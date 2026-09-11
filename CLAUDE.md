@@ -4,21 +4,6 @@ A Claude Code marketplace repo: opinionated forks of upstream skills (mattpocock
 
 ## Layout
 
-```
-.
-├── .claude-plugin/marketplace.json     # marketplace manifest, lists registered plugins
-├── .github/workflows/validate.yml      # CI gate (runs scripts/validate.sh)
-├── scripts/validate.sh                 # local + CI validator
-├── dev/                                # general development tooling
-├── meta/                               # repo-self-maintenance skills (import, refresh, merge)
-├── productivity/                       # process and workflow skills
-├── personal/                           # Mehrdad's personal working defaults (work-like-mehrdad)
-├── in-progress/                        # skills being actively authored or rewritten
-├── deprecated/                         # skills phased out, kept installable
-├── NOTICES.md                          # upstream attribution summary
-└── README.md
-```
-
 Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. Each skill is a dir with `SKILL.md` plus optional `references/` and `scripts/`. Slash commands (`commands/*.md`) are the legacy Claude Code mechanism and intentionally not used here — skills replace them.
 
 ## Conventions
@@ -52,6 +37,15 @@ Per session:
 - `dev/` / `productivity/` — stable, currently used.
 - `deprecated/` — phased out, still installable with warning. `refresh-vendored` skips these.
 - `meta/` — repo self-maintenance only; not useful in other projects.
+
+## Deprecation
+
+A skill is a deprecation candidate when both conditions hold:
+
+1. No session invoked it in the last 30 days. Claude Code deletes transcripts after 30 days, so this window is the whole visible history. Count sessions, not calls. Count subagent transcripts too, because research and review run in agents.
+2. No skill or agent file calls it. A dependency never shows in a direct count. `codebase-design` is called by `tdd`, and `verification-before-completion` by `systematic-debugging`.
+
+`scripts/skill-usage.sh` prints both numbers for every skill on the branch, with the callers. Run it before you deprecate a skill. A skill younger than the window is exempt. A `meta/` skill is a maintenance tool, so a quiet month is not a verdict on it. Deprecation moves the skill to `deprecated/`. Removal deletes the skill and its lines in `README.md`, `marketplace.json`, and `NOTICES.md`.
 
 ## Drift bands and attribution language
 
