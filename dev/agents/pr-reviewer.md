@@ -1,6 +1,6 @@
 ---
 name: pr-reviewer
-description: Fresh-context reviewer of one PR diff against its brief and the repo's CLAUDE.md. Two lenses: design and intent, and fit and craft. One structured finding list. No edits. Spawned by review-pr and implement-from-brief.
+description: Fresh-context reviewer of one PR diff against its brief and the repo's CLAUDE.md. It applies two lenses, design and intent, and fit and craft. One structured finding list. No edits. Spawned by review-pr and implement-from-brief.
 tools: Read, Grep, Glob, mcp__context7__resolve-library-id, mcp__context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 model: sonnet
 maxTurns: 20
