@@ -1,84 +1,61 @@
 ---
 name: write-a-skill
-description: Reference for writing documents an agent consumes. Use when creating or editing a skill, or when another skill needs the writing-for-agents vocabulary.
+description: Writes or rewrites a skill, an agent file, or a reference in this marketplace, from the name and the outline to the PR. Use when the user asks for a new skill, a rename, a rewrite, or an edit to a SKILL.md, an agent file, or a reference. Use it also when another skill needs the skill-writing rules.
 ---
 
-Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
+# Write a skill
 
-When the document you're writing is a skill, read [`SKILL-MECHANICS.md`](references/SKILL-MECHANICS.md) for frontmatter, invocation choice, and router skills.
+Call the Skill tool with `productivity:write-ste` first. Every file you write here follows its rules.
 
-## Context pointers
+## Before you write
 
-A **context pointer** is a reference held in the agent's context that names some out-of-context material and encodes the condition for reaching it. A skill's description is one; a line in `AGENTS.md` naming a doc is the same object. The pointer's _wording_, not its target, decides when the agent reaches the material, and how reliably. A must-have target behind a weakly worded pointer is a variance bug: sharpen the wording first, and inline the material only if sharpening fails.
+1. If the skill exists, read every file in its directory. Grep the repo for the skill's name. The hits are its callers: other skills, agent files, the README, and the marketplace manifest. Every caller changes with the skill.
+2. Choose the invocation. Read [references/invocation.md](references/invocation.md). A skill that other skills call, or that the agent must reach on its own, is model-invoked. A skill that only the human types is user-invoked.
+3. Propose the name. A name is verb-first and hyphenated, and one word when one word says it. Offer two or three names, the recommended one first. A flow verb extends the kitchen frame: `cook` works a ticket, `fire` runs the brief.
+4. Propose the frontmatter and the headings. Wait for the user to agree. Write no body before that.
 
-A pointer does two jobs: state what the material is, and list the **branches** that should trigger reaching it (a branch is a distinct case the document handles, so different runs take different paths through it). Every word of an always-loaded pointer costs on every turn, so it earns even harder pruning than the body:
+## Shape
 
-- **Front-load the leading word**: the pointer is where it does its triggering work.
-- **One trigger per branch.** Synonyms that rename a single branch are one branch written twice; collapse them and keep only genuinely distinct branches.
-- **Cut identity the body already carries.**
+- `SKILL.md` holds the steps that every run takes, in order. Each step ends with the condition that tells the agent the step is done.
+- Prose that only some runs need goes in `references/`. One sentence in `SKILL.md` names the file and says when to read it.
+- An executable goes in `scripts/`.
+- One rule lives in one place. When the rule belongs to another skill, call the Skill tool with that skill. Do not restate it.
+- A vendored skill stays as it is. New behaviour goes in a thin skill that calls it.
+- Do not write a line that the agent can find with `ls`, with `--help`, or in a config file. Write the convention, the reason, and the trap that the environment does not show.
+- Delete a sentence that the agent obeys without it.
+- State the target behaviour. A ban makes the banned behaviour more available, so write a ban only as a guardrail next to the target.
+- Introduce a **defined term** once, in bold, with a one-sentence definition. Then use the word alone. A word the model already knows, such as "ledger" or "brief", carries its meaning for free. Prefer it to a new coinage.
+- Keep the file short. Attention thins over a long file, and every line is one more to keep true.
 
-## The two loads
+## Frontmatter
 
-Every document and pointer you add spends one of two budgets:
+- `name` is the directory name.
+- `description`: the first sentence states what the skill does, in the third person. The second sentence starts with "Use when" and lists each distinct trigger once. The value has 1,536 characters maximum.
+- A colon followed by a space inside the value breaks the YAML, unless the whole value is in double quotes. The skill then loads with no metadata. Only CI catches this, so check it by eye.
+- A user-invoked skill sets `disable-model-invocation: true` and an `argument-hint`. Its description is a one-line summary for the human.
+- Check the field list against https://code.claude.com/docs/en/skills before you ship. The spec changes.
 
-- **Context load** is the cost of always-loaded material on the agent's window: an `AGENTS.md` line, a skill description, anything sitting in context every turn, spending tokens and attention whether or not it fires.
-- **Cognitive load** is the cost on the human: which documents exist and when to reach for each. The human is the index. Not a cost to minimise: it is the price of human agency; spend it where human judgement matters, remove it where it does not.
+## Agent files
 
-Material reached only through a pointer escapes context load at the price of the pointer's own line; material with no pointer at all rides entirely on cognitive load.
+- An agent file lives at `<plugin>/agents/<name>.md`. It holds one role.
+- The frontmatter holds `name`, `description`, `tools` as an allowlist, `model`, and `maxTurns`. The description names the skills that spawn the agent.
+- The body ends with the exact JSON that the agent returns. A caller that uses the Workflow tool copies that JSON as its schema.
+- A caller spawns the agent as `<plugin>:<name>`. A session registers plugin agents at its start, so a new agent resolves only in a session started after the plugin update.
 
-## Information hierarchy
+## Check before the PR
 
-A document is built from two content types: **steps** (the ordered actions the agent performs) and **reference** (definitions, rules, facts consulted on demand). The two mix freely: all steps (a recipe), all reference (a review's rules, this skill), or both. The core decision is where each piece sits on the **information hierarchy**, a ladder ranked by how immediately the agent needs the material:
+1. Run the `write-ste` check list on every changed file.
+2. Check every changed description for a colon followed by a space.
+3. Run `scripts/validate.sh` from the repository root.
+4. If the skill starts agents or runs a script, run it once against a throwaway repo. Put the result in the PR body under Verified.
+5. For a rewrite of an existing skill in STE: keep every heading, link, code block, file name and path. Keep every rule. Keep the line count within 20 percent of the original. List an ambiguity you find under "Open questions" in the PR body. Do not resolve it.
 
-1. **In-file step** is the primary tier: what the agent does, in order.
-2. **In-file reference** is consulted on demand. Often a legitimately flat peer-set (every rule of a review on one rung), which is a fine arrangement, not a smell.
-3. **Disclosed reference** is pushed out into a separate file, reached by a context pointer, loaded only when the pointer fires. Spans a sibling file in the same folder through fully external reference that lives anywhere and any document can point at.
+## Ship
 
-Push too little down and the top bloats; push too much and you hide material the agent actually needs. That tension is the whole decision.
-
-**Progressive disclosure** is the move down the ladder (out of the main file and behind a pointer) so the top stays legible. Not primarily a token optimisation: it is how the hierarchy is protected. Branching is the cleanest disclosure test: inline what every branch needs, and push behind a pointer what only some branches reach. When a document has steps, in-file reference that should be disclosed buries them and turns attending to them into a coin-flip: a variance lever, not just a legibility one.
-
-**Co-location** is the within-file companion: where the ladder decides _how far down_ a piece sits, co-location decides _what sits beside it_ once there. Keep a concept's definition, rules, and caveats under one heading rather than scattered, so reading one part brings its neighbours with it. The test: the document should read like documentation written for the agent. Grouped material reads that way; scattered material does not. (Distinct from duplication: that repeats one meaning in two places; scattering fragments one meaning across many.)
-
-**Sprawl** is the failure mode here: a document simply too long, even when every line is live and unique. Attention thins across the excess, and every extra line is one more to keep relevant. The cure is the ladder: disclose reference behind pointers, and split by branch or sequence so each path carries only what it needs.
-
-## Steps and completion criteria
-
-Every step ends on a **completion criterion**, the condition that tells the agent the work is done. Two properties make it a lever:
-
-- **Clarity**: can the agent tell done from not-done? A vague bound ("understanding reached") invites **premature completion**: ending the step before it is genuinely done, attention slipping to _being done_. The visible steps still ahead (the **post-completion steps**) supply the pull; the criterion's clarity is the resistance. Defend in order: **sharpen the bound first** (local and cheap); only if it is irreducibly fuzzy _and_ you observe the rush, hide the later steps by splitting the sequence. Hiding only works across a real context boundary (a hand-off or a subagent dispatch; an inline call leaves the later steps in context and clears nothing).
-- **Demand**: how much it requires. "Every modified model accounted for" forces thorough work where "produce a change list" does not. Demand drives **legwork** (the digging the agent does within the work, latent in the wording rather than written as its own step), and it is not step-bound: "every rule applied" binds a body of flat reference just as "every step done" binds a sequence, which is how an all-reference document still carries an exhaustiveness bar.
-
-The strongest criteria are both checkable and exhaustive.
-
-## When to split
-
-Splitting one document into two spends one of the two loads, so split only when the cut earns it:
-
-- **By sequence**: split a run of steps where the post-completion steps tempt the agent to rush the one in front of it. Keeping them out of view drives more legwork on the current task. Beware the reverse: merging sequences exposes each step's later steps to what follows, inviting premature completion.
-- **By invocation**, skill-specific: see [`SKILL-MECHANICS.md`](references/SKILL-MECHANICS.md).
-
-## Leading words
-
-A **leading word** is a compact concept already living in the model's pretraining that the agent thinks with while running the document (_lesson_, _fog of war_, _tracer bullets_). Repeated as a token, never as a sentence, it accumulates a distributed definition and anchors a whole region of behaviour in the fewest tokens, by recruiting priors the model already holds. Coining your own works if you define it clearly, but a made-up word recruits no priors: you pay in definition tokens what a pretrained word gives free; reach for an existing word first.
-
-It anchors twice. In the body, _execution_: the agent reaches for the same behaviour every time the word appears, and inside flat reference it focuses attention on a class of thing to look for. In a pointer, _invocation_: when the same word lives in your prompts, your docs, and your codebase, the agent links that shared language to the material and reaches it more reliably.
-
-Hunt for opportunities to refactor with leading words. A triad spelled out at three sites, a pointer spending a sentence to gesture at one idea. Each is a passage begging to collapse into a single token:
-
-- "fast, deterministic, low-overhead" → _tight_ (a _tight_ loop).
-- "a loop you believe in" → _red_, turning a fuzzy gate into a binary observable state (the loop goes _red_ on the bug, or it doesn't).
-
-You win twice: fewer tokens, and a sharper hook for the agent to hang its thinking on. Assume every document is carrying restatements that leading words retire. Go find them.
-
-**Negation** is the failure mode beside this lever: steering by prohibition drags the forbidden behaviour into context and makes it _more_ available, not less. _Don't think of an elephant_, and the elephant is all there is; the negation is a weak modifier the strongly-activated concept overruns, so the ban half-reads as an instruction to do the thing. Prompt the **positive**: state the target behaviour ("write one-line comments") so the banned one is never spoken. A prohibition earns its place only as a hard guardrail you cannot phrase positively; even then, pair it with the positive target so attention lands on what to do.
-
-## Pruning
-
-- Keep each meaning in a **single source of truth**: one authoritative place, so changing the behaviour is a one-place edit. **Duplication** (the same meaning in more than one place) costs maintenance and tokens, and inflates a meaning's prominence on the ladder past its real rank. (The accidental inverse of a leading word, which repeats a token on purpose, never the meaning.)
-- The **environment** is a source of truth too (`package.json` scripts, config files, the directory layout, `--help` output), and a document that restates it is a **cache**: a copy of a lookup, earning its load only when the lookup is expensive. Cache what the agent cannot find by looking: the unwritten convention, the reason behind a choice, the gotcha no config confesses. Leave the one-file, one-command lookups to the environment, where they cannot go stale.
-- Check every line for **relevance**: does it still bear on what the document does? A line loses relevance by never bearing on the task (mere exposition, or a branch that should be disclosed) or by going stale as the behaviour or world it describes changes. Shorter documents are easier to keep relevant. Without a pruning discipline the default fate is **sediment**: stale layers that settle because adding feels safe and removing feels risky, until you must core down through them to find what is still live.
-- Hunt **no-ops** sentence by sentence: an instruction the model already obeys by default pays load to say nothing. The test (does it change behaviour versus the default?) is model-relative, not reader-relative: two people disagreeing about a no-op disagree about the default, and settle it by running the document, not by debate. When a sentence fails, delete the whole sentence rather than trim words from it. The test also grades leading words: a word too weak to beat the default (_be thorough_ when the agent is already thorough-ish) is a no-op, and the fix is a stronger word (_relentless_), not a different technique.
+- Work in `.worktrees/<branch>` off `origin/main`. One skill per PR. Stack a dependent skill as a second PR on the first branch.
+- Update the marketplace manifest, the README plugin list, and every caller from step 1.
+- A vendored skill keeps its footer. Recompute the verb from the drift band by [../../../meta/skills/import-skill/references/footer-format.md](../../../meta/skills/import-skill/references/footer-format.md). The SHA changes only on a refresh.
+- Use conventional commits. Open the PR body with Why, then What, Verified, and Links.
 
 ---
-_Adapted from [mattpocock/skills/skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/productivity/writing-for-agents) — MIT © 2026 Matt Pocock._
+_Originally seeded from [mattpocock/skills/skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/productivity/writing-for-agents) — MIT © 2026 Matt Pocock._
