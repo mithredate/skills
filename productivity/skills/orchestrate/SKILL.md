@@ -17,7 +17,7 @@ Take the first frontier ticket of the active map, claim it, resolve it through w
 
 ## init
 
-A new orchestrator repo gets `.wayfinder/README.md` with the empty index table and a `CLAUDE.md` from [references/claude-md-template.md](references/claude-md-template.md), its repos table filled with the sibling repos this one steers.
+A new orchestrator repo gets `.wayfinder/README.md` with the empty index table, and `AGENTS.md` plus its `CLAUDE.md` bridge from [references/agents-md-template.md](references/agents-md-template.md), the repos table filled with the sibling repos this one steers.
 
 ## close
 
