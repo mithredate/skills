@@ -34,7 +34,8 @@
         "./skills/wayfinder",
         "./skills/domain-modeling",
         "./skills/prototype",
-        "./skills/research"
+        "./skills/research",
+        "./skills/orchestrate"
       ]
     },
     {

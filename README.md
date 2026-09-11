@@ -23,6 +23,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `write-a-skill` — reference for the craft of writing skills: predictability, context vs cognitive load, information hierarchy, leading words, failure modes
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
   - `wayfinder` — plan oversized work as a map of decision tickets on an issue tracker, resolved one at a time
+  - `orchestrate` — run a planning-only orchestrator repo: one wayfinder map per initiative under `.wayfinder/`, `cook`, `init`, the hand-off brief
   - `domain-modeling` — pin down a domain's terms and boundaries; record choices as ADRs
   - `research` — resolve a factual question a decision waits on via a focused research subagent
   - `prototype` — make a cheap, rough artifact (outline, stub, UI/logic) to react to
