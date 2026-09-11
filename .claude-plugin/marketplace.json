@@ -19,7 +19,8 @@
         "./skills/implement-with-review-loop",
         "./skills/ponytail",
         "./skills/verification-before-completion",
-        "./skills/codebase-design"
+        "./skills/codebase-design",
+        "./skills/review-pr"
       ]
     },
     {

@@ -13,6 +13,8 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `ponytail` — force the laziest solution that actually works — YAGNI, stdlib first, shortest diff
   - `verification-before-completion` — require fresh verification evidence before claiming work is done
   - `codebase-design` — shared vocabulary for designing deep modules and finding deepening opportunities
+  - `review-pr` — review a PR within a token budget: the main session for others' PRs, one capped reviewer plus one verifier for PRs the user's agents wrote
+  - agents `pr-reviewer` (Sonnet, two lenses, structured findings) and `verifier` (Haiku, runs declared commands, reports evidence)
 - **meta** — skills for maintaining this marketplace itself
   - `import-skill` — vendor a new skill from a GitHub upstream
   - `refresh-vendored` — reconcile vendored skills against upstream changes
