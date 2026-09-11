@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 **Arguments:** $ARGUMENTS. The first argument is the path of a wayfinder ticket. The `+<n>k` argument is the token ceiling for this turn. `max_rounds=N` caps the implementer rounds. The default is 3.
 
-The Workflow tool runs the script [references/loop.workflow.js](references/loop.workflow.js). The script owns the routing, the ledger, the verdict, and the budget check. The main session reads the brief, makes the worktree, starts the workflow, and reports. It does not edit code. It does not read the transcripts of the agents.
+The Workflow tool runs the script [scripts/loop.workflow.js](scripts/loop.workflow.js). The script owns the routing, the ledger, the verdict, and the budget check. The main session reads the brief, makes the worktree, starts the workflow, and reports. It does not edit code. It does not read the transcripts of the agents.
 
 ## The graph
 
@@ -42,7 +42,7 @@ The **ledger** is the list of design-level constraints that the implementer and 
 6. Set `kind` to `bugfix` when the branch starts with `fix/`, or when the brief's Tests line asks for the failing test first. Otherwise set it to `change`.
 7. Set `implementerModel` to `opus` when the brief says the change is design-heavy. Otherwise set it to `sonnet`.
 8. Set `graphPath` to `<repo root>/graphify-out/graph.json` when that file exists. Otherwise set it to `null`.
-9. Copy this skill's `references/loop.workflow.js` to `.worktrees/<branch>.workflow.js`. The Workflow tool accepts only a script path under the working directory.
+9. Copy this skill's `scripts/loop.workflow.js` to `.worktrees/<branch>.workflow.js`. The Workflow tool accepts only a script path under the working directory.
 10. Call the Workflow tool with `scriptPath` set to that copy and with these `args`. Pass them as a JSON object, not as a string.
 
 ```json
