@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Run an orchestrator repo, a planning-only repo whose `.wayfinder/` holds one wayfinder map per initiative. Use at the start of every session in such a repo, when the user says "cook", or when asked to set up a new orchestrator repo.
+description: Run an orchestrator repo, a planning-only repo whose `.wayfinder/` holds one wayfinder map per initiative. Use at the start of every session in such a repo, when the user says "cook" or "close", or when asked to set up a new orchestrator repo.
 ---
 
 # Orchestrate
@@ -18,6 +18,14 @@ Take the first frontier ticket of the active map, claim it, resolve it through w
 ## init
 
 A new orchestrator repo gets `.wayfinder/README.md` with the empty index table and a `CLAUDE.md` from [references/claude-md-template.md](references/claude-md-template.md), its repos table filled with the sibling repos this one steers.
+
+## close
+
+An initiative closes when its Destination's "closes when" sentence is true, or the user rules the rest out of scope. Closing turns the directory into one report and removes it, so the repo holds one file per finished initiative instead of a growing tree.
+
+1. Write `.wayfinder/reports/<YYYY-MM-DD>-<slug>.md`: the Destination; one entry per closed ticket with its resolution, reasoning, and `Revisit if:` line, copied from the ticket, not summarised; where the work landed (PRs, documents, systems), with links; what was ruled out of scope and why; tickets left open, each with the initiative it moves to or the reason it stays undone. Assets the report needs are quoted into it; the rest stay in git history.
+2. Set the index row to `closed <date>` linking the report, and `git rm` the initiative directory. History keeps every ticket.
+3. Commit and push.
 
 ## Hand-off: the brief
 

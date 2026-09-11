@@ -7,7 +7,8 @@ Wayfinder's tracker for an orchestrator repo: plain files under `.wayfinder/`, n
 ```
 .wayfinder/
   README.md                  index of initiatives
-  <YYYY-MM-DD>-<slug>/       one initiative
+  reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed
+  <YYYY-MM-DD>-<slug>/       one open initiative
     map.md                   the map, wayfinder's body
     tickets/<id>.md          one file per ticket
     assets/                  research, specs, digests, linked from tickets
@@ -21,7 +22,7 @@ Wayfinder's tracker for an orchestrator repo: plain files under `.wayfinder/`, n
 | [<dir>](<dir>/map.md) | **active**; <one-line state> | <Destination in one line> |
 ```
 
-Status: **active** (exactly one row), `open`, `paused <date> (<resume pointer>)`, `closed <date>`.
+Status: **active** (exactly one row), `open`, `paused <date> (<resume pointer>)`, `closed <date>` (the Map column then links the report).
 
 ## Ticket
 
