@@ -11,10 +11,10 @@ A Claude Code marketplace repo: opinionated forks of upstream skills (mattpocock
 ├── scripts/validate.sh                 # local + CI validator
 ├── dev/                                # general development tooling
 ├── meta/                               # repo-self-maintenance skills (import, refresh, merge)
-├── productivity/                       # process and workflow skills (empty)
+├── productivity/                       # process and workflow skills
 ├── personal/                           # Mehrdad's personal working defaults (work-like-mehrdad)
-├── in-progress/                        # skills being actively authored or rewritten (empty)
-├── deprecated/                         # skills phased out, kept installable (empty)
+├── in-progress/                        # skills being actively authored or rewritten
+├── deprecated/                         # skills phased out, kept installable
 ├── NOTICES.md                          # upstream attribution summary
 └── README.md
 ```
@@ -38,7 +38,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. Each s
 
 ## Worktree workflow (imports and refreshes)
 
-Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree per session**, never on `main` directly. Use Claude Code's default worktree mechanism — it places worktrees under `.claude/worktrees/<branch-name>/` (which is gitignored).
+Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree per session**, never on `main` directly. Worktrees live under `.worktrees/<branch-name>/` at the repo root (gitignored); branch name = directory name.
 
 Per session:
 - Create a worktree on a feature branch — `import/<target-name>` for imports, `refresh/<date>` for refreshes.
