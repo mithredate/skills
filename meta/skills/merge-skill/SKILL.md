@@ -1,92 +1,101 @@
 ---
 name: merge-skill
-description: Reconcile two versions of a skill into one. Reads a "current" version (your local) and an "incoming" version (fresh upstream, refreshed upstream, or another local skill), produces a semantic comparison with three-flag annotations, walks the user through per-item decisions, and applies accepted changes to the current version in place. Use when called by `import-skill` on conflict, by `refresh-vendored` for any refresh comparison, or directly with `/merge-skill <current-path> <incoming-path>` to absorb one skill into another.
+description: Reconcile two versions of a skill into one. The skill reads a `current` version and an `incoming` version. The `current` version is your local skill. The `incoming` version can be a fresh upstream, a refreshed upstream, or another local skill. The skill makes a semantic comparison and lists items with three flags. The skill asks the user to decide on each item. The skill applies every accepted change to the `current` version in place. Use when called by `import-skill` on conflict, by `refresh-vendored` for any refresh comparison, or directly with `/merge-skill <current-path> <incoming-path>` to absorb one skill into another.
 ---
 
 # Merge Skill
 
-Shared core for reconciling skill versions. `import-skill` delegates to this on naming conflicts; `refresh-vendored` delegates for every refresh. May also be invoked standalone.
+This skill is the shared core that reconciles skill versions. `import-skill` delegates to this skill on a naming conflict. `refresh-vendored` delegates to this skill for every refresh. You can also run this skill on its own.
 
 ## Inputs
 
-- **current** — path to the local skill directory you want to keep editing. Receives all changes in place.
-- **incoming** — path to the skill directory to merge from. May be a temp clone, another local skill, or anything readable as a skill directory.
-- **incoming-sha** (optional) — when incoming is an upstream version with a known commit SHA, pass it. Used to update the footer's checkpoint SHA after a successful merge.
+- **current** — the path to your local skill directory. You edit this directory. This skill writes every accepted change into it.
+- **incoming** — the path to the skill directory you merge from. It can be a temporary clone, another local skill, or any directory readable as a skill.
+- **incoming-sha** (optional) — when incoming is an upstream version with a known commit SHA, give this value. This skill uses it to update the footer's checkpoint SHA after a successful merge.
 
 ## Output
 
-- `current` is rewritten in place with accepted changes.
-- `incoming` is left untouched (it was a vehicle, not a destination).
-- If `incoming-sha` was provided, the footer in `current/SKILL.md` is updated to that SHA; the verb (`Adapted from` / `Inspired by` / `Originally seeded from`) is recomputed based on the new local drift band.
-- A summary is printed listing accepted, skipped, and adapted items.
+- This skill rewrites `current` in place with the accepted changes.
+- This skill never edits `incoming`. This skill only reads `incoming`.
+- If the caller gives `incoming-sha`, this skill updates the footer in `current/SKILL.md` to that SHA. This skill also recomputes the verb. The verb is `Adapted from`, `Inspired by`, or `Originally seeded from`. This skill picks the verb from the new local drift band.
+- This skill prints a summary of accepted, skipped, and adapted items.
 
 ## Process
 
-Create a TodoWrite item per step when invoked.
+When you start this skill, create one TodoWrite item for each step.
 
 ### 1. Read both versions
 
-Read every file under `current/` and `incoming/` (SKILL.md, references/, scripts/, etc.). Treat the skill as one cohesive unit.
+Read every file under `current/` and `incoming/`. This includes `SKILL.md`, `references/`, and `scripts/`. Treat the skill as one unit.
 
 ### 2. Build a semantic comparison
 
-Do **not** show a git diff. Read both versions and produce a structured list of items describing what differs. Each item is one logical unit (a section, a paragraph, a script behavior). Items are typically 3–7 per skill.
+Do not show a git diff. Read both versions. Make a list of items that shows the differences. Each item is one logical unit. Examples are a section, a paragraph, or a script behavior. A skill usually has 3 to 7 items.
 
 Annotate each item with one of three flags:
 
-- **`upstream-new`** — content/idea present in incoming but absent in current. No direct overlap. Candidate for adoption.
-- **`conflict`** — incoming and current both touch the same concept differently. The user's local drift directly contradicts incoming. Needs judgment.
-- **`stale-divergence`** — current has content nowhere in incoming, and the surrounding context suggests it may be an old fork artifact the user forgot about. Surfaced for hygiene.
+- **`upstream-new`** — the incoming version has this content, and the current version does not. There is no direct overlap. This item is a candidate for adoption.
+- **`conflict`** — incoming and current both change the same concept in different ways. The user's local drift contradicts incoming directly. This item needs the user's judgment.
+- **`stale-divergence`** — current has content that incoming does not have. This content can be an old artifact from an earlier fork that the user forgot. This skill flags the item so the user can check it.
 
 ### 3. Present the comparison
 
-Show all items grouped by flag. Brief summaries (1–2 sentences each), not raw diffs. Cite locations (`SKILL.md § "Process"`, `references/foo.md`, etc.).
+Show all items in groups by flag. Write a brief summary for each item. Use 1 to 2 sentences. Do not show raw diffs. Give the location of each item, for example `SKILL.md § "Process"` or `references/foo.md`.
 
 ### 4. Walk the user through decisions
 
-For each item, ask: **adopt** (integrate into current), **skip** (deliberate divergence, don't touch current), or **adapt** (user describes a custom resolution). Process items one at a time.
+For each item, ask the user to pick one option:
 
-`stale-divergence` items get a softer prompt: "this looks like content unique to your local; keep, drop, or adapt?"
+- **adopt** — put the item into `current`.
+- **skip** — do not change `current`. This is a deliberate divergence.
+- **adapt** — the user describes a custom fix. Apply that fix to `current`.
+
+Handle one item at a time.
+
+For a `stale-divergence` item, ask a softer question: "this content is only in your local skill. Do you want to keep it, drop it, or adapt it?"
 
 ### 5. Apply decisions
 
-For each adopted/adapted item, edit the relevant file in `current/` directly. Confirm each edit's exact content before applying. Never silently overwrite. On any edit failure, abort and report.
+For each adopted or adapted item, edit the matching file in `current/`. Show the exact content of each edit to the user before you apply it. Never overwrite a file without the user's approval. If an edit fails, abort the run and report it.
 
 ### 6. Update footer (if applicable)
 
-If `incoming-sha` was provided:
-1. Compute the post-merge drift ratio: lines changed in current relative to incoming, summed across all skill files.
-2. Map ratio to verb (< 30%: `Adapted from`; 30–80%: `Inspired by`; > 80%: `Originally seeded from`).
-3. Rewrite the footer in `current/SKILL.md` with the new verb and new SHA. Preserve license, copyright, and source URL path. Format per [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md).
+If the caller gives `incoming-sha`:
+1. Compute the post-merge drift ratio. This ratio is the number of lines that changed in `current` compared to `incoming`, added up across every skill file.
+2. Match the ratio to a verb:
+   - Below 30% — use `Adapted from`.
+   - 30% to 80% — use `Inspired by`.
+   - Above 80% — use `Originally seeded from`.
+3. Rewrite the footer in `current/SKILL.md` with the new verb and the new SHA. Keep the license, the copyright, and the source URL path unchanged. Use the format in [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md).
 
-If `incoming-sha` was not provided (merging two local skills), leave the footer alone.
+If the caller does not give `incoming-sha`, leave the footer as it is. This happens when you merge two local skills.
 
 ### 7. Validate
 
-Run the official validator against the plugin that owns `current` to confirm post-merge integrity:
+Run the official validator against the plugin that owns `current`. This confirms the merge did not break the skill.
 
 ```bash
 claude plugin validate <plugin-dir-containing-current>
 ```
 
-(e.g., if `current` is `productivity/skills/tdd/`, the plugin dir is `productivity`.)
+For example, if `current` is `productivity/skills/tdd/`, the plugin directory is `productivity`.
 
-On any validation error, surface the message and stop — do not declare merge successful. The user resolves before committing.
+On a validation error, surface the message. Abort the run. Do not say the merge worked. The user must fix the problem before the commit.
 
 ### 8. Report
 
 Print:
-- Items accepted / skipped / adapted (count + brief titles)
-- Files modified
-- New footer line if updated
-- Suggested commit message
+- the number of accepted, skipped, and adapted items, with a brief title for each
+- the files this skill changed
+- the new footer line, if the footer changed
+- a suggested commit message
 
-Leave the actual `git add` / `git commit` to the user.
+Leave the `git add` and `git commit` commands to the user.
 
 ## Edge cases
 
-- **`current` and `incoming` are identical** → report "no changes," exit.
-- **`incoming` is missing `SKILL.md`** → abort with a clear error; merge needs a valid skill on both sides.
-- **Conflicting items where the user's intent is unclear** → ask follow-up questions before classifying. Don't guess.
-- **A single accepted edit fails to apply cleanly** (e.g., the local file has drifted so far that the diff target text doesn't exist) → abort the run, surface the partial state, and let the user resolve manually.
-- **No items to surface** (the agent reads both and finds nothing meaningful different) → still report explicitly; don't silently no-op.
+- If `current` and `incoming` are identical, report "no changes" and exit.
+- If `incoming` has no `SKILL.md`, abort with a clear error. A merge needs a valid skill on both sides.
+- If an item is a conflict and the user's intent is unclear, ask follow-up questions before you classify it. Do not guess.
+- A single accepted edit can fail to apply cleanly. This can happen when the local file has drifted so far that the diff target text does not exist. If this happens, abort the run, surface the partial state, and let the user resolve it manually.
+- If the agent reads both versions and finds nothing meaningfully different, there are no items to surface. Report this explicitly. Do not skip the report silently.
