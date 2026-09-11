@@ -6,7 +6,6 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 
 - **dev** — general development tooling
   - `manage-agents-md` — write, improve, and housekeep a repo's instruction file (`CLAUDE.md`, or `AGENTS.md` bridged into it); graduate corrections out of auto-memory into it
-  - `install-claude-sidecar` — install the Claude sidecar viewer
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix
   - `fire` — implement a briefed change through a Workflow graph inside a token ceiling: implementer, then `pr-reviewer` and `verifier`, verdict in code
