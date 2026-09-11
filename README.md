@@ -35,8 +35,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `weigh-feature-complexity` — break a spec or PR into features and visualize the complexity each one adds
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
-- **deprecated** — skills phased out, kept installable during transitions
-  - `handoff` — compact the current conversation into a handoff doc for the next session
+- **deprecated** — skills phased out, kept installable during transitions _(empty for now)_
 
 ## Installation
 
