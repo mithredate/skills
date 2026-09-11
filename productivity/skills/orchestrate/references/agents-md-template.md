@@ -1,25 +1,26 @@
 # Instruction files for an orchestrator repo
 
-Repo facts only. The ritual lives in the `productivity:orchestrate` skill; the defaults in `personal:work-like-mehrdad`.
+This file holds repo facts only. The procedure lives in the `productivity:orchestrate` skill. The defaults live in `personal:work-like-mehrdad`.
 
-`AGENTS.md`, read by every agent:
+Every agent reads `AGENTS.md`.
 
 ```markdown
 # <repo-name>
 
-Orchestrator for <what it steers>. Planning only: implementation lives in the
-repos below. Everything lives in `.wayfinder/`, one directory per initiative;
-`.wayfinder/README.md` is the index. Every change is committed and pushed.
+This repo is an orchestrator for <what it plans for>. It is planning only.
+Implementation lives in the repos below. Everything lives in `.wayfinder/`,
+one directory for each initiative. `.wayfinder/README.md` is the index.
+Commit and push every change.
 
 ## Repos
 
-Sibling directories under `~/projects/`.
+The sibling repos sit under `~/projects/`.
 
 | Repo | What it is |
 |---|---|
 | `../<sibling>` | <one line> |
 
-Reference repos (read from here, never modified from here): `../<repo>`.
+A reference repo is read here, not changed here. Example: `../<repo>`.
 
 ## Links
 
@@ -30,13 +31,13 @@ Reference repos (read from here, never modified from here): `../<repo>`.
 <repo-specific rules only, for example a file that one owner edits>
 ```
 
-`CLAUDE.md`, the bridge Claude Code reads:
+Claude Code reads `CLAUDE.md`, the bridge to `AGENTS.md`.
 
 ```markdown
 @AGENTS.md
 
 ## Claude Code
 
-At the start of every session call the Skill tool with `productivity:orchestrate`.
-<Claude-only gates, e.g. the permissions.ask rule in .claude/settings.json>
+At the start of every session, call the Skill tool with `productivity:orchestrate`.
+<Claude-only gates, for example the permissions.ask rule in .claude/settings.json>
 ```

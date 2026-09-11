@@ -1,6 +1,6 @@
 # Local-markdown tracker
 
-Wayfinder's tracker for an orchestrator repo: plain files under `.wayfinder/`, no issue tracker. These are its "Wayfinding operations".
+This is wayfinder's tracker for an orchestrator repo. It uses plain files under `.wayfinder/`, not an issue tracker. This file gives its "Wayfinding operations".
 
 ## Layout
 
@@ -22,24 +22,30 @@ Wayfinder's tracker for an orchestrator repo: plain files under `.wayfinder/`, n
 | [<dir>](<dir>/map.md) | **active**; <one-line state> | <Destination in one line> |
 ```
 
-Status: **active** (exactly one row), `open`, `paused <date> (<resume pointer>)`, `closed <date>` (the Map column then links the report).
+The Status column holds one value:
+- **active**, for exactly one row
+- `open`
+- `paused <date> (<resume pointer>)`
+- `closed <date>`
+
+When the status is `closed <date>`, the Map column links to the report.
 
 ## Ticket
 
-A ticket is `tickets/<id>.md`. Wayfinder's tracker fields live in its frontmatter; the body is wayfinder's.
+A ticket is `tickets/<id>.md`. Wayfinder's tracker fields live in its frontmatter. The body of the file is wayfinder's.
 
 | Wayfinder concept | In the file |
 |---|---|
 | ticket id, title | `id: <prefix>-<nn>`, `title:` |
 | open / closed | `status: open` / `status: closed` |
-| claimed by | `assignee:` (empty means unclaimed) |
+| claimed by | `assignee:`, empty if unclaimed |
 | blocked by | `blocked-by: [<id>, ...]` |
 | frontier | `status: open`, empty `assignee`, every `blocked-by` id closed |
 | resolution comment | a `## Resolution` section appended on close, plus one gist line under the map's Decisions so far |
 | linked assets | files under `assets/`, linked from the ticket |
-| hand-off | a `## Brief` section after the resolution (below) |
+| hand-off | a `## Brief` section, placed after the resolution section |
 
-Commit and push every change to a map, ticket, or asset when it happens; concurrent sessions read the tracker from git.
+When a change happens to a map, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
 
 ## Brief
 
