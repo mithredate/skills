@@ -14,7 +14,8 @@ export const meta = {
 //   kind ('bugfix' | 'change'), implementerModel ('sonnet' | 'opus'),
 //   maxRounds, graphPath (string | null), skillDir
 
-const ROUND_ESTIMATE_TOKENS = 500_000
+// budget counts output tokens only. A toy round cost 14K; the floor covers a real repo.
+const ROUND_ESTIMATE_TOKENS = 50_000
 const maxRounds = args.maxRounds ?? 3
 const briefPath = `${args.skillDir}/references/implementer-brief.md`
 const startSpent = budget.spent()

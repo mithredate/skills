@@ -35,13 +35,15 @@ The **ledger** is the list of design-level constraints that the implementer and 
 ## Pre-flight
 
 1. Read the ticket. The `## Brief` section holds the repo, the branch, the files, the order, the tests, the FR, the NFR and the ponytail limits. If the ticket has no `## Brief` section, stop and ask the user for one.
-2. If the arguments hold no `+<n>k` ceiling, stop and ask the user for one. The ceiling is the hard stop of the run.
-3. In the repo that the brief names, run `git fetch origin`. Set `baseSha` to the output of `git rev-parse origin/main`.
-4. Make the worktree. Run `git worktree add -b <branch> .worktrees/<branch> <baseSha>` from the repo root. The branch name comes from the brief.
-5. Set `kind` to `bugfix` when the branch starts with `fix/`, or when the brief's Tests line asks for the failing test first. Otherwise set it to `change`.
-6. Set `implementerModel` to `opus` when the brief says the change is design-heavy. Otherwise set it to `sonnet`.
-7. Set `graphPath` to `<repo root>/graphify-out/graph.json` when that file exists. Otherwise set it to `null`.
-8. Call the Workflow tool with `scriptPath` set to this skill's `references/loop.workflow.js` and with these `args`. Pass them as a JSON object, not as a string.
+2. If the arguments hold no `+<n>k` ceiling, stop and ask the user for one. The ceiling is the hard stop of the run. It counts the output tokens of this turn, not the total tokens.
+3. The nodes `dev:pr-reviewer` and `dev:verifier` are agents of this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`. A session registers agents at its start.
+4. In the repo that the brief names, run `git fetch origin`. Set `baseSha` to the output of `git rev-parse origin/main`.
+5. Make the worktree. Run `git worktree add -b <branch> .worktrees/<branch> <baseSha>` from the repo root. The branch name comes from the brief.
+6. Set `kind` to `bugfix` when the branch starts with `fix/`, or when the brief's Tests line asks for the failing test first. Otherwise set it to `change`.
+7. Set `implementerModel` to `opus` when the brief says the change is design-heavy. Otherwise set it to `sonnet`.
+8. Set `graphPath` to `<repo root>/graphify-out/graph.json` when that file exists. Otherwise set it to `null`.
+9. Copy this skill's `references/loop.workflow.js` to `.worktrees/<branch>.workflow.js`. The Workflow tool accepts only a script path under the working directory.
+10. Call the Workflow tool with `scriptPath` set to that copy and with these `args`. Pass them as a JSON object, not as a string.
 
 ```json
 {
@@ -67,7 +69,7 @@ The workflow runs in the background. Wait for its task notification. Do not star
 The workflow returns `status`, `rounds`, `ledger`, `findings`, `blocker` and `outputTokens`.
 
 1. Write the ledger to `.worktrees/<branch>-ledger.md`, one entry per line. Write the file also when the ledger is empty.
-2. Report in this order. State the status: `pass`, `escalate`, `budget`, `plan_broken`, `setup_blocked` or `agent_failed`. Then list the findings that remain: `discrepancy`, then `blocking`, then red verifier commands, then `quality_note`, then at most five `nit` entries. Then give the worktree path, the branch, and the ledger path. Then give the rounds spent out of the cap. End with a cost line: the `outputTokens` figure.
+2. Report in this order. State the status: `pass`, `escalate`, `budget`, `plan_broken`, `setup_blocked` or `agent_failed`. Then list the findings that remain: `discrepancy`, then `blocking`, then red verifier commands, then `quality_note`, then at most five `nit` entries. Then give the worktree path, the branch, and the ledger path. Then give the rounds spent out of the cap. End with a cost line: the `outputTokens` figure from the result, and the `subagent_tokens` figure from the task notification.
 3. On `plan_broken` or `setup_blocked`, put the `blocker` text first. When it names a decision, list the options for the user.
 4. Open no PR. Merge nothing. Push nothing. Remove nothing. The next step is the user's: `/review-pr <branch> --fresh`, or a merge.
 
