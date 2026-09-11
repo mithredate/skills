@@ -1,4 +1,4 @@
-# What belongs in a CLAUDE.md
+# What belongs in an instruction file
 
 ## The WHAT-WHY-HOW framework
 
@@ -48,8 +48,8 @@ agent_docs/
 See agent_docs/running_tests.md for testing guide.
 ```
 
-## Placement
+## Placement (Claude Code)
 
-- **Root**: shared context for all work
-- **Subdirectories**: pulled in when working in that directory (`frontend/CLAUDE.md`)
+- **Root** `AGENTS.md` with the `CLAUDE.md` bridge: shared context for all work
+- **Subdirectories**: a `CLAUDE.md` there loads when Claude reads files in that directory; `.claude/rules/*.md` with `paths:` frontmatter loads on matching files
 - **Home folder** (`~/.claude/CLAUDE.md`): personal preferences across all projects
