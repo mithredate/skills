@@ -5,7 +5,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 ## Plugins
 
 - **dev** — general development tooling
-  - `manage-claude-md` — create, review, and improve `CLAUDE.md` files
+  - `manage-claude-md` — create, review, and improve `CLAUDE.md` files; graduate corrections out of auto-memory into CLAUDE.md and skills
   - `install-claude-sidecar` — install the Claude sidecar viewer
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix

@@ -1,6 +1,6 @@
 ---
 name: manage-claude-md
-description: Help write and improve CLAUDE.md files for Claude Code projects. Use when users want to create a new CLAUDE.md, improve an existing one, review their CLAUDE.md for best practices, or ask questions about what to include in CLAUDE.md. Triggers on requests like "help me write a CLAUDE.md", "review my CLAUDE.md", "what should I put in CLAUDE.md", or "improve my Claude configuration".
+description: Help write and improve CLAUDE.md files for Claude Code projects, and graduate corrections out of auto-memory into them. Use when users want to create a new CLAUDE.md, improve an existing one, review their CLAUDE.md for best practices, ask what to include in CLAUDE.md, or say "sweep corrections", "graduate memories", "what has Claude been getting wrong". Triggers on requests like "help me write a CLAUDE.md", "review my CLAUDE.md", "what should I put in CLAUDE.md", or "improve my Claude configuration".
 ---
 
 # CLAUDE.md Helper
@@ -93,3 +93,19 @@ See [references/checklist.md](references/checklist.md) for quick validation.
 See [references/examples.md](references/examples.md) for templates and patterns.
 
 For the general levers of writing for agents (context pointers, the two loads, information hierarchy, pruning), call the Skill tool with `productivity:write-a-skill`.
+
+## Graduating corrections
+
+Auto-memory is the inbox for corrections; CLAUDE.md and skills are where they live. A memory is private to one machine and one project directory: a worktree session has its own directory and starts with none of them, a teammate or Codex sees none of them. A correction that must hold beyond this directory graduates.
+
+1. **Collect.** Memory lives in `~/.claude/projects/<project-dir>/memory/` where `<project-dir>` is the repo path with `/` replaced by `-`; worktree sessions have their own directories starting with the same prefix. List files whose frontmatter says `type: feedback`, plus `type: project` entries that are rules rather than facts, changed since the last sweep (default: 14 days).
+2. **Sort each one** into a destination, one line each: the rule as it would read at its destination.
+   - repo convention → this repo's CLAUDE.md, under the section that already holds that kind of rule; a new section only when none fits. The cache principle applies: a rule the environment already states is dropped, not graduated.
+   - how the user works, any repo → their personal skill (`personal:work-like-mehrdad`).
+   - a rule teammates need → the team plugin.
+   - a rule about one skill's procedure → that skill.
+   - one-off, session-specific, or superseded → delete.
+3. **Graduate when** the same correction appears twice, or must hold in a worktree session, or a teammate or Codex must follow it. Otherwise it stays in memory.
+4. **Propose the table** (memory, destination, the line) and wait. The user approves each row; nothing moves without a yes.
+5. **Apply** the approved rows: edit the destination; a skill destination gets a PR in its repo. Delete each graduated memory file and its line in `MEMORY.md`, so the rule has one home.
+6. **Report the metric**: feedback memories created per week over the window, next to the previous sweep's figure. Corrections that keep arriving after graduation mean the destination is not being read; fix the pointer, not the memory.
