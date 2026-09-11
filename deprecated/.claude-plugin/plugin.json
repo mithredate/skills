@@ -1,5 +1,6 @@
 {
   "name": "deprecated",
+  "version": "0.1.0",
   "description": "Skills phased out. Still installable to ease the transition; will be removed once unused.",
   "author": {
     "name": "Mehrdad Hedayati",

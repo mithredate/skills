@@ -1,6 +1,7 @@
 {
   "name": "meta",
-  "description": "Skills for maintaining this marketplace itself (import, refresh, etc.). Not useful in other repos.",
+  "version": "0.1.0",
+  "description": "Skills for maintaining this marketplace itself (import, refresh, merge). Not useful in other repos.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"

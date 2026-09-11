@@ -1,6 +1,7 @@
 {
   "name": "dev",
-  "description": "General development tooling skills (manage-agents-md, review-pr, tdd, ponytail, ...) and the pr-reviewer and verifier agents.",
+  "version": "0.1.0",
+  "description": "General development tooling skills, and the pr-reviewer and verifier agents.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"

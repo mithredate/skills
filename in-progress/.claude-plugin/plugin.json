@@ -1,6 +1,7 @@
 {
   "name": "in-progress",
-  "description": "Skills being actively authored or rewritten. Expect rough edges.",
+  "version": "0.1.0",
+  "description": "Skills being actively authored or rewritten. Installable for dogfooding; expect churn until they graduate.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"

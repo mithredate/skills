@@ -1,6 +1,7 @@
 {
   "name": "productivity",
-  "description": "Process and workflow skills (planning, debugging, TDD, grilling, etc.).",
+  "version": "0.1.0",
+  "description": "Process and workflow skills (planning, grilling, research, writing).",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"
