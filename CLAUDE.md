@@ -19,7 +19,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. Each s
 - **Vendor a new skill from an upstream repo** — invoke `/import-skill`. Defined in `meta/skills/import-skill/SKILL.md`. Interactive: gathers upstream coords, picks target plugin, runs the import script, validates.
 - **Refresh vendored skills against upstream** — invoke `/refresh-vendored`. Defined in `meta/skills/refresh-vendored/SKILL.md`. Delegates each per-skill reconciliation to `merge-skill`.
 - **Reconcile two skill versions** — invoke `/merge-skill`. Defined in `meta/skills/merge-skill/SKILL.md`. Used by both above; can also be invoked standalone.
-- **Author from scratch** — new SKILL.md goes under `in-progress/skills/<name>/`. Move to `dev/` or `productivity/` when it represents the current opinion. Lifecycle is one-way; no demotion.
+- **Author from scratch** — a new `SKILL.md` goes into the plugin it belongs to. `in-progress/` is for a vendored skill that is still being drifted toward the local opinion. Lifecycle is one-way; no demotion.
 
 ## Worktree workflow (imports and refreshes)
 
@@ -33,7 +33,7 @@ Per session:
 
 ## Lifecycle
 
-- `in-progress/` — actively being shaped (vendored-and-drifting or authored-from-scratch).
+- `in-progress/` — a vendored skill still being drifted toward the local opinion.
 - `dev/` / `productivity/` / `personal/` — stable, currently used.
 - `deprecated/` — phased out, still installable with warning. `refresh-vendored` skips these.
 - `meta/` — repo self-maintenance only; not useful in other projects.

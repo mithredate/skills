@@ -1,5 +1,6 @@
 {
   "name": "in-progress",
+  "version": "0.1.0",
   "description": "Skills being actively authored or rewritten. Installable for dogfooding; expect churn until they graduate.",
   "author": {
     "name": "Mehrdad Hedayati",
