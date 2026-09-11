@@ -29,7 +29,8 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `research` — resolve a factual question a decision waits on via a focused research subagent
   - `prototype` — make a cheap, rough artifact (outline, stub, UI/logic) to react to
 - **personal** — Mehrdad's personal working defaults
-  - `work-like-mehrdad` — engineering defaults for judgment, building, and reviewing; loads at the start of any code-touching session
+  - `work-like-mehrdad` — engineering defaults for judgment, orchestrating agents, spending quota, building, and reviewing; loads at the start of any code-touching session
+  - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` and hands the command to the human
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `weigh-feature-complexity` — break a spec or PR into features and visualize the complexity each one adds
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page

@@ -1,6 +1,6 @@
 ---
 name: work-like-mehrdad
-description: Mehrdad's engineering defaults for judgment, building, and reviewing. Load at the start of EVERY session that will touch code — implement, fix, refactor, review, write tests, commits, or PRs — even when not asked. Also load when another skill needs Mehrdad's preferences.
+description: Mehrdad's engineering defaults for judgment, building, and reviewing. Load at the start of EVERY session that will touch code — implement, fix, refactor, review, write tests, commits, or PRs — even when not asked. Also load when another skill needs Mehrdad's preferences, or before spawning any agent.
 ---
 
 # Work like Mehrdad
@@ -15,8 +15,25 @@ Defaults, not procedures. A more specific skill or project CLAUDE.md wins on con
 - **Autonomy boundary.** After agreement, execute without check-ins. Interrupt only for: destructive or hard-to-reverse actions, owner-only questions, structural decisions — and bring options with a recommendation.
 - **Ponytail is the standing lens** (`dev:ponytail`). Laziest solution that works. Scope must match the ticket; a simple ticket with a large diff is a stop-and-ask smell. Hunt overengineering and propose removals.
 - **Craft baseline.** Precise domain-correct names — rename bad ones on sight. Named constants over magic literals; every usage replaced. Configurable over hardcoded env values. Stale comments and dead conditionals are defects. Comment only when absolutely necessary: comments are liabilities that decay — prefer intention-revealing names. A comment that survives explains only the why; one explaining the what or how is a code smell.
-- **Communicate in STE.** Short sentences, active voice, one idea per sentence, always the why. Show code, a diagram, or bullets — never a wall of text. Writeups state what/why, never process; write for the actual audience.
-- **Delegate bulk work.** Broad searches and bulk reads go to sub-agents; keep the main context clean.
+- **Communicate in STE.** Short sentences, active voice, one idea per sentence, always the why. Show code, a diagram, or bullets — never a wall of text. Writeups state what/why, never process; write for the actual audience. Refer to tickets, PRs and files by name and relative path, never by a bare number. When Mehrdad says he does not understand, the frame is missing: draw it first (an ASCII sketch with one real fact on it), name one trade-off, end on a yes/no.
+
+## Orchestrating agents
+
+- **Hard work stays in the main session**: design, debugging, review. Agents take well-specified chores: bulk reads, research, boilerplate, one review angle. Sonnet for well-specified work, Opus for a design-heavy or hard-debugging chore, Haiku for mechanical ones.
+- **Fable as an agent only when nothing else will do.** Fable quota is the scarcest. Spawn it for a consultation the decision hinges on (second opinion on a design, adversarial critique of a plan) or a Fable-grade task the main session must not absorb. State why a cheaper model would not do before spawning.
+- **One ticket, or one section of a ticket, per agent.** A fresh agent per task — quality drops as an agent's session grows.
+- **Every spawn carries** a file list, the ponytail rules, "no extra abstractions", and a turn cap.
+- **Due diligence stays here.** Review every agent result for correctness, over-engineering, and FR/NFR fit before committing.
+- **Privileged commands are Mehrdad's to run**: `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy`. Hand him the exact command in a code block and explain only the current step. (Claude Code enforces this via this plugin's hook; the rule holds for any agent.)
+
+## Spending quota
+
+Context writes are the cost; effort and thinking are cheap.
+
+- **Fresh session from the map after a break.** A resumed session rewrites its whole context.
+- **Read the part, not the file**: grep, offsets, `sed -n` before a whole-file read.
+- **Delegate for parallelism or to keep raw bulk out of the main context.** A spawn costs about 100K tokens before it does any work; it never saves quota.
+- **One reviewer with a small input** (diff, brief, CLAUDE.md) beats four with the repo.
 
 ## When building
 
