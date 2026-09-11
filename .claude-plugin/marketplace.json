@@ -31,12 +31,11 @@
         "./skills/grilling",
         "./skills/write-a-skill",
         "./skills/teach",
-        "./skills/capture-decision",
-        "./skills/recall-decision",
         "./skills/wayfinder",
         "./skills/domain-modeling",
         "./skills/prototype",
-        "./skills/research"
+        "./skills/research",
+        "./skills/orchestrate"
       ]
     },
     {
