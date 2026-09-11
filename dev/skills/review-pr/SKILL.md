@@ -37,6 +37,6 @@ A red verifier verdict is a `blocking` finding. Report a `could_not_run` verdict
 
 ## Report
 
-List findings in this order: `discrepancy`, then `blocking`, then `quality_note`, then at most five `nit` entries. State a count of the remaining nits. Every entry keeps its relative path. Write findings in Simplified Technical English. If the PR is a bugfix, put the root-cause line first. The fresh mode ends with a cost line. This line gives the token figure that each agent result reports, and the sum of the two figures.
+List findings in this order: `discrepancy`, then `blocking`, then `quality_note`, then at most five `nit` entries. State a count of the remaining nits. Every entry keeps its relative path. Write findings by the rules of `productivity:write-ste`. If the PR is a bugfix, put the root-cause line first. The fresh mode ends with a cost line. This line gives the token figure that each agent result reports, and the sum of the two figures.
 
 Post to GitHub only when the user asks for it. Post one review with the same content. Write it in the voice that the repo's conventions specify.
