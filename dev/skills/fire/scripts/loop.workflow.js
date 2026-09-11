@@ -1,5 +1,5 @@
 export const meta = {
-  name: 'implement-from-brief',
+  name: 'fire',
   description: 'Implement a briefed change in rounds: one implementer, then a reviewer and a verifier in parallel, verdict in code',
   phases: [
     { title: 'Orient', detail: 'one Haiku node reads the blast radius of the briefed files' },

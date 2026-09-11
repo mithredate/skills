@@ -1,11 +1,11 @@
 ---
-name: implement-from-brief
-description: Implements a briefed change through a Workflow graph inside a token ceiling. One implementer round, then one reviewer and one verifier in parallel, verdict in code, three rounds maximum. The input is a wayfinder ticket with a Brief section. The output is a branch in a worktree and a report. No PR, no merge.
+name: fire
+description: Fires a briefed change through a Workflow graph inside a token ceiling. One implementer round, then one reviewer and one verifier in parallel, verdict in code, three rounds maximum. The input is a wayfinder ticket with a Brief section. The output is a branch in a worktree and a report. No PR, no merge.
 argument-hint: "<ticket path> +<n>k [max_rounds=N]"
 disable-model-invocation: true
 ---
 
-# Implement from brief
+# Fire
 
 **Arguments:** $ARGUMENTS. The first argument is the path of a wayfinder ticket. The `+<n>k` argument is the token ceiling for this turn. `max_rounds=N` caps the implementer rounds. The default is 3.
 
