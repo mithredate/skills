@@ -13,7 +13,7 @@
       "description": "General development tooling skills",
       "skills": [
         "./skills/install-claude-sidecar",
-        "./skills/manage-claude-md",
+        "./skills/manage-agents-md",
         "./skills/tdd",
         "./skills/systematic-debugging",
         "./skills/implement-with-review-loop",

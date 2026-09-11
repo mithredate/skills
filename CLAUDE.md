@@ -23,7 +23,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. Each s
 
 ## Conventions
 
-- **Skill names are verb-first hyphenated** (`import-skill`, `manage-claude-md`). Never linguistically "improve" upstream names; user overrides if needed.
+- **Skill names are verb-first hyphenated** (`import-skill`, `manage-agents-md`). Never linguistically "improve" upstream names; user overrides if needed.
 - **Vendored skills carry a footer** at the bottom of `SKILL.md` linking to the upstream commit. Canonical format: `meta/skills/import-skill/references/footer-format.md`. The link is always preserved (MIT-compliance anchor) even when the skill has fully drifted.
 - **The SHA in the footer is a last-reviewed checkpoint**, not the original fork point. Advances every refresh.
 - **No parallel skills.** When concepts conflict, merge or abort — never run two forks of the same idea side by side.

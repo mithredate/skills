@@ -1,6 +1,6 @@
 {
   "name": "dev",
-  "description": "General development tooling skills (manage-claude-md, install-claude-sidecar).",
+  "description": "General development tooling skills (manage-agents-md, review-pr, tdd, ponytail, ...) and the pr-reviewer and verifier agents.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"
