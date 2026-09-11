@@ -1,6 +1,6 @@
 ---
 name: manage-claude-md
-description: Help write and improve CLAUDE.md files for Claude Code projects, and graduate corrections out of auto-memory into them. Use when users want to create a new CLAUDE.md, improve an existing one, review their CLAUDE.md for best practices, ask what to include in CLAUDE.md, or say "sweep corrections", "graduate memories", "what has Claude been getting wrong". Triggers on requests like "help me write a CLAUDE.md", "review my CLAUDE.md", "what should I put in CLAUDE.md", or "improve my Claude configuration".
+description: Help write and improve CLAUDE.md files for Claude Code projects, and graduate corrections out of auto-memory into them. Use when users want to create a new CLAUDE.md, improve an existing one, review their CLAUDE.md for best practices, ask what to include in CLAUDE.md, or say "sweep corrections", "graduate memories", "what has Claude been getting wrong", "clean up CLAUDE.md", "what in here is stale". Triggers on requests like "help me write a CLAUDE.md", "review my CLAUDE.md", "what should I put in CLAUDE.md", or "improve my Claude configuration".
 ---
 
 # CLAUDE.md Helper
@@ -85,7 +85,7 @@ See agent_docs/running_tests.md for testing guide.
 1. **Read existing file** (if any) to understand current state
 2. **Identify gaps** using the WHAT-WHY-HOW framework
 3. **Check length** - If over 300 lines, extract to reference files
-4. **Remove** task-specific, stale, or linting content
+4. **Housekeep** (below): every line checked against the environment, deletions proposed
 5. **Add directory map** if missing
 6. **Define workflows** for common tasks
 
@@ -109,3 +109,18 @@ Auto-memory is the inbox for corrections; CLAUDE.md and skills are where they li
 4. **Propose the table** (memory, destination, the line) and wait. The user approves each row; nothing moves without a yes.
 5. **Apply** the approved rows: edit the destination; a skill destination gets a PR in its repo. Delete each graduated memory file and its line in `MEMORY.md`, so the rule has one home.
 6. **Report the metric**: feedback memories created per week over the window, next to the previous sweep's figure. Corrections that keep arriving after graduation mean the destination is not being read; fix the pointer, not the memory.
+
+## Housekeeping
+
+A CLAUDE.md grows by addition and rots by inertia: a rule stays because deleting it feels riskier than keeping it. Every sweep, and whenever asked, check every line against the environment and propose deletions. The user approves each; nothing is deleted on suspicion alone.
+
+A line goes on the deletion table when:
+
+- **It names something that no longer exists.** A path, script, command, package, branch, or file that is not there. Check with `ls`, `git ls-files`, the manifest's scripts, `--help`.
+- **The environment now states it.** A linter rule, a manifest script, a config value. The lookup is cheap; the line is a cache gone stale.
+- **A newer line contradicts it.** Two rules on the same subject: the older one goes, the newer one is checked against the code.
+- **The code does not follow it.** A convention the codebase violates in most places is a wish, not a rule. Propose deletion or a ratchet, never silent retention.
+- **It is transitional.** "Legacy", "deprecated", "for backward compatibility", "until X lands", "for now": read the date and the state; when the transition is over, the line goes with it.
+- **It restates the agent's defaults.** A line that changes nothing in behaviour pays load to say nothing.
+
+Present the table (line, reason, evidence) and wait. Deletion is a one-place edit; when a rule was cached from a document, point at the document instead.
