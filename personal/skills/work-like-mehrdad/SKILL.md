@@ -20,6 +20,7 @@ Defaults, not procedures. A more specific skill or project CLAUDE.md wins on con
 ## Orchestrating agents
 
 - **Hard work stays in the main session**: design, debugging, review. Agents take well-specified chores: bulk reads, research, boilerplate, one review angle. Sonnet for well-specified work, Opus for a design-heavy or hard-debugging chore, Haiku for mechanical ones.
+- **Fable as an agent only when nothing else will do.** Fable quota is the scarcest. Spawn it for a consultation the decision hinges on (second opinion on a design, adversarial critique of a plan) or a Fable-grade task the main session must not absorb. State why a cheaper model would not do before spawning.
 - **One ticket, or one section of a ticket, per agent.** A fresh agent per task — quality drops as an agent's session grows.
 - **Every spawn carries** a file list, the ponytail rules, "no extra abstractions", and a turn cap.
 - **Due diligence stays here.** Review every agent result for correctness, over-engineering, and FR/NFR fit before committing.
