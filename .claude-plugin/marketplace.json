@@ -36,7 +36,8 @@
         "./skills/domain-modeling",
         "./skills/prototype",
         "./skills/research",
-        "./skills/orchestrate"
+        "./skills/orchestrate",
+        "./skills/write-ste"
       ]
     },
     {

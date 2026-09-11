@@ -23,6 +23,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `grill-me` — launcher that opens a `grilling` session (thin shim)
   - `grilling` — stress-test a plan, decision, or idea by relentless one-question-at-a-time interrogation
   - `write-a-skill` — reference for the craft of writing skills: predictability, context vs cognitive load, information hierarchy, leading words, failure modes
+  - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
   - `wayfinder` — plan oversized work as a map of decision tickets on an issue tracker, resolved one at a time
   - `orchestrate` — run a planning-only orchestrator repo: one wayfinder map per initiative under `.wayfinder/`, `cook`, `init`, `close` (report replaces the map), the hand-off brief
