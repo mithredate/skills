@@ -1,26 +1,26 @@
 # TypeScript rubric
 
-Conventions for TypeScript code. Applies when writing TS or reviewing a diff that touches it.
+This rubric states conventions for TypeScript code. Use it when you write TypeScript or review a diff that touches it.
 
 ## Types carry the logic
 
-- **Union types over `string`** (and over enums). Anything the type system can enforce moves into the types — invalid states should not compile.
-- **One source of truth** for a constant set and its type: define the const object and derive the union from it (`as const satisfies Record<string, T>`, `keyof typeof`), never a const object and a hand-maintained parallel type.
+- **Union types over `string`**. This also applies to enums. Anything the type system can enforce moves into the types. Invalid states must not compile.
+- **One source of truth** for a constant set and its type. Define the const object, then derive the union from it, for example with `as const satisfies Record<string, T>` or `keyof typeof`. Never keep a hand-maintained parallel type next to the const object.
 - No `any` without a stated reason at the usage site.
 
 ## Constants and naming
 
-- **No magic literals.** String and numeric literals with meaning get extracted to a named constant — and the extraction replaces *every* usage, not just the new one.
-- Names are precise and domain-correct. A name that misstates what the thing is (`variables` for a config map, `actor` for a user id) gets renamed on sight.
+- **No magic literals.** Extract a string or numeric literal with meaning to a named constant. Replace *every* usage, not just the new one.
+- Use precise, domain-correct names. Rename a name that misstates what the thing is. For example, rename `variables` used for a config map, or `actor` used for a user id.
 
 ## Structure
 
-- **Writes are actions, queries are reads** — name and organize them that way (CQRS-flavored). Keep the split consistent across layers, including file and branch naming.
-- **No generic `update` operations.** Domain operations get specific, intention-revealing actions (`approve`, `decline`, `reopen`). Shared mechanics get extracted into a composable/helper the specific actions use.
-- Business logic does not live in handlers/controllers. State rules (allowed transitions, invariants) belong to the domain layer, not passed in by the caller.
-- **Check existing utils before writing new code.** Grep `utils/`, sibling components, and shared modules first; extract copy-pasted logic to a shared home instead of adding a third copy.
-- Types used by more than one module move to the shared types location (`shared/`, `app/types/`) — no duplicated type definitions, no types defined inside components.
+- **Writes are actions, queries are reads**. Name and organize them that way, in a CQRS style. Keep the split consistent across layers. This includes file names and branch names.
+- **No generic `update` operations.** Give a domain operation a specific, intention-revealing action, such as `approve`, `decline`, or `reopen`. Extract shared mechanics into a composable or a helper that the specific actions use.
+- Business logic does not live in a handler or a controller. State rules, such as allowed transitions and invariants, belong to the domain layer. The caller must not pass them in.
+- **Check existing utils before writing new code.** Grep `utils/`, sibling components, and shared modules first. Extract copy-pasted logic to a shared home, and do not add a third copy.
+- A type used by more than one module moves to the shared types location, such as `shared/` or `app/types/`. Do not duplicate a type definition. Do not define a type inside a component.
 
 ## API evolution
 
-- Never break an API silently. Deprecate explicitly: rename with a `deprecated` prefix (so usage is visible), stand up the new version in parallel, and migrate clients before deleting.
+- Never break an API silently. Deprecate it explicitly. Rename it with a `deprecated` prefix so its usage is visible. Build the new version in parallel. Migrate clients before you delete the old version.
