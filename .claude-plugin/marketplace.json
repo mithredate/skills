@@ -44,7 +44,6 @@
       "source": "./in-progress",
       "description": "Skills being actively authored or rewritten. Installable for dogfooding; expect churn until they graduate.",
       "skills": [
-        "./skills/weigh-feature-complexity",
         "./skills/show-me"
       ]
     },
