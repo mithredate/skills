@@ -1,11 +1,14 @@
 # Credential Shadowing
 
-Hide sensitive credential files from Claude by mounting `/dev/null` over them. Files appear empty to Claude while remaining intact on the host.
+Hide credential files from Claude by mounting `/dev/null` over each file.
+The files stay intact on the host. Inside the container, they appear
+empty.
 
-> Scope note: shadowing hides files from the *model's view of the workspace*. It does
-> NOT isolate credentials the app's code needs at runtime (e.g. a `DATABASE_URL` env
-> var) — that code runs in the same container and can read them. Credential isolation
-> from the model is deferred future work in claude-sidecar.
+> Scope note: This hides files from the model's view of the
+> workspace. It does not isolate credentials that the app's code needs at
+> runtime, such as a `DATABASE_URL` environment variable. That code runs
+> in the same container and can still read them. Credential isolation
+> from the model is future work in claude-sidecar, not yet built.
 
 ## Discovering Credential Files
 
@@ -15,21 +18,23 @@ Check `.gitignore` and `.dockerignore` for credential patterns:
 grep -E '\.(env|pem|key|crt|credentials|secret)|\bsecrets?\b|\bcredentials?\b|\.npmrc|service.account' .gitignore .dockerignore 2>/dev/null
 ```
 
-Look for:
+Look for these files:
 
-- `.env*` files (`.env`, `.env.local`, `.env.production`)
-- `*.pem`, `*.key`, `*.crt` (certificates and keys)
-- `*credentials*`, `*secrets*` (credential files)
-- `.npmrc`, `.pypirc` (package manager auth)
-- `service-account*.json` (cloud provider credentials)
+- `.env*` files, such as `.env`, `.env.local`, and `.env.production`.
+- `*.pem`, `*.key`, and `*.crt` files. These are certificates and keys.
+- `*credentials*` and `*secrets*` files.
+- `.npmrc` and `.pypirc` files. These hold package manager auth.
+- `service-account*.json` files. These hold cloud provider credentials.
 
-Present discovered files to the user when asking about credential shadowing.
+Show the discovered files to the user when you ask about credential
+shadowing.
 
 ## Applying Shadows
 
-Add volume mounts to the claude service. Use the project's real host path via
-`${PWD}` (matching the `${PWD}:${PWD}` project mount). Mount writable (NOT `:ro` — a
-read-only bind of `/dev/null` can fail on some setups):
+Add volume mounts to the `claude` service. Use the project's real host
+path, `${PWD}`. This matches the `${PWD}:${PWD}` project mount. Make each
+mount writable, not `:ro`. A read-only bind of `/dev/null` can fail on
+some systems:
 
 ```yaml
 volumes:
@@ -43,12 +48,12 @@ volumes:
 - `.env`, `.env.local`, `.env.production`
 - `.credentials.json`, `credentials.json`
 - `secrets.yaml`, `secrets.json`
-- `.npmrc` (if it contains auth tokens)
+- `.npmrc`, if it holds auth tokens
 - `service-account.json`
 
 ## User Instructions
 
-To shadow additional files, add volume mounts in this format:
+To shadow more files, add volume mounts in this format:
 
 ```yaml
 - /dev/null:${PWD}/<path-to-sensitive-file>

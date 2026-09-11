@@ -1,42 +1,47 @@
 ---
 name: install-claude-sidecar
-description: "Set up Claude Sidecar integration in any Docker-based project. Use when: user asks to 'add claude container', 'setup claude-sidecar', 'integrate claude container', 'add claude to docker compose', 'containerize claude', 'run claude in docker', or wants Claude Code running as a container service with project toolchains and an egress firewall."
+description: "This skill sets up Claude Sidecar integration in a Docker-based project. Use when the user asks to 'add claude container', 'setup claude-sidecar', 'integrate claude container', 'add claude to docker compose', 'containerize claude', or 'run claude in docker', or wants Claude Code to run as a container service with project toolchains and an egress firewall."
 ---
 
 # Claude Sidecar Installer
 
-Set up Claude Sidecar to run Claude Code in a single container alongside a project.
-Toolchains (node, go, python, …) are installed in-image on demand via
-[mise](https://mise.jdx.dev); Claude runs build/test commands directly and reaches
-the project's services (db, redis, …) over the compose network by name. There is no
-command bridge or Docker socket access. A startup firewall whitelists egress and
-Claude runs as a non-root user.
+This skill sets up Claude Sidecar. Claude Sidecar runs Claude Code in one
+container next to a project. The image installs toolchains, such as node, go,
+and python, on demand through [mise](https://mise.jdx.dev). Claude runs build
+and test commands directly in the container. Claude reaches the project's
+services, such as a database or a cache, over the compose network by name.
+The container has no command bridge and no Docker socket access. A startup
+firewall allows only approved outbound connections. Claude runs as a
+non-root user.
 
 ## Workflow
 
-1. Analyze project (tech stack, compose file, services, toolchain version pins)
-2. Add/create the `claude` service in the compose file (single-container model)
-3. Ensure toolchains resolve (mise reads `.tool-versions` / `mise.toml`)
-4. Optionally add `.sidecar/allowed-domains.txt` for the firewall
-5. **Ask about credential shadowing** → discover → confirm → apply
-6. Seed Claude auth + config from the host
+1. Check the project's tech stack, compose file, services, and toolchain version pins.
+2. Add or create the `claude` service in the compose file. This uses one container for Claude.
+3. Check that toolchains resolve. mise reads `.tool-versions` or `mise.toml`.
+4. If the firewall needs more domains, add `.sidecar/allowed-domains.txt`.
+5. **Ask about credential shadowing.** Then discover the files, confirm them, and apply the shadow.
+6. Seed the Claude auth files and config from the host.
 
 ## Step 1: Analyze Project
 
-Identify:
+Find these facts about the project:
 
-- Tech stack (language, framework, package manager)
-- Existing `compose.yml` / `docker-compose.yml` and its services
-- Which services Claude's code will need to reach (db, cache, queues) — Claude
-  reaches them by service name over the compose network
-- Toolchain version pins: look for `.tool-versions`, `mise.toml`, `.nvmrc`,
-  `go.mod`, `.python-version`. If none exist, suggest adding a `mise.toml` so
-  versions are reproducible (mise still auto-installs a default otherwise).
+- Find the tech stack: the language, the framework, and the package manager.
+- Find the compose file, `compose.yml` or `docker-compose.yml`, and its services.
+- Find which services the Claude container must reach, such as a database,
+  a cache, or a queue. Claude reaches these services by name over the
+  compose network.
+- Find the toolchain version pins in `.tool-versions`, `mise.toml`, `.nvmrc`,
+  `go.mod`, or `.python-version`. If none of these files exist, suggest a
+  new `mise.toml` file for reproducible versions. Without it, mise still
+  installs a default version.
 
 ## Step 2: Add the claude service
 
-Add to the project's compose file (so `claude` shares the project network and can
-reach its services). If no compose file exists, create `compose.yml`.
+Add the `claude` service to the project's compose file. This lets `claude`
+share the project network and reach its services. If no compose file
+exists, create `compose.yml`.
 
 ```yaml
 services:
@@ -77,17 +82,20 @@ volumes:
   claude-home:
 ```
 
-`${PWD}` and `${HOME}` are interpolated by Docker Compose from the host shell, so
-this stays portable across machines and the in-container path equals the host path.
+Docker Compose reads `${PWD}` and `${HOME}` from the host shell. This makes
+the setup portable across machines. The path inside the container equals
+the path on the host.
 
 ## Step 3: Toolchains (mise)
 
-No bridge or per-command config is needed. mise resolves toolchains per project
-from `.tool-versions` / `mise.toml` and installs them on first use (prebuilt — fast).
-Installs persist in the `claude-home` volume. `MISE_TRUSTED_CONFIG_PATHS=${PWD}`
-(Step 2) lets mise trust the project's config without a manual `mise trust`.
+The setup needs no bridge and no per-command config. mise reads the
+project's `.tool-versions` or `mise.toml` file and resolves the toolchain.
+mise installs the toolchain on first use, from a prebuilt package, so this
+step is fast. Installs stay in the `claude-home` volume.
+`MISE_TRUSTED_CONFIG_PATHS=${PWD}`, set in Step 2, lets mise trust the
+project's config. The user does not need to run `mise trust` by hand.
 
-If the project has no version file, recommend creating `mise.toml`:
+If the project has no version file, recommend a new `mise.toml` file:
 
 ```toml
 [tools]
@@ -96,9 +104,9 @@ node = "22"      # or go, python, etc. — match the project
 
 ## Step 4: Allowed Domains (Optional)
 
-The firewall resolves a whitelist at container start. Create
-`.sidecar/allowed-domains.txt` if the project needs hosts beyond the defaults
-(GitHub IP ranges are always added):
+The firewall builds an allow list of domains when the container starts. It
+always adds the GitHub IP ranges to this list. If the project needs more
+hosts than the defaults, create `.sidecar/allowed-domains.txt`:
 
 ```text
 # Anthropic + Claude Code
@@ -118,27 +126,31 @@ storage.googleapis.com
 # api.example.com
 ```
 
-Note: a custom file REPLACES the built-in defaults, so include the Anthropic/npm/
-mise hosts above plus any MCP server domains. Add the domains of any MCP servers the
-project uses, or they will fail to connect. To disable the firewall entirely, remove
-the `cap_add` block from compose.
+A custom file replaces the built-in defaults completely. Include the
+Anthropic, npm, and mise hosts shown above, and add any MCP server domains.
+Add the domain of each MCP server the project uses. If you miss a domain,
+that MCP server cannot connect. To turn off the firewall, remove the
+`cap_add` block from the compose file.
 
-> Limitation: domains are resolved to IPs once at startup; CDN IP rotation can break
-> a long-lived container until restart.
+> Limitation: The firewall resolves each domain to an IP address one time,
+> at container start. A CDN can change its IP addresses later. This can
+> break a long-running container until you restart it.
 
 ## Step 5: Shadow Credential Files (Optional)
 
 ### 5.1: Ask User
 
-"Would you like to shadow credential files? This hides sensitive files (`.env`, keys,
-certs) from Claude by mounting `/dev/null` over them. The files stay intact on your
-host but appear empty inside the container."
+"Do you want to shadow credential files? This hides files such as
+`.env`, keys, and certificates from Claude. The skill does this by mounting
+`/dev/null` over each file. The files stay intact on your host. Inside the
+container, they appear empty."
 
-If user declines, skip to Step 6.
+If the user declines, skip to Step 6.
 
 ### 5.2: Discover Credentials
 
-Use the patterns in [references/credential-shadowing.md](references/credential-shadowing.md):
+Find candidate files with the patterns in
+[references/credential-shadowing.md](references/credential-shadowing.md):
 
 ```bash
 grep -E '\.(env|pem|key|crt|credentials|secret)|\bsecrets?\b|\bcredentials?\b|\.npmrc|service.account' .gitignore .dockerignore 2>/dev/null
@@ -147,12 +159,14 @@ find . -maxdepth 3 -type f \( -name ".env*" -o -name "*.pem" -o -name "*.key" -o
 
 ### 5.3–5.4: Confirm + Ask for More
 
-Present discovered files, ask which to shadow, then ask for any others not found.
+Show the user the files you found. Ask which files to shadow. Ask if there
+are more files, not yet found, to shadow.
 
 ### 5.5: Apply Shadows
 
-Add each confirmed file as a `/dev/null` mount (note: writable, NOT `:ro` — a `:ro`
-bind of `/dev/null` can fail on some setups):
+Add each confirmed file as a `/dev/null` mount. Make the mount writable,
+not `:ro`. A read-only, `:ro`, mount of `/dev/null` can fail on some
+systems:
 
 ```yaml
 volumes:
@@ -164,12 +178,14 @@ See [references/credential-shadowing.md](references/credential-shadowing.md).
 
 ## Step 6: Seed Claude Auth + Config
 
-Auth and config are seeded into the `claude-home` volume on first start (only if
-absent), so there is no re-auth / re-onboarding across container recreation. Provide
-two seeds before `docker compose up`:
+The setup seeds auth and config into the `claude-home` volume on first
+start, only if the volume is empty. Because of this, the user does not log
+in again or set up again when the container restarts. Provide two seed
+files before you run `docker compose up`:
 
-1. **`.credentials.json`** — must be the **full** credential blob (`claudeAiOauth`
-   *and* `mcpOAuth`, or MCP servers stay unauthenticated):
+1. **`.credentials.json`** must hold the full credential blob: both
+   `claudeAiOauth` and `mcpOAuth`. Without `mcpOAuth`, MCP servers stay
+   unauthenticated:
 
    ```bash
    # macOS — capture the WHOLE keychain blob
@@ -178,23 +194,25 @@ two seeds before `docker compose up`:
    cp ~/.claude/.credentials.json .credentials.json
    ```
 
-   Verify both keys are present:
+   Check that both keys are present:
    ```bash
    python3 -c "import json;print(list(json.load(open('.credentials.json')).keys()))"
    # -> ['claudeAiOauth', 'mcpOAuth']
    ```
 
-2. **`~/.claude.json`** — onboarding state, oauthAccount, per-project `mcpServers`.
-   Mounted from the host by compose; no copy needed.
+2. **`~/.claude.json`** holds the onboarding state, the `oauthAccount`, and
+   the per-project `mcpServers`. Compose mounts this file from the host.
+   You do not need to copy it.
 
 **Add to `.gitignore`:** `.credentials.json`
 
-> Limitation: seeded OAuth credentials are shared with the host account; a host
-> re-login can invalidate the container copy. For a long-lived container, prefer
-> authenticating it independently (interactive `/login` inside the container, or an
-> API key) over seeding.
+> Limitation: The seeded OAuth credentials are shared with the host
+> account. A new login on the host can invalidate the container's copy.
+> For a long-lived container, authenticate it on its own instead. Use an
+> interactive `/login` inside the container, or use an API key.
 
-**Re-authenticate / reset:** `docker compose down -v` (drops the volume; re-seeds next start).
+**Re-authenticate or reset:** Run `docker compose down -v`. This removes
+the volume. The setup seeds new files on the next start.
 
 ## Post-Setup Commands
 
@@ -205,8 +223,9 @@ docker compose exec -e CLAUDE_YOLO=1 claude claude   # YOLO mode (skip permissio
 docker compose down                                  # Stop
 ```
 
-The `claude` wrapper inside the image drops to the non-root `claude` user
-automatically, so `docker compose exec claude claude` works without `-u`.
+The `claude` wrapper inside the image switches to the non-root `claude`
+user by itself. Because of this, `docker compose exec claude claude` works
+with no `-u` flag.
 
 ## Error Handling
 
@@ -214,11 +233,12 @@ automatically, so `docker compose exec claude claude` works without `-u`.
 Create `compose.yml` with the `claude` service from Step 2.
 
 ### Toolchain not found / fails to install
-The image auto-installs the version pinned by the project's mise config on first use.
-If it fails, check the firewall (Step 4) — the toolchain download host is likely not
-whitelisted — or that the project pins a real version.
+The image installs the version pinned in the project's mise config, on
+first use. If this install fails, check two things. First, check the
+firewall from Step 4. The toolchain download host might not be on the
+allow list. Second, check that the project pins a real version.
 
 ### Claude can't reach the database / a service
-Ensure the `claude` service is in the SAME compose file (or network) as the service,
-and connect by service name (e.g. `db:5432`). The firewall allows the internal
-docker subnet by default.
+Make sure `claude` and the service are in the same compose file or
+network. Connect to the service by its name, for example `db:5432`. By
+default, the firewall allows the internal Docker subnet.
