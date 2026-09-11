@@ -1,6 +1,6 @@
 ---
 name: verifier
-description: Runs the repo's declared test, lint, typecheck, and build commands against a branch, and reports exit codes with evidence. Never edits. Spawned by review-pr and implement-from-brief.
+description: Runs the repo's declared test, lint, typecheck, and build commands against a branch, and reports exit codes with evidence. Never edits. Spawned by review-pr and fire.
 tools: Bash, Read, Grep
 model: haiku
 maxTurns: 12
