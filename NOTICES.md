@@ -19,7 +19,7 @@ This repository vendors skills from other open-source projects. Originals retain
 ### superpowers
 - **Repository:** https://github.com/obra/superpowers
 - **License:** MIT
-- **Copyright:** Copyright (c) 2025 Jesse Vincent
+- **Copyright:** © 2025 Jesse Vincent
 - **Vendored skills:** dev/systematic-debugging, dev/verification-before-completion
 
 ### ponytail

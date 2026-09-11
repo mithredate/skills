@@ -28,13 +28,13 @@ Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree
 Per session:
 - Create a worktree on a feature branch — `import/<target-name>` for imports, `refresh/<date>` for refreshes.
 - Do all file edits in the worktree.
-- On successful validation: commit, push the branch, offer to open a PR via `gh pr create --fill`. CI on the feature branch is the actual gate.
+- On successful validation: commit, push the branch, open a PR with the body shape from `write-a-skill` (Why, What, Verified, Links). CI on the feature branch is the actual gate.
 - On validation failure: leave the worktree dirty for inspection. Don't commit, don't push.
 
 ## Lifecycle
 
 - `in-progress/` — actively being shaped (vendored-and-drifting or authored-from-scratch).
-- `dev/` / `productivity/` — stable, currently used.
+- `dev/` / `productivity/` / `personal/` — stable, currently used.
 - `deprecated/` — phased out, still installable with warning. `refresh-vendored` skips these.
 - `meta/` — repo self-maintenance only; not useful in other projects.
 

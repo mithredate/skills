@@ -283,4 +283,4 @@ These techniques are part of systematic debugging and live under `references/` a
 - **`references/condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
 - **`scripts/find-polluter.sh`** - Bisection helper for finding which test/commit poisons a suite
 ---
-_Adapted from [obra/superpowers/skills/systematic-debugging](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging) — MIT Copyright (c) 2025 Jesse Vincent._
+_Adapted from [obra/superpowers/skills/systematic-debugging](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging) — MIT © 2025 Jesse Vincent._

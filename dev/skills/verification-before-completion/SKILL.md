@@ -119,4 +119,4 @@ Skip any step = lying, not verifying
 - Implications of success
 - ANY communication suggesting completion/correctness
 ---
-_Adapted from [obra/superpowers/skills/verification-before-completion](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/verification-before-completion) — MIT Copyright (c) 2025 Jesse Vincent._
+_Adapted from [obra/superpowers/skills/verification-before-completion](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/verification-before-completion) — MIT © 2025 Jesse Vincent._

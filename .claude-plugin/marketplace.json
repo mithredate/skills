@@ -10,7 +10,7 @@
     {
       "name": "dev",
       "source": "./dev",
-      "description": "General development tooling skills",
+      "description": "General development tooling skills, and the pr-reviewer and verifier agents.",
       "skills": [
         "./skills/manage-agents-md",
         "./skills/tdd",
@@ -25,7 +25,7 @@
     {
       "name": "productivity",
       "source": "./productivity",
-      "description": "Process and workflow skills (planning, debugging, grilling, etc.).",
+      "description": "Process and workflow skills (planning, grilling, research, writing).",
       "skills": [
         "./skills/grill-me",
         "./skills/grilling",
