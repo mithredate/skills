@@ -22,7 +22,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 - **productivity** — process and workflow skills
   - `grill-me` — launcher that opens a `grilling` session (thin shim)
   - `grilling` — stress-test a plan, decision, or idea by relentless one-question-at-a-time interrogation
-  - `write-a-skill` — reference for the craft of writing skills: predictability, context vs cognitive load, information hierarchy, leading words, failure modes
+  - `write-a-skill` — write or rewrite a skill, an agent file, or a reference: name, invocation, shape, frontmatter, checks, and the PR
   - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
   - `wayfinder` — plan oversized work as a map of decision tickets on an issue tracker, resolved one at a time
