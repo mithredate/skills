@@ -11,20 +11,19 @@ One instruction file per repo, `AGENTS.md`, read by every coding agent. Claude C
 
 - **The cache principle.** The environment is a source of truth too: `package.json` scripts, config files, the directory layout, `--help` output. A line that restates it is a cache, and earns its place only when the lookup is expensive. Cache what the agent cannot find by looking: the unwritten convention, the reason behind a choice, the gotcha no config confesses.
 - **Length.** Under 200 lines; adherence degrades past that, across all instructions, not only the new ones. Imports still load at launch, so splitting organises but does not shrink.
-- What belongs, what to leave out, disclosure and placement: [references/what-belongs.md](references/what-belongs.md). The general levers of writing for agents: call the Skill tool with `productivity:write-a-skill`.
+- The general levers of writing for agents (pointers, hierarchy, pruning, no-ops): call the Skill tool with `productivity:write-a-skill`.
 
 ## Write or improve
 
 1. **The bridge.** `AGENTS.md` is the real file. A repo with only a `CLAUDE.md`: move every agent-agnostic line into `AGENTS.md`, leave `@AGENTS.md` plus the Claude-only lines in `CLAUDE.md`, or a symlink when none remain.
-2. Read the existing file; find the gaps against WHAT, WHY, HOW (the reference).
-3. Housekeep (below).
-4. Over 200 lines: move path-specific material to `.claude/rules/` with `paths:` frontmatter, task-specific material to a skill.
-5. Add the directory map if missing; define the workflows for common tasks.
-6. Check against [references/checklist.md](references/checklist.md); templates in [references/examples.md](references/examples.md).
+2. Read the existing file, the manifest, and the config; walk the tree. Everything they state is already known to the agent.
+3. Collect what they cannot state, from the code and from the user: the convention no linter enforces, the reason behind a choice, the gotcha, the how (runs in a container, needs a fixture first), the rule that differs from the tool's default. Each becomes one specific, checkable line in the section that holds its kind.
+4. Housekeep (below).
+5. Over 200 lines: path-specific material moves to `.claude/rules/` with `paths:` frontmatter, task-specific material to a skill.
 
 ## Housekeep
 
-An instruction file grows by addition and rots by inertia: a rule stays because deleting it feels riskier than keeping it. On every sweep, in every improve pass, and whenever asked: run `/doctor` for its trim proposals (derivable content), then check every remaining line against the environment and propose a deletion table (line, criterion, evidence) from [references/deletion-criteria.md](references/deletion-criteria.md). Wait; the user approves each row. Nothing is deleted on suspicion alone.
+An instruction file grows by addition and rots by inertia: a rule stays because deleting it feels riskier than keeping it. On every sweep, in every improve pass, and whenever asked, check every line against the environment and propose a deletion table (line, criterion, evidence) from [references/deletion-criteria.md](references/deletion-criteria.md). Wait; the user approves each row. Nothing is deleted on suspicion alone.
 
 ## Graduate corrections
 
