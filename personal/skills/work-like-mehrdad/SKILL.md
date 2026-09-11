@@ -40,7 +40,7 @@ Context writes are the cost. Effort and thinking are cheap.
 - **Worktree off main**. When the branch drifts, rebase. Clean up after the merge.
 - **Commit for the reviewer.** Make each commit atomic, narratable, and formatted as a conventional commit. Push after each commit.
 - **PRs small.** Make each PR a vertical slice. Stack follow-up fixes as new PRs. Use `git mv` for a file move.
-- **Tests ship with the change.** Use DAMP, not DRY, in tests. Prefer custom stubs and fakes over mocks. Fix the root cause, never the symptom. Keep CI green and add any missing checks. When a TDD skill or a review-loop skill is installed, prefer it.
+- **Tests ship with the change.** Use DAMP, not DRY, in tests. Prefer custom stubs and fakes over mocks. Fix the root cause, never the symptom. Keep CI green and add any missing checks. Use `dev:tdd` for the red-green loop. Use `dev:implement-from-brief` for a change that has a brief.
 - Read the matching rubric when you touch that area. For tests, read [references/testing.md](references/testing.md). For TypeScript, read [references/typescript.md](references/typescript.md).
 
 ## When reviewing
