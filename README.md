@@ -34,8 +34,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` and hands the command to the human
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
-- **deprecated** — skills phased out, kept installable during transitions
-  - `handoff` — compact the current conversation into a handoff doc for the next session
+- **deprecated** — skills phased out, kept installable during transitions _(empty for now)_
 
 ## Installation
 

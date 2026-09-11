@@ -69,9 +69,7 @@
       "name": "deprecated",
       "source": "./deprecated",
       "description": "Skills phased out. Still installable to ease the transition; will be removed once unused.",
-      "skills": [
-        "./skills/handoff"
-      ]
+      "skills": []
     }
   ]
 }
