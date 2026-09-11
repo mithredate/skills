@@ -1,6 +1,6 @@
 ---
 name: import-skill
-description: This skill imports a skill from a GitHub upstream into this repo. It clones the upstream, picks a target plugin, and copies the files when the target name is free. When a local skill of the same concept exists, it calls `merge-skill` to reconcile the incoming skill instead. It never creates a parallel skill next to an existing one. Use when the user wants to vendor a skill from a repo, pull one in from mattpocock-skills, superpowers, or another GitHub source, or invoke `/import-skill`.
+description: Imports a skill from a GitHub upstream into this repo, copies the files when the target name is free, and calls `merge-skill` when a local skill of the same concept exists, so it never creates a parallel skill. Use when the user wants to vendor a skill from a repo, pull one in from mattpocock-skills, superpowers, or another GitHub source, or invoke `/import-skill`.
 ---
 
 # Import Skill
@@ -19,7 +19,7 @@ Create a TodoWrite item per step when invoked.
 
 ### 1. Gather inputs (one prompt at a time)
 
-Ask the user for three items, one at a time.
+Ask the user for three items.
 1. The **upstream repo**, in `<owner>/<repo>` form, for example `mattpocock/skills`.
 2. The **upstream path** inside that repo, for example `skills/productivity/grill-me`.
 3. A **README one-liner**, a short description for the entry in the top-level `README.md` plugin list.
