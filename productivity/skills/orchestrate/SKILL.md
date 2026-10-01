@@ -1,19 +1,46 @@
 ---
 name: orchestrate
-description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one wayfinder map for each initiative. Use when a session starts in this repo, or when the user says "cook", "close", or asks to set up a new one.
+description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one wayfinder map for each initiative and one index that orders them. Use when a session starts in this repo, when the user says "cook", "close", "prep", "prioritize", asks what is next across maps, or asks to set up a new one.
 ---
 
 # Orchestrate
 
 An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad`. Then call it with `productivity:wayfinder`. This skill adds only what wayfinder leaves to the repo.
 
+## The index
+
+**The index** is the file `.wayfinder/README.md`, with one row for each initiative. The tracker reference gives its table shape.
+
+- Every session reads the index before any other step. This rule applies also when the user names a map.
+- If the index is missing, build it. If a map directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
+- The row order is the priority. The first row is the most important initiative.
+- When the user says "prioritize", reorder the rows with the user. Then commit and push.
+- Exactly one row is `active`. The status column holds one of `active`, `open`, `waiting <who> since <date>`, `paused <date> (<resume pointer>)`, or `closed <date>`.
+- `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop.
+- A row that is `waiting` or `paused` is not takeable.
+- Each row ends with a one-line state of the initiative.
+
 ## One directory per initiative
 
-`.wayfinder/<YYYY-MM-DD>-<slug>/` holds one wayfinder map with its tickets and assets. `.wayfinder/README.md` is the index. It has one row for each initiative, newest first, with exactly one row marked **active**. A session without a named initiative works on the active one. For a new initiative, first create its directory and index row. Wayfinder then charts the map inside the directory. Wayfinder's tracker for this repo is [references/local-markdown-tracker.md](references/local-markdown-tracker.md).
+`.wayfinder/<YYYY-MM-DD>-<slug>/` holds one wayfinder map with its tickets and assets. For a new initiative, first create its directory and its index row. Wayfinder then charts the map inside the directory. Wayfinder's tracker for this repo is [references/local-markdown-tracker.md](references/local-markdown-tracker.md).
+
+When wayfinder charts a map in this repo, the Destination ends with one sentence that starts with `Closes when`. The close step checks that sentence.
+
+## prep
+
+Use this step when the user names no map, or asks what is next across maps.
+
+1. Read the index. Show each row as one line.
+2. For each `active` or `open` row, check if its map has a frontier ticket. Use the frontier definition in the tracker reference. Do not open ticket bodies.
+3. Propose the first row in order that is takeable and has a frontier ticket. Give the reason in one sentence.
+4. For each `waiting` row, say who it waits on and since when.
+5. When the user names a map or confirms the proposal, the step is done. Then continue with cook.
 
 ## cook
 
 Take the first frontier ticket of the active map. Claim it. Resolve it through wayfinder's work-through mode. Record the resolution with its reasoning and a `Revisit if:` line. Commit and push. Work one ticket in each session. When the ticket is closed and its gist sits under the map's Decisions so far, the task is done.
+
+At the end of every session, update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`. Commit and push the index with the ticket.
 
 ## init
 
@@ -21,7 +48,7 @@ A new orchestrator repo needs three files: `.wayfinder/README.md` with the empty
 
 ## close
 
-An initiative closes when its Destination's "closes when" sentence is true, or when the user rules the rest out of scope. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
+An initiative closes when the `Closes when` sentence of its Destination is true, or when the user rules the rest out of scope. If the Destination has no `Closes when` sentence, write it with the user first. Then close. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
 
 1. Write `.wayfinder/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
    - the Destination
