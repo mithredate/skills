@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one wayfinder map for each initiative and one index that orders them. Use when a session starts in this repo, when the user says "cook", "close", "prep", "prioritize", asks what is next across maps, or asks to set up a new one.
+description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one wayfinder map for each initiative and one index that orders them. Use when a session starts in this repo, or when the user says "cook", "close", "prep", or "prioritize". Use also when the user asks what is next across maps, or asks to set up a new one.
 ---
 
 # Orchestrate
@@ -34,7 +34,7 @@ Use this step when the user names no map, or asks what is next across maps.
 2. For each `active` or `open` row, check if its map has a frontier ticket. Use the frontier definition in the tracker reference. Do not open ticket bodies.
 3. Propose the first row in order that is takeable and has a frontier ticket. Give the reason in one sentence.
 4. For each `waiting` row, say who it waits on and since when.
-5. When the user names a map or confirms the proposal, the step is done. Then continue with cook.
+5. When the user names a map or confirms the proposal, set that row to `active` and the old `active` row to `open`. Commit. The step is done. Then continue with cook.
 
 ## cook
 
