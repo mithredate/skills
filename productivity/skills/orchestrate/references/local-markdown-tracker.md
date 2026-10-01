@@ -22,11 +22,14 @@ This is wayfinder's tracker for an orchestrator repo. It uses plain files under 
 | [<dir>](<dir>/map.md) | **active**; <one-line state> | <Destination in one line> |
 ```
 
-The Status column holds one value:
+The rows are in priority order. The first row is the most important initiative. The Status column holds one value:
 - **active**, for exactly one row
-- `open`
-- `paused <date> (<resume pointer>)`
-- `closed <date>`
+- `open`, takeable but not active
+- `waiting <who> since <date>`, blocked by an external dependency, for example a support case or a PR review by another person
+- `paused <date> (<resume pointer>)`, stopped by the owner's own choice
+- `closed <date>`, finished, with a report
+
+A `waiting` or `paused` row is not takeable. The text after the status is the one-line state of the initiative.
 
 When the status is `closed <date>`, the Map column links to the report.
 
@@ -36,6 +39,7 @@ A ticket is `tickets/<id>.md`. Wayfinder's tracker fields live in its frontmatte
 
 | Wayfinder concept | In the file |
 |---|---|
+| destination | the Destination section of `map.md`, whose last sentence starts with "Closes when" |
 | ticket id, title | `id: <prefix>-<nn>`, `title:` |
 | open / closed | `status: open` / `status: closed` |
 | claimed by | `assignee:`, empty if unclaimed |

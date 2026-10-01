@@ -10,7 +10,7 @@ Every agent reads `AGENTS.md`.
 This repo is an orchestrator for <what it plans for>. It is planning only.
 Implementation lives in the repos below. Everything lives in `.wayfinder/`,
 one directory for each initiative. `.wayfinder/README.md` is the index.
-Commit and push every change.
+The index is read first in every session. Commit and push every change.
 
 ## Repos
 
