@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one wayfinder map for each initiative and one index that orders them. Use when a session starts in this repo, or when the user says "cook", "close", "prep", or "prioritize". Use also when the user asks what is next across maps, or asks to set up a new one.
+description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one wayfinder map for each initiative and one index that orders them. Use when a session starts in this repo, or when the user says "cook", "close", or "prioritize". Use also when the user asks to set up a new one.
 ---
 
 # Orchestrate
@@ -16,6 +16,7 @@ An **orchestrator repo** plans the work. The sibling repos it plans for hold the
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - Exactly one row is `active`. The status column holds one of `active`, `open`, `waiting <who> since <date>`, `paused <date> (<resume pointer>)`, or `closed <date>`.
+- When the user names a map, that row becomes `active` and the old `active` row becomes `open`. Commit the index with the ticket.
 - `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop.
 - A row that is `waiting` or `paused` is not takeable.
 - Each row ends with a one-line state of the initiative.
@@ -26,19 +27,9 @@ An **orchestrator repo** plans the work. The sibling repos it plans for hold the
 
 When wayfinder charts a map in this repo, the Destination ends with one sentence that starts with `Closes when`. The close step checks that sentence.
 
-## prep
-
-Use this step when the user names no map, or asks what is next across maps.
-
-1. Read the index. Show each row as one line.
-2. For each `active` or `open` row, check if its map has a frontier ticket. Use the frontier definition in the tracker reference. Do not open ticket bodies.
-3. Propose the first row in order that is takeable and has a frontier ticket. Give the reason in one sentence.
-4. For each `waiting` row, say who it waits on and since when.
-5. When the user names a map or confirms the proposal, set that row to `active` and the old `active` row to `open`. Commit. The step is done. Then continue with cook.
-
 ## cook
 
-Take the first frontier ticket of the active map. Claim it. Resolve it through wayfinder's work-through mode. Record the resolution with its reasoning and a `Revisit if:` line. Commit and push. Work one ticket in each session. When the ticket is closed and its gist sits under the map's Decisions so far, the task is done.
+A session that names no map works the `active` row. Take the first frontier ticket of the active map. Claim it. Resolve it through wayfinder's work-through mode. Record the resolution with its reasoning and a `Revisit if:` line. Commit and push. Work one ticket in each session. When the ticket is closed and its gist sits under the map's Decisions so far, the task is done.
 
 At the end of every session, update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`. Commit and push the index with the ticket.
 
