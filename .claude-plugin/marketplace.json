@@ -36,6 +36,7 @@
         "./skills/prototype",
         "./skills/research",
         "./skills/orchestrate",
+        "./skills/sup",
         "./skills/write-ste"
       ]
     },
