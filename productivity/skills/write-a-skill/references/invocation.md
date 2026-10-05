@@ -11,7 +11,7 @@ The skill keeps its `description`. The agent can start it on its own, and anothe
 
 A skill that holds only reference is also the home for rules that several skills need. Each of them calls it. The rules then live in one place.
 
-Mechanics: omit `disable-model-invocation`. Write the description for the agent: what the skill does, then "Use when" and the triggers.
+Mechanics: omit `disable-model-invocation`. Write the description for the agent, by the Frontmatter rules in `SKILL.md`.
 
 ## User-invoked
 

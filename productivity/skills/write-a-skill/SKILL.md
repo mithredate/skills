@@ -30,7 +30,9 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 ## Frontmatter
 
 - `name` is the directory name.
-- `description`: the first sentence states what the skill does, in the third person. The second sentence starts with "Use when" and lists each distinct trigger once. The value has 1,536 characters maximum.
+- `description` is the routing signal. The agent sees only the name and the description of each skill when it chooses which skill to load. Write the text that makes that choice right, not a summary of the body.
+- The first sentence names the capability and the key terms, in the third person. Short phrases are correct: "Checks PRs, issues, and threads linked from the tracker." The second sentence starts with "Use when" and lists each trigger once. A trigger is a situation, a calling skill, or the words the user types.
+- Put no step, rule, or reason from the body in the description. The listing cuts `description` and `when_to_use` together at 1,536 characters, so put the key use case first.
 - A colon followed by a space inside the value breaks the YAML, unless the whole value is in double quotes. The skill then loads with no metadata. Only CI catches this, so check it by eye.
 - A user-invoked skill sets `disable-model-invocation: true` and an `argument-hint`. Its description is a one-line summary for the human.
 - Check the field list against https://code.claude.com/docs/en/skills before you ship. The spec changes.
