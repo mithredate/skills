@@ -1,5 +1,5 @@
 {
-  "description": "Privileged commands are Mehrdad's to run: block aws, aws-vault, kubectl, helm, terraform apply/destroy and hand him the command.",
+  "description": "Privileged commands are Mehrdad's to run: block aws, aws-vault, kubectl, helm, terraform apply/destroy, except reads that return no secret, and hand him the command.",
   "hooks": {
     "PreToolUse": [
       {

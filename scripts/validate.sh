@@ -7,7 +7,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-for tool in claude jq; do
+for tool in claude jq node; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "✘ \`$tool\` not found on PATH." >&2
     exit 127
@@ -49,6 +49,11 @@ while read -r skill_path; do
     failed=1
   fi
 done < <(jq -r '.plugins[] | .source as $s | (.skills // [])[] | "\($s)/\(.)"' "$manifest" | sed 's#^\./##; s#/\./#/#')
+
+# Hook tests run the real hook with node:test.
+echo
+echo "→ hook tests"
+node --test */hooks/*.test.mjs || failed=1
 
 echo
 if [ "$failed" -ne 0 ]; then
