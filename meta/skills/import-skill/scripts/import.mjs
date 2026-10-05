@@ -62,6 +62,19 @@ function updateMarketplace({ targetPlugin, targetName }) {
   writeFileSync(path, JSON.stringify(json, null, 2) + '\n');
 }
 
+function bumpPluginVersion(targetPlugin) {
+  // Installers update a plugin only when its version changes. A new skill
+  // without a bump is listed in the marketplace but absent from the cache,
+  // and the whole plugin fails to load.
+  const path = join(REPO_ROOT, targetPlugin, '.claude-plugin/plugin.json');
+  const json = JSON.parse(readFileSync(path, 'utf8'));
+  const [major, minor, patch] = json.version.split('.').map(Number);
+  const previous = json.version;
+  json.version = `${major}.${minor}.${patch + 1}`;
+  writeFileSync(path, JSON.stringify(json, null, 2) + '\n');
+  return { previous, next: json.version };
+}
+
 function updateNotices({ upstream, license, copyright, targetPlugin, targetName }) {
   const path = join(REPO_ROOT, 'NOTICES.md');
   let content = readFileSync(path, 'utf8');
@@ -127,6 +140,8 @@ function main() {
     targetName: args['target-name'],
   });
 
+  const version = bumpPluginVersion(args['target-plugin']);
+
   updateNotices({
     upstream: args.upstream,
     license: args.license,
@@ -137,6 +152,7 @@ function main() {
 
   console.log(`Imported: ${args['target-plugin']}/skills/${args['target-name']}`);
   console.log(`Source: ${args.upstream}/${args['upstream-path']} @ ${args['upstream-sha']}`);
+  console.log(`Plugin version: ${args['target-plugin']} ${version.previous} -> ${version.next}`);
 }
 
 main();
