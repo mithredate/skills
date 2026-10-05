@@ -30,6 +30,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `domain-modeling` — pin down a domain's terms and boundaries; record choices as ADRs
   - `research` — resolve a factual question a decision waits on via a focused research subagent
   - `prototype` — make a cheap, rough artifact (outline, stub, UI/logic) to react to
+  - `unslop` — cut AI tells from any writing
 - **personal** — Mehrdad's personal working defaults
   - `work-like-mehrdad` — engineering defaults for judgment, orchestrating agents, spending quota, building, and reviewing; loads at the start of any code-touching session
   - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` and hands the command to the human

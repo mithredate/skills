@@ -37,7 +37,8 @@
         "./skills/research",
         "./skills/orchestrate",
         "./skills/sup",
-        "./skills/write-ste"
+        "./skills/write-ste",
+        "./skills/unslop"
       ]
     },
     {

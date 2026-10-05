@@ -28,6 +28,12 @@ This repository vendors skills from other open-source projects. Originals retain
 - **Copyright:** © 2026 DietrichGebert
 - **Vendored skills:** dev/ponytail
 
+### plugins (cursor)
+- **Repository:** https://github.com/cursor/plugins
+- **License:** MIT
+- **Copyright:** © 2026 Lauren Tan
+- **Vendored skills:** productivity/unslop
+
 <!--
 Format for each upstream:
 
