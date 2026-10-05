@@ -17,7 +17,7 @@ The file format of the index, the map, and the tickets is in [references/local-m
 
 - Every session reads the index before any other step. This rule applies also when the user names a map.
 - If the index is missing, build it. If a map directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
-- Then run sweep in write mode. Give it the map of this session and each `waiting` row. The tracker is true only when its live links are checked.
+- Then run sweep in write mode. Give it the map of this session and each `waiting` row. Sweep also adds each new host to `.wayfinder/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - Exactly one row is `active`. The status column holds one of `active`, `open`, `waiting <who> since <date> (<link>)`, `paused <date> (<resume pointer>)`, or `closed <date>`.
@@ -61,7 +61,7 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 
 ## init
 
-A new orchestrator repo needs three files: `.wayfinder/README.md` with the empty index table, `AGENTS.md`, and `CLAUDE.md`, the bridge to `AGENTS.md`. Copy `AGENTS.md` and `CLAUDE.md` from [references/agents-md-template.md](references/agents-md-template.md). Fill the repos table with the sibling repos this repo plans for.
+A new orchestrator repo needs four files: `.wayfinder/README.md` with the empty index table, `.wayfinder/sources.md` with the empty table from `productivity:sweep`, `AGENTS.md`, and `CLAUDE.md`, the bridge to `AGENTS.md`. Copy `AGENTS.md` and `CLAUDE.md` from [references/agents-md-template.md](references/agents-md-template.md). Fill the repos table with the sibling repos this repo plans for.
 
 ## close
 

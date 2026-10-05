@@ -7,6 +7,7 @@ This is the file format of an orchestrator repo. It uses plain files under `.way
 ```
 .wayfinder/
   README.md                  index of initiatives
+  sources.md                 the hosts that the tracker links to, owned by productivity:sweep
   reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed
   <YYYY-MM-DD>-<slug>/       one open initiative
     map.md                   the map, see map.md

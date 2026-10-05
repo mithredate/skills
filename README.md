@@ -26,7 +26,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
   - `orchestrate` — run a planning-only orchestrator repo: one map of decision tickets per initiative under `.wayfinder/`, an index read first that orders them by priority, `chart`, `cook`, `init`, `close` (report replaces the map), the hand-off brief
   - `sup` — one-screen, read-only report across the maps of an orchestrator repo, with a proposal for the next map, with the live state of linked PRs, issues, and threads
-  - `sweep` — check the PRs, issues, and threads linked from an orchestrator tracker, and give each session fact its place (used by `orchestrate` and `sup`)
+  - `sweep` — check the PRs, issues, pages, and threads linked from an orchestrator tracker, on the hosts listed in `.wayfinder/sources.md`, and give each session fact its place (used by `orchestrate` and `sup`)
   - `domain-modeling` — pin down a domain's terms and boundaries; record choices as ADRs
   - `research` — resolve a factual question a decision waits on via a focused research subagent
   - `prototype` — make a cheap, rough artifact (outline, stub, UI/logic) to react to
