@@ -1,13 +1,13 @@
 ---
 name: fire
-description: Fires a briefed change through a Workflow graph inside a token ceiling. One implementer round, then one reviewer and one verifier in parallel, verdict in code, three rounds maximum. The input is a wayfinder ticket with a Brief section. The output is a branch in a worktree and a report. No PR, no merge.
+description: Fires a briefed change through a Workflow graph inside a token ceiling. One implementer round, then one reviewer and one verifier in parallel, verdict in code, three rounds maximum. The input is an orchestrate ticket with a Brief section. The output is a branch in a worktree and a report. No PR, no merge.
 argument-hint: "<ticket path> +<n>k [max_rounds=N]"
 disable-model-invocation: true
 ---
 
 # Fire
 
-**Arguments:** $ARGUMENTS. The first argument is the path of a wayfinder ticket. The `+<n>k` argument is the token ceiling for this turn. `max_rounds=N` caps the implementer rounds. The default is 3.
+**Arguments:** $ARGUMENTS. The first argument is the path of an `orchestrate` ticket. The `+<n>k` argument is the token ceiling for this turn. `max_rounds=N` caps the implementer rounds. The default is 3.
 
 The Workflow tool runs the script [scripts/loop.workflow.js](scripts/loop.workflow.js). The script owns the routing, the ledger, the verdict, and the budget check. The main session reads the brief, makes the worktree, starts the workflow, and reports. It does not edit code. It does not read the transcripts of the agents.
 

@@ -1,6 +1,6 @@
 # Local-markdown tracker
 
-This is wayfinder's tracker for an orchestrator repo. It uses plain files under `.wayfinder/`, not an issue tracker. This file gives its "Wayfinding operations".
+This is the file format of an orchestrator repo. It uses plain files under `.wayfinder/`, not an issue tracker.
 
 ## Layout
 
@@ -9,7 +9,7 @@ This is wayfinder's tracker for an orchestrator repo. It uses plain files under 
   README.md                  index of initiatives
   reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed
   <YYYY-MM-DD>-<slug>/       one open initiative
-    map.md                   the map, wayfinder's body
+    map.md                   the map, see map.md
     tickets/<id>.md          one file per ticket
     assets/                  research, specs, digests, linked from tickets
 ```
@@ -35,12 +35,13 @@ When the status is `closed <date>`, the Map column links to the report.
 
 ## Ticket
 
-A ticket is `tickets/<id>.md`. Wayfinder's tracker fields live in its frontmatter. The body of the file is wayfinder's.
+A ticket is `tickets/<id>.md`. The tracker fields live in its frontmatter. The body holds the question, and later the resolution.
 
-| Wayfinder concept | In the file |
+| Concept | In the file |
 |---|---|
 | destination | the Destination section of `map.md`, whose last sentence starts with "Closes when" |
 | ticket id, title | `id: <prefix>-<nn>`, `title:` |
+| ticket type | `type: research`, `prototype`, `grilling`, or `task` |
 | open / closed | `status: open` / `status: closed` |
 | claimed by | `assignee:`, empty if unclaimed |
 | blocked by | `blocked-by: [<id>, ...]` |

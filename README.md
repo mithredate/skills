@@ -24,8 +24,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `write-a-skill` — write or rewrite a skill, an agent file, or a reference: name, invocation, shape, frontmatter, checks, and the PR
   - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
-  - `wayfinder` — plan oversized work as a map of decision tickets on an issue tracker, resolved one at a time
-  - `orchestrate` — run a planning-only orchestrator repo: one wayfinder map per initiative under `.wayfinder/`, an index read first that orders them by priority, `cook`, `init`, `close` (report replaces the map), the hand-off brief
+  - `orchestrate` — run a planning-only orchestrator repo: one map of decision tickets per initiative under `.wayfinder/`, an index read first that orders them by priority, `chart`, `cook`, `init`, `close` (report replaces the map), the hand-off brief
   - `sup` — one-screen, read-only report across the maps of an orchestrator repo, with a proposal for the next map
   - `domain-modeling` — pin down a domain's terms and boundaries; record choices as ADRs
   - `research` — resolve a factual question a decision waits on via a focused research subagent
@@ -36,7 +35,8 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` except reads that return no secret, and hands the command to the human
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
-- **deprecated** — skills phased out, kept installable during transitions _(empty for now)_
+- **deprecated** — skills phased out, kept installable during transitions
+  - `wayfinder` — merged into `orchestrate`, which is the only place it ran
 
 ## Installation
 
