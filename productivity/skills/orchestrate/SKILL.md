@@ -5,7 +5,7 @@ description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/`
 
 # Orchestrate
 
-An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad` first.
+An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad` and `productivity:sweep` first.
 
 An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. The map is done when nothing is left to decide before someone builds the thing. If you feel the pull to do the work, you are at the edge of the map. Hand off with a brief.
 
@@ -17,7 +17,7 @@ The file format of the index, the map, and the tickets is in [references/local-m
 
 - Every session reads the index before any other step. This rule applies also when the user names a map.
 - If the index is missing, build it. If a map directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
-- Then call the Skill tool with `productivity:sweep` in write mode. Give it the map of this session and each `waiting` row. The tracker is true only when its live links are checked.
+- Then run sweep in write mode. Give it the map of this session and each `waiting` row. The tracker is true only when its live links are checked.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - Exactly one row is `active`. The status column holds one of `active`, `open`, `waiting <who> since <date> (<link>)`, `paused <date> (<resume pointer>)`, or `closed <date>`.
@@ -53,7 +53,7 @@ A session that names no map works the `active` row. Work one ticket in each sess
 3. Before your next tool call, call the Skill tool with each skill that the map's Notes name. If the Notes name none, call `productivity:grilling` and `productivity:domain-modeling`. A skill that you know only by its name is not loaded. Then resolve the ticket. The step is done when the Skill tool has returned each skill and the ticket has a resolution.
 4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
-6. Sweep the session. Call the Skill tool with `productivity:sweep` in write mode, for the session items. The step is done when every item has a place.
+6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date> (<link>)`.
 8. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed, its gist is under Decisions so far, and the sweep table is in your final message.
 
