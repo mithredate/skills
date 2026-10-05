@@ -50,6 +50,9 @@ A ticket is `tickets/<id>.md`. The tracker fields live in its frontmatter. The b
 | resolution comment | a `## Resolution` section appended on close, plus one gist line under the map's Decisions so far |
 | linked assets | files under `assets/`, linked from the ticket |
 | hand-off | a `## Brief` section, placed after the resolution section |
+| skills to load | `skills: [<plugin>:<skill>, ...]`, set when the ticket is written, from its type and the map's Notes |
+
+The `skills:` field is required. When an agent claims the ticket, the `productivity` plugin hook names these skills to the agent. A skill list in prose is skipped about half the time, and the hook is not.
 
 When a change happens to a map, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
 
