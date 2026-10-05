@@ -40,7 +40,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 3. Write `map.md` with the Destination and the Notes. Leave Decisions so far empty. List the unspecified questions under Not yet specified.
 4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges in a second pass.
 5. For each research ticket, start a subagent that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
-6. Sweep the session as in `cook` step 7.
+6. Sweep the session as in `cook` step 6.
 7. Commit and push.
 
 ## cook
@@ -49,12 +49,12 @@ A session that names no map works the `active` row. Work one ticket in each sess
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Take the first frontier ticket, or the ticket that the user names. Claim it before any other work.
-3. Resolve it. Call the Skill tool for each skill that the map's Notes name. If the Notes name none, call `productivity:grilling` and `productivity:domain-modeling`.
+3. Before your next tool call, call the Skill tool with each skill that the map's Notes name. If the Notes name none, call `productivity:grilling` and `productivity:domain-modeling`. A skill that you know only by its name is not loaded. Then resolve the ticket. The step is done when the Skill tool has returned each skill and the ticket has a resolution.
 4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
-7. Sweep the session. List each answer from the user, each fact that you found, and each new term. For each item, name its place: a ticket resolution, a new ticket, Not yet specified, Out of scope, the map's Notes, `CONTEXT.md`, or an ADR. If an item has no place yet, write it there now. The step is done when every item has a place.
-8. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`.
-9. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed, its gist is under Decisions so far, and the sweep table is in your final message.
+6. Sweep the session. List each answer from the user, each fact that you found, and each new term. For each item, name its place: a ticket resolution, a new ticket, Not yet specified, Out of scope, the map's Notes, `CONTEXT.md`, or an ADR. If an item has no place yet, write it there now. The step is done when every item has a place.
+7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`.
+8. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed, its gist is under Decisions so far, and the sweep table is in your final message.
 
 The user can run other sessions on other frontier tickets at the same time. Expect concurrent commits.
 
