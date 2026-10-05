@@ -20,7 +20,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 - Prose that only some runs need goes in `references/`. One sentence in `SKILL.md` names the file and says when to read it.
 - An executable goes in `scripts/`.
 - One rule lives in one place. When the rule belongs to another skill, call the Skill tool with that skill. Do not restate it.
-- A vendored skill stays as it is. New behaviour goes in a thin skill that calls it.
+- To change a vendored skill, edit it in place. A thin skill that wraps it is a parallel skill.
 - Do not write a line that the agent can find with `ls`, with `--help`, or in a config file. Write the convention, the reason, and the trap that the environment does not show.
 - Delete a sentence that the agent obeys without it.
 - State the target behaviour. A ban makes the banned behaviour more available, so write a ban only as a guardrail next to the target.
