@@ -21,7 +21,7 @@ The map is an **index**, not a store. It lists the decisions and links to the ti
 
 ## Not yet specified
 
-<the fog: in-scope questions that you cannot state precisely yet>
+<the unspecified questions>
 
 ## Out of scope
 
@@ -37,15 +37,15 @@ Each ticket has a `type` in its frontmatter. A **HITL** ticket resolves only in 
 - **grilling** (HITL): the default type. Call the Skill tool with `productivity:grilling` and with `productivity:domain-modeling`.
 - **task** (HITL or AFK): work that must happen before a decision is possible, for example access to a service or data moved so that its shape shows. Do it alone when you can. Otherwise give the user a precise checklist. The resolution records what was done and the facts that later tickets need.
 
-## Fog
+## Unspecified questions
 
-The map is incomplete on purpose. The **fog** is the set of questions that you can see coming but cannot state precisely yet, because they wait on open tickets. The Not yet specified section holds the fog.
+The map is incomplete on purpose. An **unspecified question** is an in-scope question that you cannot state precisely yet, because it waits on open tickets. The Not yet specified section holds the unspecified questions.
 
 - If you can state the question precisely now, write a ticket, also when the ticket is blocked.
-- If you cannot state it precisely yet, leave it in the fog. Do not cut the fog into ticket-sized pieces. One patch can become several tickets, or none.
+- If you cannot state it precisely yet, keep it under Not yet specified. Do not cut it into ticket-sized pieces. One unspecified question can become several tickets, or none.
 
-The fog holds no decided question, no live ticket, and no out-of-scope work.
+Not yet specified holds no decided question, no live ticket, and no out-of-scope work.
 
 ## Out of scope
 
-The destination fixes the scope. Work past the destination is out of scope, not fog. When a ticket turns out to be past the destination, close it and add one line under Out of scope with its reason and a link. It does not go under Decisions so far, because Decisions so far records the way that the map took. Out-of-scope work comes back only as a new initiative.
+The destination fixes the scope. Work past the destination is out of scope. It is not an unspecified question. When a ticket turns out to be past the destination, close it and add one line under Out of scope with its reason and a link. It does not go under Decisions so far, because Decisions so far records the way that the map took. Out-of-scope work comes back only as a new initiative.

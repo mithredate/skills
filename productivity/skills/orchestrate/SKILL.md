@@ -9,7 +9,7 @@ An **orchestrator repo** plans the work. The sibling repos it plans for hold the
 
 An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. The map is done when nothing is left to decide before someone builds the thing. If you feel the pull to do the work, you are at the edge of the map. Hand off with a brief.
 
-The file format of the index, the map, and the tickets is in [references/local-markdown-tracker.md](references/local-markdown-tracker.md). The map body, the ticket types, the fog, and the out-of-scope rules are in [references/map.md](references/map.md). Read both before you chart a map or work a ticket.
+The file format of the index, the map, and the tickets is in [references/local-markdown-tracker.md](references/local-markdown-tracker.md). The map body, the ticket types, the unspecified questions, and the out-of-scope rules are in [references/map.md](references/map.md). Read both before you chart a map or work a ticket.
 
 ## The index
 
@@ -36,11 +36,12 @@ Refer to a map or a ticket by its title in everything the user reads. Put the pa
 The user gives a loose idea. Charting is one session's work. It resolves no ticket.
 
 1. Name the destination. Call the Skill tool with `productivity:grilling` and with `productivity:domain-modeling`. The destination fixes the scope, so settle it first. It ends with one sentence that starts with `Closes when`. The step is done when the user agrees to the destination.
-2. Map the frontier. Grill again, breadth-first. Find the open decisions and the first steps that a session can take now. If no fog shows, the work fits one session and needs no map. Stop and ask the user how to continue.
-3. Write `map.md` with the Destination and the Notes. Leave Decisions so far empty. Sketch the fog into Not yet specified.
+2. Map the frontier. Grill again, breadth-first. Find the open decisions and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no map. Stop and ask the user how to continue.
+3. Write `map.md` with the Destination and the Notes. Leave Decisions so far empty. List the unspecified questions under Not yet specified.
 4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges in a second pass.
 5. For each research ticket, start a subagent that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
-6. Commit and push.
+6. Sweep the session as in `cook` step 7.
+7. Commit and push.
 
 ## cook
 
@@ -50,9 +51,10 @@ A session that names no map works the `active` row. Work one ticket in each sess
 2. Take the first frontier ticket, or the ticket that the user names. Claim it before any other work.
 3. Resolve it. Call the Skill tool for each skill that the map's Notes name. If the Notes name none, call `productivity:grilling` and `productivity:domain-modeling`.
 4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far.
-5. Write a ticket for each new question. Move each fog patch that is now precise from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
-6. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`.
-7. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed and its gist is under Decisions so far.
+5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
+7. Sweep the session. List each answer from the user, each fact that you found, and each new term. For each item, name its place: a ticket resolution, a new ticket, Not yet specified, Out of scope, the map's Notes, `CONTEXT.md`, or an ADR. If an item has no place yet, write it there now. The step is done when every item has a place.
+8. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`.
+9. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed, its gist is under Decisions so far, and the sweep table is in your final message.
 
 The user can run other sessions on other frontier tickets at the same time. Expect concurrent commits.
 
