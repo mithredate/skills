@@ -33,6 +33,7 @@ This repository vendors skills from other open-source projects. Originals retain
 - **License:** MIT
 - **Copyright:** © 2026 Lauren Tan
 - **Vendored skills:** productivity/unslop
+- **Adapted rules:** dev/tdd, the Unfalsifiable anti-pattern, from `principle-test-behavior-not-implementation`
 
 <!--
 Format for each upstream:
