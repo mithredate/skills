@@ -61,7 +61,7 @@ For each adopted or adapted item, edit the matching file in `current/`. Show the
 ### 6. Update footer (if applicable)
 
 If the caller gives `incoming-sha`:
-1. Compute the post-merge drift ratio. This ratio is the number of lines that changed in `current` compared to `incoming`, added up across every skill file.
+1. Compute the post-merge drift by the definition in [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md).
 2. Match the ratio to a verb:
    - Below 30% — use `Adapted from`.
    - 30% to 80% — use `Inspired by`.
