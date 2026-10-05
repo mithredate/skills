@@ -1,0 +1,16 @@
+{
+  "description": "When an agent claims an orchestrator ticket, name the skills in the ticket's skills field, so the agent loads them before it works the ticket.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-ticket-skills.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -13,7 +13,7 @@ The map is an **index**, not a store. It lists the decisions and links to the ti
 
 ## Notes
 
-<the domain, the skills that every session must call, the standing preferences for this initiative>
+<the domain, the skills that every new ticket adds to its `skills:` field, the standing preferences for this initiative>
 
 ## Decisions so far
 
