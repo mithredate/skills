@@ -11,7 +11,7 @@ _<Verb> [<owner>/<repo>/<upstream-path>](https://github.com/<owner>/<repo>/tree/
 
 ### Components
 
-- **Verb**. This word encodes the current drift band:
+- **Verb**. This word encodes the current drift band. **Drift** is the share of the local skill that is not upstream text: `1 − (local lines identical to upstream ÷ local non-blank lines)`, counted across every skill file, footer excluded. A deletion of upstream text does not raise the drift.
   - `Adapted from`: local drift under 30%
   - `Inspired by`: local drift from 30% to 80%
   - `Originally seeded from`: local drift over 80%
