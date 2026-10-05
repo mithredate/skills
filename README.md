@@ -33,7 +33,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `unslop` — cut AI tells from any writing
 - **personal** — Mehrdad's personal working defaults
   - `work-like-mehrdad` — engineering defaults for judgment, orchestrating agents, spending quota, building, and reviewing; loads at the start of any code-touching session
-  - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` and hands the command to the human
+  - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` except reads that return no secret, and hands the command to the human
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
 - **deprecated** — skills phased out, kept installable during transitions _(empty for now)_
