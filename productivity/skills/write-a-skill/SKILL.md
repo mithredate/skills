@@ -53,7 +53,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 ## Ship
 
 - Work in `.worktrees/<branch>` off `origin/main`. One skill per PR. Stack a dependent skill as a second PR on the first branch.
-- Update the marketplace manifest, the README plugin list, and every caller from step 1.
+- Update the marketplace manifest, the README plugin list, and every caller from step 1. Bump the patch version in the plugin's `plugin.json`. An installer updates a plugin only when the version changes.
 - A vendored skill keeps its footer. Recompute the verb from the drift band by [../../../meta/skills/import-skill/references/footer-format.md](../../../meta/skills/import-skill/references/footer-format.md). The SHA changes only on a refresh.
 - Use conventional commits. Open the PR body with Why, then What, Verified, and Links.
 

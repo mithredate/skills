@@ -6,7 +6,7 @@ description: Imports a skill from a GitHub upstream into this repo, copies the f
 # Import Skill
 
 This skill vendors a skill from a GitHub upstream. It is interactive. It gathers inputs, picks a target, and forks to one of two paths:
-- In a **fresh import**, no concept conflict exists. The skill copies the files, writes the footer, and registers the skill in `marketplace.json` and `NOTICES.md`.
+- In a **fresh import**, no concept conflict exists. The skill copies the files, writes the footer, registers the skill in `marketplace.json` and `NOTICES.md`, and bumps the plugin version.
 - In a **conflict**, a local skill of the same concept already exists. The skill delegates to [`merge-skill`](../merge-skill/SKILL.md) to reconcile the incoming skill into the existing skill. It never creates a parallel skill.
 
 This skill pairs with [`refresh-vendored`](../refresh-vendored/SKILL.md). All three skills share the canonical footer format in [`references/footer-format.md`](references/footer-format.md).
@@ -75,6 +75,7 @@ Show:
 - Target directory: `<target_plugin>/skills/<target_name>/`.
 - Footer text for `SKILL.md`, following [`references/footer-format.md`](references/footer-format.md).
 - `marketplace.json` entry to insert.
+- Patch bump of `<target_plugin>/.claude-plugin/plugin.json`, for example `0.1.0` to `0.1.1`. An installer updates a plugin only when its version changes.
 - `NOTICES.md` block to add or update.
 - `README.md` entry for the `<target_plugin>` section.
 
@@ -134,15 +135,21 @@ claude plugin validate <target_plugin>
 
 If validation shows an error, show the message and stop. Do not report the import as successful. The user must fix the problem, usually in the footer or the frontmatter, before committing.
 
-### 11. Report (fresh import path)
+### 11. Commit and report (fresh import path)
 
-Show the files you created, the files you changed, and a suggested commit message:
+Commit in the worktree with a message in this form:
 
 ```
 vendor: import productivity/grill-me from mattpocock-skills
 ```
 
-Leave the `git add` and `git commit` commands to the user.
+Push the branch. Open the PR with the body shape from `write-a-skill`. Show the files you created and the files you changed.
+
+Tell the user that the installed copy changes only after the PR merges. The marketplace clone auto-updates. Then this command fetches the new plugin version:
+
+```bash
+claude plugin update <target_plugin>@skills
+```
 
 ### 12. Merge path: delegate to merge-skill
 
@@ -156,7 +163,7 @@ Follow these steps when the user picks **merge** in Step 4.
 3. `merge-skill` handles the comparison, the decision loop, the file edits, and the footer rewrite. This skill's work ends here. Show its output exactly as it is.
 4. Check the existing local skill's footer. If it points to a *different* upstream than the one you are merging in, flag this as unclear. Ask the user how to record the source after the merge. One common choice treats the existing footer's upstream as the primary source. It names the merged-in source as an extra contributor in `NOTICES.md`.
 
-After `merge-skill` returns, suggest a commit message like this:
+After `merge-skill` returns, bump the patch version in `<target_plugin>/.claude-plugin/plugin.json` by hand. The script in Step 7 does not run on this path. Then commit, push, and open the PR as in Step 11, with a message like this:
 
 ```
 merge: absorb superpowers/tdd into productivity/tdd
