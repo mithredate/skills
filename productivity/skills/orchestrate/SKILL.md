@@ -1,11 +1,15 @@
 ---
 name: orchestrate
-description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one wayfinder map for each initiative and one index that orders them. Use when a session starts in this repo, or when the user says "cook", "close", or "prioritize". Use also when the user asks to set up a new one.
+description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one map of decision tickets for each initiative and one index that orders them. Use when a session starts in this repo, when the user wants to plan work too big for one agent session, or when the user says "chart", "cook", "close", or "prioritize". Use also when the user asks to set up a new orchestrator repo.
 ---
 
 # Orchestrate
 
-An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad`. Then call it with `productivity:wayfinder`. This skill adds only what wayfinder leaves to the repo.
+An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad` first.
+
+An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. The map is done when nothing is left to decide before someone builds the thing. If you feel the pull to do the work, you are at the edge of the map. Hand off with a brief.
+
+The file format of the index, the map, and the tickets is in [references/local-markdown-tracker.md](references/local-markdown-tracker.md). The map body, the ticket types, the fog, and the out-of-scope rules are in [references/map.md](references/map.md). Read both before you chart a map or work a ticket.
 
 ## The index
 
@@ -23,15 +27,34 @@ An **orchestrator repo** plans the work. The sibling repos it plans for hold the
 
 ## One directory per initiative
 
-`.wayfinder/<YYYY-MM-DD>-<slug>/` holds one wayfinder map with its tickets and assets. For a new initiative, first create its directory and its index row. Wayfinder then charts the map inside the directory. Wayfinder's tracker for this repo is [references/local-markdown-tracker.md](references/local-markdown-tracker.md).
+`.wayfinder/<YYYY-MM-DD>-<slug>/` holds one map with its tickets and assets. For a new initiative, first create its directory and its index row. Then chart the map inside the directory.
 
-When wayfinder charts a map in this repo, the Destination ends with one sentence that starts with `Closes when`. The close step checks that sentence.
+Refer to a map or a ticket by its title in everything the user reads. Put the path inside the title's link. A list of bare ids is not readable.
+
+## chart
+
+The user gives a loose idea. Charting is one session's work. It resolves no ticket.
+
+1. Name the destination. Call the Skill tool with `productivity:grilling` and with `productivity:domain-modeling`. The destination fixes the scope, so settle it first. It ends with one sentence that starts with `Closes when`. The step is done when the user agrees to the destination.
+2. Map the frontier. Grill again, breadth-first. Find the open decisions and the first steps that a session can take now. If no fog shows, the work fits one session and needs no map. Stop and ask the user how to continue.
+3. Write `map.md` with the Destination and the Notes. Leave Decisions so far empty. Sketch the fog into Not yet specified.
+4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges in a second pass.
+5. For each research ticket, start a subagent that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
+6. Commit and push.
 
 ## cook
 
-A session that names no map works the `active` row. Take the first frontier ticket of the active map. Claim it. Resolve it through wayfinder's work-through mode. Record the resolution with its reasoning and a `Revisit if:` line. Commit and push. Work one ticket in each session. When the ticket is closed and its gist sits under the map's Decisions so far, the task is done.
+A session that names no map works the `active` row. Work one ticket in each session. Research tickets are the exception.
 
-At the end of every session, update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`. Commit and push the index with the ticket.
+1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
+2. Take the first frontier ticket, or the ticket that the user names. Claim it before any other work.
+3. Resolve it. Call the Skill tool for each skill that the map's Notes name. If the Notes name none, call `productivity:grilling` and `productivity:domain-modeling`.
+4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far.
+5. Write a ticket for each new question. Move each fog patch that is now precise from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
+6. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date>`.
+7. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed and its gist is under Decisions so far.
+
+The user can run other sessions on other frontier tickets at the same time. Expect concurrent commits.
 
 ## init
 
@@ -53,3 +76,6 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 ## Hand-off: the brief
 
 A task ticket whose answer is "build this in repo X" ends its resolution with a **brief**. The brief is the whole input an implementer reads from the ticket file, with no transcript. It holds repo and branch, files, order, tests, FR and NFR, and ponytail limits. The PR names the ticket. Read the tracker reference for the exact format.
+
+---
+_Originally seeded from [mattpocock/skills/skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/wayfinder) — MIT © 2026 Matt Pocock._

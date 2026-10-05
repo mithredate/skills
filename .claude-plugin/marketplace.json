@@ -31,7 +31,6 @@
         "./skills/grilling",
         "./skills/write-a-skill",
         "./skills/teach",
-        "./skills/wayfinder",
         "./skills/domain-modeling",
         "./skills/prototype",
         "./skills/research",
@@ -71,7 +70,9 @@
       "name": "deprecated",
       "source": "./deprecated",
       "description": "Skills phased out. Still installable to ease the transition; will be removed once unused.",
-      "skills": []
+      "skills": [
+        "./skills/wayfinder"
+      ]
     }
   ]
 }

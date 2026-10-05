@@ -15,7 +15,7 @@ A failure is to try approach after approach without a record of what you learned
 
 The prompt gives you these inputs.
 
-- The **brief** is the `## Brief` section of a wayfinder ticket. It holds the repo, the branch, the files, the order, the tests, the FR, the NFR, and the ponytail limits. The brief is your scope. A file outside the brief's file list is out of scope.
+- The **brief** is the `## Brief` section of an `orchestrate` ticket. It holds the repo, the branch, the files, the order, the tests, the FR, the NFR, and the ponytail limits. The brief is your scope. A file outside the brief's file list is out of scope.
 - The **digest** is a short orientation from a read-only agent. It holds pointers, not content. Read the files yourself.
 - The **ledger** holds numbered constraints from earlier rounds. It is empty in the first round of a new run.
 - The **mode** is `fresh` or `patch`.
