@@ -20,6 +20,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 - Prose that only some runs need goes in `references/`. One sentence in `SKILL.md` names the file and says when to read it.
 - An executable goes in `scripts/`.
 - One rule lives in one place. When the rule belongs to another skill, call the Skill tool with that skill. Do not restate it.
+- Put a Skill call that every run needs in a "First actions" line at the top of the body. If the call depends on a fact found later, add a hook on the event that shows the fact. An agent skips a Skill call inside a numbered step about half the time. A skill list in a file that the agent reads is skipped in the same way.
 - To change a vendored skill, edit it in place. A thin skill that wraps it is a parallel skill.
 - Do not write a line that the agent can find with `ls`, with `--help`, or in a config file. Write the convention, the reason, and the trap that the environment does not show.
 - Delete a sentence that the agent obeys without it.
@@ -30,7 +31,9 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 ## Frontmatter
 
 - `name` is the directory name.
-- `description`: the first sentence states what the skill does, in the third person. The second sentence starts with "Use when" and lists each distinct trigger once. The value has 1,536 characters maximum.
+- `description` is the routing signal. The agent sees only the name and the description of each skill when it chooses which skill to load. Write the text that makes that choice right, not a summary of the body.
+- The first sentence names the capability and the key terms, in the third person. Short phrases are correct: "Checks PRs, issues, and threads linked from the tracker." The second sentence starts with "Use when" and lists each trigger once. A trigger is a situation, a calling skill, or the words the user types.
+- Put no step, rule, or reason from the body in the description. The listing cuts `description` and `when_to_use` together at 1,536 characters, so put the key use case first.
 - A colon followed by a space inside the value breaks the YAML, unless the whole value is in double quotes. The skill then loads with no metadata. Only CI catches this, so check it by eye.
 - A user-invoked skill sets `disable-model-invocation: true` and an `argument-hint`. Its description is a one-line summary for the human.
 - Check the field list against https://code.claude.com/docs/en/skills before you ship. The spec changes.

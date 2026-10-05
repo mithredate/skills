@@ -7,6 +7,7 @@ This is the file format of an orchestrator repo. It uses plain files under `.way
 ```
 .wayfinder/
   README.md                  index of initiatives
+  sources.md                 the hosts that the tracker links to, owned by productivity:sweep
   reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed
   <YYYY-MM-DD>-<slug>/       one open initiative
     map.md                   the map, see map.md
@@ -25,7 +26,7 @@ This is the file format of an orchestrator repo. It uses plain files under `.way
 The rows are in priority order. The first row is the most important initiative. The Status column holds one value:
 - **active**, for exactly one row
 - `open`, takeable but not active
-- `waiting <who> since <date>`, blocked by an external dependency, for example a support case or a PR review by another person
+- `waiting <who> since <date> (<link>)`, blocked by an external dependency, for example a support case or a PR review by another person. The link points to the PR, issue, or thread, so that `productivity:sweep` can check it.
 - `paused <date> (<resume pointer>)`, stopped by the owner's own choice
 - `closed <date>`, finished, with a report
 
