@@ -81,9 +81,12 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 A ticket whose answer is "build this" ends its resolution with one **brief** for each phase. A **phase** is the agent work between two human steps. A human step is a setup that the agent cannot do, a review, a deploy, or a check that only a human can make.
 
 - Split a brief only at a human step. A phase can span more than one repo.
+- Write the fewest phases. If a human can do a setup before the session starts, put it in Ready when. Do not split for it.
+- The Hand back of one phase and the Ready when of the next phase name the same human step.
 - The brief gives context, not steps. The session that takes the brief picks the agents, the order of work, the branches, and the PRs.
 - Before you write a brief, collect each fact that the session needs to build and verify the change. Examples are test data, reviewer names, and access. Do not leave a question for a human to answer after the build.
 - A brief with an open question is not ready. Mark the open line `OPEN`, and settle it before the session starts.
+- If a fact contradicts a closed decision, mark the line `OPEN` and name the decision. The owner of the decision settles it before the session starts.
 
 The brief is the whole input that the session reads from the ticket file, with no transcript. Each PR names the ticket. Read the tracker reference for the fields.
 

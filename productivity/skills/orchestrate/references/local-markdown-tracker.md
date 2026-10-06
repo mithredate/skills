@@ -64,7 +64,7 @@ When a change happens to a map, ticket, or asset, commit and push it. Concurrent
 - Goal: <what is true when the session hands back>
 - Ready when: <the human steps that are done before the session starts>
 - Repos: <each repo and its base branch. The session picks the branches, the PRs, and the order>
-- Read first: <code and decisions to read. A hint, not a scope limit. Optional>
+- Read first: <code and decisions to read, with what to copy and what not to copy. A hint, not a scope limit. Optional>
 - FR: <what it must do>
 - NFR: <limits: security, performance, placement, allowed new dependencies, ...>
 - Verification: <how the session proves it, with real commands and data. For a bugfix, the failing test first>
