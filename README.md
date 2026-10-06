@@ -8,7 +8,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `manage-agents-md` — write, improve, and housekeep a repo's instruction file (`CLAUDE.md`, or `AGENTS.md` bridged into it); graduate corrections out of auto-memory into it
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix
-  - `fire` — build one build-ticket brief with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, patch up to three rounds, then open draft PRs. Targets can be git repos or other systems such as n8n
+  - `fire` — build one build-ticket brief with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. Targets can be git repos or other systems such as n8n
   - `ponytail` — force the laziest solution that actually works — YAGNI, stdlib first, shortest diff
   - `verification-before-completion` — require fresh verification evidence before claiming work is done
   - `codebase-design` — shared vocabulary for designing deep modules and finding deepening opportunities

@@ -1,6 +1,6 @@
 ---
 name: fire
-description: Builds the brief of one `orchestrate` build ticket with a fresh implementer agent, then reviews and verifies the change, with at most three patch rounds. The target can be a git repo or another system, such as n8n. Use when a session claims a ticket with a `## Brief`, or when the user runs `/fire`.
+description: Builds the brief of one `orchestrate` build ticket with a fresh implementer agent, then reviews and verifies the change, with at most three rounds. The target can be a git repo or another system, such as n8n. Use when a session claims a ticket with a `## Brief`, or when the user runs `/fire`.
 argument-hint: "<ticket path>"
 ---
 
@@ -13,10 +13,12 @@ The session does not edit code or a target system. Agents build, review, and ver
 ## Read the brief
 
 1. Read the ticket. If it has no `## Brief` section, stop and ask the user for one. If a ticket in its `blocked-by` is open, stop and name it.
-2. For each git repo in the Targets line, run `git fetch origin`. Make a branch `feat/<ticket slug>` from the base branch that the brief names, or `fix/<ticket slug>` for a bugfix. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree.
+2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<ticket slug>` from the base branch that the brief names, or `fix/<ticket slug>` for a bugfix. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it.
 3. Set the kind to `bugfix` when the brief is a bugfix, or when its Verification line asks for the failing test first. Otherwise set it to `change`.
 
 The step is done when each git target has its branch checked out in a known directory.
+
+The agents `dev:pr-reviewer` and `dev:verifier` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
 
 ## Build
 
@@ -35,9 +37,10 @@ The step is done when the agent returns its JSON. If the outcome is `plan_broken
 
 Start these agents in parallel, and wait for all of them:
 
-- `dev:pr-reviewer`, when a git target changed. Give it the diff file, the brief, and the ticket path.
+- `dev:pr-reviewer`, when a git target changed. Give it the diff file, the brief, the ticket path, and the root and the AGENTS.md or CLAUDE.md of each changed repo.
 - `dev:verifier`, once for each git target, with its directory and its AGENTS.md or CLAUDE.md.
-- `dev:verifier`, once, for the brief's Verification checks that the declared commands of a repo do not cover. Tell it to run each check and report it as a command. This covers a target that is not a git repo.
+- `dev:verifier`, once, for the brief's Verification checks of the git targets that the declared commands do not cover. Tell it to run each check and report it as a command.
+- One `general-purpose` agent for the Verification checks of each target that is not a git repo. That agent has the tools of the system, which `dev:verifier` does not have. Tell it to change nothing, and to return the JSON of `dev:verifier`.
 
 Then decide:
 
@@ -48,12 +51,12 @@ Then decide:
 | `quality_note` only | next round patches. On the last round, `pass` |
 | `nit` only, or nothing | `pass` |
 
-The run has at most 3 rounds. If round 3 does not pass, the status is `rounds_spent`.
+The first build is round 1. The run has at most 3 rounds. If round 3 does not pass, the status is `rounds_spent`.
 
 ## Hand back
 
 1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. The body lists the verifier evidence.
 2. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user.
-3. Give the PR links, or the Verification evidence for a target that is not a git repo. Give the rounds spent.
+3. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent.
 
 Merge nothing. The human review is a `gate` ticket in the map.
