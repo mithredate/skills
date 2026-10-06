@@ -1,6 +1,6 @@
 ---
 name: fire
-description: Builds the brief of one `orchestrate` build ticket with a fresh implementer agent, then reviews and verifies the change, with at most three rounds. The target can be a git repo or another system, such as n8n. Use when a session claims a ticket with a `## Brief`, or when the user runs `/fire`.
+description: Use when a session claims an `orchestrate` ticket with a `## Brief`, or on `/fire`.
 argument-hint: "<ticket path>"
 ---
 

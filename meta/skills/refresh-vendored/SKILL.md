@@ -1,6 +1,6 @@
 ---
 name: refresh-vendored
-description: Refreshes each vendored skill against its upstream source, fetches the current upstream version, and sends the comparison to `merge-skill`. Use when the user wants to check upstream changes, decide what to add locally, or watch the attribution verb shift with drift. Triggers on requests like "refresh vendored skills", "check upstream changes", "update from mattpocock", "see what's new upstream", or a `/refresh-vendored` command.
+description: Use when the user wants to check the vendored skills for upstream changes, or says "update from mattpocock".
 ---
 
 # Refresh Vendored Skills

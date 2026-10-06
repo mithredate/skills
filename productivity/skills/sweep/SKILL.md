@@ -1,6 +1,6 @@
 ---
 name: sweep
-description: Checks the live state of the PRs, issues, pages, and threads linked from the `.wayfinder/` tracker of an orchestrator repo, on any host such as GitHub, Linear, Jira, Confluence, Notion, or Slack, and gives each fact from a session its place in the tracker. Use when orchestrate starts work on a map or ends a session, when sup builds its report, or when the user says "sweep", "check the PRs", or "what changed".
+description: Use when the user says "sweep", "check the PRs", or "what changed" in a `.wayfinder/` repo, or when `orchestrate` or `sup` calls it.
 ---
 
 # Sweep

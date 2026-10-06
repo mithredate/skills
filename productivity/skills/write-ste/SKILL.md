@@ -1,6 +1,6 @@
 ---
 name: write-ste
-description: States the Simplified Technical English rules for every text we write, with the check to run before you finish. Use when you write a skill, an agent file, a reference, a PR body, a review finding, a report, or an AGENTS.md line, or when another skill needs the writing rules.
+description: Our writing rules. Use when writing a skill, an agent file, a reference, a PR body, a review finding, or a report.
 ---
 
 # Write STE

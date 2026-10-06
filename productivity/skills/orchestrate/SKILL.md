@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/` directory holds one map of decision tickets for each initiative and one index that orders them. Use when a session starts in this repo, when the user wants to plan work too big for one agent session, or when the user says "chart", "cook", "close", or "prioritize". Use also when the user asks to set up a new orchestrator repo.
+description: Use in a repo with `.wayfinder/`, to set one up, for work too big for one session, or on "chart", "cook", "close", or "prioritize".
 ---
 
 # Orchestrate
