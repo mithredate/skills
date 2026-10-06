@@ -306,17 +306,19 @@ for (const unit of args.units) {
 phase('Gate')
 const allRepos = args.repos.map(r => r.name)
 const fullDiff = `${args.runDir}/full.diff`
-const gateChecks = [
-  () => agent(gateVerifyPrompt(), { label: 'gate:verify', phase: 'Gate', agentType: 'general-purpose', model: 'sonnet', schema: VERIFY_SCHEMA }),
-]
-if (args.units.length > 1) {
-  gateChecks.push(() => agent(
-    `First write the whole diff with\n  ${diffCommand(allRepos, runBases, fullDiff)}\n\n${reviewPrompt('Whole change: all units together. Scope is the FR and NFR lines of the brief.', allRepos, fullDiff)}`,
+// The verifier writes the whole diff first, because dev:pr-reviewer has no shell.
+const gateVerify = await agent(
+  `First write the whole diff with\n  ${diffCommand(allRepos, runBases, fullDiff)}\n\n${gateVerifyPrompt()}`,
+  { label: 'gate:verify', phase: 'Gate', agentType: 'general-purpose', model: 'sonnet', schema: VERIFY_SCHEMA },
+)
+if (!gateVerify) return result('agent_failed', { rounds: roundsPerUnit, blocker: 'the gate verifier returned nothing' })
+const gateReview = args.units.length > 1
+  ? await agent(
+    reviewPrompt('Whole change: all units together. Scope is the FR and NFR lines of the brief.', allRepos, fullDiff),
     { label: 'gate:review', phase: 'Gate', agentType: 'dev:pr-reviewer', schema: REVIEW_SCHEMA },
-  ))
-}
-const [gateVerify, gateReview] = await parallel(gateChecks)
-if (!gateVerify || (args.units.length > 1 && !gateReview)) return result('agent_failed', { rounds: roundsPerUnit, blocker: 'a gate agent returned nothing' })
+  )
+  : null
+if (args.units.length > 1 && !gateReview) return result('agent_failed', { rounds: roundsPerUnit, blocker: 'the gate reviewer returned nothing' })
 const gateFindings = { review: gateReview ?? null, verify: [gateVerify] }
 const gateRed = gateVerify.verdict !== 'green' || (gateReview && (gateReview.discrepancy.length || gateReview.blocking.length))
 if (gateRed) return result('gate_failed', { rounds: roundsPerUnit, findings: gateFindings })
