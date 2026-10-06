@@ -35,7 +35,7 @@ Each ticket has a `type` in its frontmatter. A **HITL** ticket resolves only in 
 - **research** (AFK): find a fact outside the working directory that a decision waits on. A subagent calls the Skill tool with `productivity:research`.
 - **prototype** (HITL): make a cheap, rough artifact for the user to react to. Call the Skill tool with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question.
 - **grilling** (HITL): the default type. Call the Skill tool with `productivity:grilling` and with `productivity:domain-modeling`.
-- **task** (AFK): work that the agent does alone. One kind comes before a decision, for example data moved so that its shape shows. The other kind is a build, which holds a `## Brief` that `dev:fire` runs. The resolution records what was done and the facts that later tickets need.
+- **task** (AFK): work that the agent does alone. One kind comes before a decision, for example data moved so that its shape shows. The other kind is a build, which holds a `## Brief`. `dev:fire` runs it, or the session runs it when the brief changes no git repo. The resolution records what was done and the facts that later tickets need.
 - **gate** (HITL): one human step, for example a setup that the agent cannot do, a review, or a deploy. The agent never claims it. It blocks the tickets that wait on the step.
 
 ## Unspecified questions

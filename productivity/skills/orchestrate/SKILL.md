@@ -51,7 +51,7 @@ A session that names no map works the `active` row. Work one ticket in each sess
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Take the first frontier ticket that is not a `gate`, or the ticket that the user names. Claim it before any other work. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
 3. When you claim the ticket, a hook names the skills in its `skills:` field. Call the Skill tool with each of them before your next tool call. A skill that you know only by its name is not loaded. Then resolve the ticket. The step is done when the Skill tool has returned each skill and the ticket has a resolution.
-4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far. A build ticket closes only when `dev:fire` returns `pass`, and its resolution links the PRs. If `fire` returns another status, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket.
+4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far. A build ticket closes only when the build passes, and its resolution links the PRs or the changed items. For a `dev:fire` ticket, the build passes when `fire` returns `pass`. If the build does not pass, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date> (<link>)`.
@@ -82,6 +82,7 @@ When the decisions for a change are made, write the build as `task` tickets and 
 
 - A **gate** ticket is one human step: a setup that the agent cannot do, a review, a deploy, or a check that only a human can make.
 - A build `task` ticket holds one **brief**. The brief is the whole input of one session, with no transcript. `dev:fire` takes the brief, and plans, implements, and verifies it.
+- If the brief changes no git repo, for example an n8n workflow, `fire` cannot run it. The ticket names the skills of the target system instead of `dev:fire`. The session that claims the ticket does the work itself. The build passes when every Verification and Safe to deploy check passes.
 - A brief holds no human step. A session runs it from start to end when every ticket in its `blocked-by` is closed.
 - Split the build only at a gate. Write the fewest build tickets. A brief can span more than one repo.
 - The brief gives context, not steps. The session picks the agents, the order of work, the branches, and the PRs.

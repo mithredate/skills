@@ -49,7 +49,7 @@ A ticket is `tickets/<id>.md`. The tracker fields live in its frontmatter. The b
 | frontier | `status: open`, empty `assignee`, every `blocked-by` id closed |
 | resolution comment | a `## Resolution` section appended on close, plus one gist line under the map's Decisions so far |
 | linked assets | files under `assets/`, linked from the ticket |
-| hand-off | a build `task` ticket whose body is a `## Brief` section, with `skills: [dev:fire]`. The resolution on close links the PRs |
+| hand-off | a build `task` ticket whose body is a `## Brief` section, with `skills: [dev:fire]`. If the brief changes no git repo, `skills:` names the skills of the target system. The resolution on close links the PRs or the changed items |
 | human step | a `gate` ticket whose body is a `## Step` checklist. `owner:` names the human who owns it. `assignee:` stays empty |
 | skills to load | `skills: [<plugin>:<skill>, ...]`, set when the ticket is written, from its type and the map's Notes |
 
