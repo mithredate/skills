@@ -7,7 +7,7 @@ description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/`
 
 An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad` and `productivity:sweep` first.
 
-An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. The map is done when nothing is left to decide before someone builds the thing. If you feel the pull to do the work, you are at the edge of the map. Hand off with a brief.
+An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of tickets. Most tickets are **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. When nothing is left to decide, the map hands off the build as build tickets and gate tickets. If you feel the pull to do the work in this session, write a build ticket.
 
 The file format of the index, the map, and the tickets is in [references/local-markdown-tracker.md](references/local-markdown-tracker.md). The map body, the ticket types, the unspecified questions, and the out-of-scope rules are in [references/map.md](references/map.md). Read both before you chart a map or work a ticket.
 
@@ -49,13 +49,13 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 A session that names no map works the `active` row. Work one ticket in each session. Research tickets are the exception.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Take the first frontier ticket, or the ticket that the user names. Claim it before any other work.
+2. Take the first frontier ticket that is not a `gate`, or the ticket that the user names. Claim it before any other work. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
 3. When you claim the ticket, a hook names the skills in its `skills:` field. Call the Skill tool with each of them before your next tool call. A skill that you know only by its name is not loaded. Then resolve the ticket. The step is done when the Skill tool has returned each skill and the ticket has a resolution.
-4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far.
+4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far. A build ticket closes only when `dev:fire` returns `pass`, and its resolution links the PRs. If `fire` returns another status, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date> (<link>)`.
-8. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed, its gist is under Decisions so far, and the sweep table is in your final message.
+8. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed, its gist is under Decisions so far, and the sweep table is in your final message. For a failed build, the task is done when the build ticket is open, its blocker ticket is in its `blocked-by`, and the sweep table is in your final message.
 
 The user can run other sessions on other frontier tickets at the same time. Expect concurrent commits.
 
@@ -76,9 +76,19 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory with `git rm`. Git history keeps every ticket.
 3. Commit and push.
 
-## Hand-off: the brief
+## Hand-off: build and gate tickets
 
-A task ticket whose answer is "build this in repo X" ends its resolution with a **brief**. The brief is the whole input an implementer reads from the ticket file, with no transcript. It holds repo and branch, files, order, tests, FR and NFR, and ponytail limits. The PR names the ticket. Read the tracker reference for the exact format.
+When the decisions for a change are made, write the build as `task` tickets and each human step as a `gate` ticket. Connect them with `blocked-by` edges.
+
+- A **gate** ticket is one human step: a setup that the agent cannot do, a review, a deploy, or a check that only a human can make.
+- A build `task` ticket holds one **brief**. The brief is the whole input of one session, with no transcript. `dev:fire` takes the brief, and plans, implements, and verifies it.
+- A brief holds no human step. A session runs it from start to end when every ticket in its `blocked-by` is closed.
+- Split the build only at a gate. Write the fewest build tickets. A brief can span more than one repo.
+- The brief gives context, not steps. The session picks the agents, the order of work, the branches, and the PRs.
+- Before you write a brief, collect each fact that the session needs to build and verify the change. Examples are test data, reviewer names, and access.
+- If a question needs a human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
+
+Read the tracker reference for the brief fields and the gate format.
 
 ---
 _Originally seeded from [mattpocock/skills/skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/wayfinder) — MIT © 2026 Matt Pocock._

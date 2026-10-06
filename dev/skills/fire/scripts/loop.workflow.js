@@ -2,7 +2,7 @@ export const meta = {
   name: 'fire',
   description: 'Implement a briefed change in rounds: one implementer, then a reviewer and a verifier in parallel, verdict in code',
   phases: [
-    { title: 'Orient', detail: 'one Haiku node reads the blast radius of the briefed files' },
+    { title: 'Orient', detail: 'one Haiku node reads the blast radius of the code the brief names' },
     { title: 'Round 1', detail: 'implementer, then reviewer and verifier' },
     { title: 'Round 2', detail: 'patch or fresh, by verdict' },
     { title: 'Round 3', detail: 'last round by default' },
@@ -84,8 +84,8 @@ const ledgerText = () => (ledger.length ? ledger.join('\n') : '(empty)')
 
 function orientPrompt() {
   const source = args.graphPath
-    ? `Read the code graph at ${args.graphPath}. For every file the brief names, list its callers and the files that import it (the blast radius).`
-    : `Use Grep and Glob only. For every file the brief names, list its callers. For every directory the brief names, describe the conventions of the sibling files: naming, error handling, test file placement.`
+    ? `Read the code graph at ${args.graphPath}. For every file and symbol that the brief names in its Read first and FR lines, list its callers and the files that import it (the blast radius).`
+    : `Use Grep and Glob only. For every file and symbol that the brief names in its Read first and FR lines, list its callers. For every directory that the brief names, describe the conventions of the sibling files: naming, error handling, test file placement.`
   return `Repository root: ${args.repoRoot}. Read only, no edits.
 
 ${source}
