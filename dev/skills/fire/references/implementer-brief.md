@@ -23,7 +23,7 @@ The prompt gives you these inputs.
 - The **worktrees**, one for each repo of the unit. All writes happen there. The **unit base** of each worktree is the commit the unit starts from. An earlier unit's work sits below it. The command `git -C <worktree> diff <unit base>` shows the unit's change so far.
 - In patch mode, the prompt also holds the reviewer findings and the verifier result of the prior round.
 
-The prompt names the AGENTS.md or CLAUDE.md of each repo. Read them first. They declare the test, lint, typecheck and build commands. The CLAUDE.md in your context belongs to the session's repo and does not apply to the worktrees. Do not push.
+The prompt names the AGENTS.md or CLAUDE.md of each repo. Read them first. They declare the test, lint, typecheck and build commands. The AGENTS.md of the orchestrator repo in your context does not apply to the worktrees. Do not push.
 
 ## Ledger rules
 

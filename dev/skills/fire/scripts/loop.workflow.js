@@ -27,7 +27,8 @@ const maxRounds = args.maxRounds ?? 3
 const briefPath = `${args.skillDir}/references/implementer-brief.md`
 const startSpent = budget.spent()
 // The ceiling comes from args, because budget.total is set only by a user's own +Nk directive.
-const tokensLeft = () => args.ceiling - (budget.spent() - startSpent)
+// When budget.total is set, it also counts the pre-flight, so the smaller limit wins.
+const tokensLeft = () => Math.min(args.ceiling - (budget.spent() - startSpent), budget.total ? budget.remaining() : Infinity)
 
 const STRING_LIST = { type: 'array', items: { type: 'string' } }
 
@@ -117,7 +118,7 @@ function repoLines(repoNames, bases) {
 
 // The agents get the session repo's CLAUDE.md, not the target repo's. Name the right file in each prompt.
 function instructionFiles(repoNames) {
-  return `The CLAUDE.md in your context belongs to the session's repo. It does not apply here. Do not push. Read the instruction file of each repo first:\n${repoNames.map(n => `- ${n}: ${repoByName[n].root}/AGENTS.md or CLAUDE.md`).join('\n')}`
+  return `The AGENTS.md of the orchestrator repo in your context does not apply to the worktrees. Do not push. Read the instruction file of each repo first:\n${repoNames.map(n => `- ${n}: ${repoByName[n].root}/AGENTS.md or CLAUDE.md`).join('\n')}`
 }
 
 function unitHeader(unit) {
@@ -203,7 +204,7 @@ Report the grep as a command. Exit code 0 (a test file changed after the first c
 First run these checks, before any declared command, and report each one as a command. A non-empty output is a failure:
   git -C "${repo.worktree}" status --porcelain
   git -C "${repo.worktree}" diff ${bases[name]} | sed 's|^|${name}: |' | diff - <(grep '^${name}: ' "${diffFile}")
-Then read ${repo.root}/AGENTS.md or CLAUDE.md to find the declared test, lint, typecheck and build commands. Run each one in that directory. The CLAUDE.md in your context belongs to the session's repo, not to this one.
+Then read ${repo.root}/AGENTS.md or CLAUDE.md to find the declared test, lint, typecheck and build commands. Run each one in that directory. The AGENTS.md of the orchestrator repo in your context does not apply to this worktree.
 ${bugfixCheck}
 Put the output of git -C "${repo.worktree}" rev-parse HEAD in "head".
 Return only the JSON.`

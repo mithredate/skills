@@ -38,13 +38,13 @@ The **ledger** is the list of design-level constraints that the implementers and
 ## Pre-flight
 
 1. Read the ticket. The `## Brief` section holds the goal, the repos, the FR, the NFR, the verification, and the ponytail limits. If the ticket has no `## Brief` section, stop and ask the user for one. If a ticket in its `blocked-by` is open, stop and name it.
-2. Set `ceiling` from the `+<n>k` argument. If there is none, use the brief's Budget line. If neither has a ceiling, stop and ask the user for one. The script stops at the ceiling, so it is the hard stop of the run. It counts the output tokens of this turn, not the total tokens.
+2. Set `ceiling` from the `+<n>k` argument. If there is none, use the brief's Budget line. If neither has a ceiling, stop and ask the user for one. The script stops at the ceiling, so it is the hard stop of the run. It counts the output tokens from the start of the workflow, not the total tokens.
 3. The nodes `dev:pr-reviewer` and `dev:verifier` are agents of this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`. A session registers agents at its start.
 4. Set `runDir` to `.worktrees/fire-<ticket slug>` under the working directory, and make it. If git does not ignore `.worktrees/`, add it to `.git/info/exclude`. All worktrees go under `runDir`, so every write of the run stays inside the working directory.
 5. For each repo that the brief names:
    1. Run `git fetch origin`. Set `baseSha` to the output of `git rev-parse origin/<base>`, with the base branch from the brief's Repos line.
    2. Name the branch `feat/<ticket slug>`, or `fix/<ticket slug>` when the brief is a bugfix. If the repo's AGENTS.md or CLAUDE.md has a branch rule, follow it.
-   3. If the branch exists from an earlier run, keep its work. Run `git -C <repo root> worktree move <runDir>/<repo name> <runDir>/<repo name>-<timestamp>` and `git -C <repo root> branch -m <branch> <branch>-<timestamp>`.
+   3. If the branch exists from an earlier run, keep its work. Run `git -C <repo root> worktree prune`. If `<runDir>/<repo name>` exists, run `git -C <repo root> worktree move <runDir>/<repo name> <runDir>/<repo name>-<timestamp>`. Then run `git -C <repo root> branch -m <branch> <branch>-<timestamp>`. If `<runDir>/ledger.md` exists, rename it to `ledger-<timestamp>.md`.
    4. Run `git -C <repo root> worktree add -b <branch> <runDir>/<repo name> <baseSha>`.
    5. Set `graphPath` to `<repo root>/graphify-out/graph.json` when that file exists. Otherwise set it to `null`.
 6. Plan the units. A **unit** is the part of the brief that one implementer builds in one loop. Write the fewest units, because each round costs a lot of tokens and time. One unit for the whole brief is the default. Split only when one implementer cannot hold the work. Order the units so that a unit that serves a contract comes before a unit that calls it. Give each unit a name, its repos, and its `build` lines quoted verbatim from the brief. Every FR line goes into exactly one unit. Every NFR line goes into each unit that it limits.
