@@ -9,7 +9,7 @@ export const meta = {
 }
 
 // args, set by the skill's pre-flight:
-//   ticketPath, briefText, runDir, kind ('bugfix' | 'change'), implementerModel ('opus' | 'fable'),
+//   ticketPath, briefText, runDir, ceiling (output tokens), kind ('bugfix' | 'change'), implementerModel ('opus' | 'fable'),
 //   maxRounds, skillDir,
 //   repos: [{ name, root, worktree, branch, baseSha, graphPath (string | null) }],
 //   units: [{ name, build (verbatim brief lines), repos (repo names) }], in run order
@@ -26,6 +26,8 @@ const GATE_REVIEW_MODEL = 'fable'
 const maxRounds = args.maxRounds ?? 3
 const briefPath = `${args.skillDir}/references/implementer-brief.md`
 const startSpent = budget.spent()
+// The ceiling comes from args, because budget.total is set only by a user's own +Nk directive.
+const tokensLeft = () => args.ceiling - (budget.spent() - startSpent)
 
 const STRING_LIST = { type: 'array', items: { type: 'string' } }
 
@@ -75,9 +77,14 @@ const VERIFY_SCHEMA = {
       },
     },
     verdict: { type: 'string', enum: ['green', 'red', 'could_not_run'] },
-    head: { type: 'string', description: 'the HEAD commit of the worktree, for a repo verifier' },
   },
   required: ['commands', 'verdict'],
+}
+
+const REPO_VERIFY_SCHEMA = {
+  ...VERIFY_SCHEMA,
+  properties: { ...VERIFY_SCHEMA.properties, head: { type: 'string', description: 'the HEAD commit of the worktree' } },
+  required: [...VERIFY_SCHEMA.required, 'head'],
 }
 
 const SHA = /^[0-9a-f]{40}$/
@@ -106,6 +113,11 @@ function repoLines(repoNames, bases) {
   return repoNames
     .map(name => `- ${name}: worktree ${repoByName[name].worktree}, branch ${repoByName[name].branch}, unit base ${bases[name]}`)
     .join('\n')
+}
+
+// The agents get the session repo's CLAUDE.md, not the target repo's. Name the right file in each prompt.
+function instructionFiles(repoNames) {
+  return `The CLAUDE.md in your context belongs to the session's repo. It does not apply here. Do not push. Read the instruction file of each repo first:\n${repoNames.map(n => `- ${n}: ${repoByName[n].root}/AGENTS.md or CLAUDE.md`).join('\n')}`
 }
 
 function unitHeader(unit) {
@@ -145,6 +157,7 @@ ${JSON.stringify(findings.verify, null, 2)}\n`
 
 Repos of this unit (all writes happen in these worktrees):
 ${repoLines(unit.repos, bases)}
+${instructionFiles(unit.repos)}
 Kind of change: ${args.kind}
 
 Brief (from ${args.ticketPath}):
@@ -166,6 +179,7 @@ Then return the JSON your contract describes.`
 function reviewPrompt(header, repoNames, diffFile, scope) {
   return `Repos: ${repoNames.map(n => `${n} (${repoByName[n].root}, worktree ${repoByName[n].worktree})`).join(', ')}.
 The diff is in the file ${diffFile}. Each line starts with its repo name. Read that file first.
+${instructionFiles(repoNames)}
 Kind of change: ${args.kind}. There is no PR yet.
 
 Brief (from ${args.ticketPath}):
@@ -186,10 +200,10 @@ Also run this check. The first commit after the unit base must hold the failing 
 Report the grep as a command. Exit code 0 (a test file changed after the first commit) is a failure. Exit code 1 is a pass.`
     : ''
   return `Directory that holds the branch under review: ${repo.worktree}
-Read ${repo.root}/AGENTS.md or CLAUDE.md to find the declared test, lint, typecheck and build commands. Run each one in that directory.
-Also run these checks, and report each one as a command. A non-empty output is a failure:
+First run these checks, before any declared command, and report each one as a command. A non-empty output is a failure:
   git -C "${repo.worktree}" status --porcelain
   git -C "${repo.worktree}" diff ${bases[name]} | sed 's|^|${name}: |' | diff - <(grep '^${name}: ' "${diffFile}")
+Then read ${repo.root}/AGENTS.md or CLAUDE.md to find the declared test, lint, typecheck and build commands. Run each one in that directory. The CLAUDE.md in your context belongs to the session's repo, not to this one.
 ${bugfixCheck}
 Put the output of git -C "${repo.worktree}" rev-parse HEAD in "head".
 Return only the JSON.`
@@ -198,6 +212,7 @@ Return only the JSON.`
 function gateVerifyPrompt() {
   return `You verify. Do not edit a file in a worktree. Worktrees:
 ${args.repos.map(r => `- ${r.name}: ${r.worktree}`).join('\n')}
+${instructionFiles(args.repos.map(r => r.name))}
 
 Brief (from ${args.ticketPath}):
 ${args.briefText}
@@ -226,6 +241,9 @@ function result(status, extra) {
   }
 }
 
+if (unknownRepos.length) return result('plan_broken', { blocker: `a unit names a repo that is not in repos: ${unknownRepos.join(', ')}` })
+
+if (!(args.ceiling > 0)) return result('plan_broken', { blocker: 'args.ceiling is not a positive token count' })
 phase('Orient')
 const orientation = await agent(orientPrompt(), {
   label: 'orient',
@@ -244,8 +262,6 @@ const roundsReport = () => Object.entries(roundsByUnit).map(([name, n]) => `${na
 let roundCost = ROUND_ESTIMATE_TOKENS
 
 // ponytail: units run one after another, because two units can share a worktree. Run units with disjoint repos in parallel when wall-clock time matters.
-if (unknownRepos.length) return result('plan_broken', { blocker: `a unit names a repo that is not in repos: ${unknownRepos.join(', ')}` })
-
 phase('Units')
 for (const unit of args.units) {
   const bases = Object.fromEntries(unit.repos.map(name => [name, heads[name]]))
@@ -256,8 +272,8 @@ for (const unit of args.units) {
   let passed = false
 
   while (round < maxRounds) {
-    if (budget.total && budget.remaining() < roundCost) {
-      log(`ceiling: ${Math.round(budget.remaining() / 1000)}k left, a round costs about ${Math.round(roundCost / 1000)}k`)
+    if (tokensLeft() < roundCost) {
+      log(`ceiling: ${Math.round(tokensLeft() / 1000)}k left, a round costs about ${Math.round(roundCost / 1000)}k`)
       return result('budget', { unit: unit.name, rounds: roundsReport(), findings })
     }
     round++
@@ -291,7 +307,7 @@ for (const unit of args.units) {
     // A barrier is correct here. The verdict needs every result.
     const [review, ...verifies] = await parallel([
       () => agent(reviewPrompt(unitHeader(unit), unit.repos, diffFile, 'Judge scope against the Build lines above.'), { label: `review:${unit.name}`, phase: 'Units', agentType: 'dev:pr-reviewer', model: UNIT_REVIEW_MODEL, schema: REVIEW_SCHEMA }),
-      ...unit.repos.map(name => () => agent(verifyPrompt(name, bases, diffFile), { label: `verify:${unit.name}:${name}`, phase: 'Units', agentType: 'dev:verifier', model: REPO_VERIFY_MODEL, schema: VERIFY_SCHEMA })),
+      ...unit.repos.map(name => () => agent(verifyPrompt(name, bases, diffFile), { label: `verify:${unit.name}:${name}`, phase: 'Units', agentType: 'dev:verifier', model: REPO_VERIFY_MODEL, schema: REPO_VERIFY_SCHEMA })),
     ])
     if (!review || verifies.some(v => !v)) return result('agent_failed', { unit: unit.name, rounds: roundsReport(), findings, blocker: 'a reviewer returned nothing' })
     appendLedger(review.learnings, unit.name, round, 'pr-reviewer')
@@ -315,8 +331,8 @@ for (const unit of args.units) {
 }
 
 // ponytail: the gate escalates, it does not patch. Add a patch round on the gate when gate failures turn out to be small.
-if (budget.total && budget.remaining() < roundCost) {
-  log(`ceiling: ${Math.round(budget.remaining() / 1000)}k left before the gate`)
+if (tokensLeft() < roundCost) {
+  log(`ceiling: ${Math.round(tokensLeft() / 1000)}k left before the gate`)
   return result('budget', { rounds: roundsReport() })
 }
 
