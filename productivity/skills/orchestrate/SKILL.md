@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Use in a repo with a `.wayfinder/` directory, for work too big for one session, or on "chart", "cook", "close", or "prioritize".
+description: Use in a repo with `.wayfinder/`, to set one up, for work too big for one session, or on "chart", "cook", "close", or "prioritize".
 ---
 
 # Orchestrate

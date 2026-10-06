@@ -1,6 +1,6 @@
 ---
 name: import-skill
-description: Use when the user wants to vendor or import a skill from a GitHub repo into this marketplace.
+description: Use when the user wants to vendor a skill from a GitHub repo, such as mattpocock-skills or superpowers, into this marketplace.
 ---
 
 # Import Skill

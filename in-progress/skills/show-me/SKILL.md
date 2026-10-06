@@ -1,6 +1,6 @@
 ---
 name: show-me
-description: Use when the user asks to see, draw, or visualize something, or when a flow is hard to follow in prose.
+description: Use when the user asks to see, draw, diagram, or visualize the current topic.
 ---
 
 Help the user understand the current topic of conversation visually. Skip the preamble and keep prose brief. Pick the smallest view that makes the key point clear.

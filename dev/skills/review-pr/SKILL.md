@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Use when asked to review a PR or a branch, or to judge if a change is ready to merge.
+description: Use when asked to review a PR or a branch, to check the open PRs assigned to the user, or to judge if a change is ready to merge.
 argument-hint: "<PR number | branch> [--inline | --fresh]"
 ---
 

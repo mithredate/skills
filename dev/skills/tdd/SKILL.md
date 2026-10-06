@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Use when building a feature or fixing a bug test-first, or when the user mentions TDD or red-green-refactor.
+description: Use when building a feature or fixing a bug test-first, writing integration tests, or when the user mentions TDD or red-green-refactor.
 ---
 
 # Test-Driven Development

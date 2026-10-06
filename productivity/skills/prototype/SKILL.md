@@ -1,6 +1,6 @@
 ---
 name: prototype
-description: Use when throwaway code answers a logic, state, or UI design question faster than talk.
+description: Use when the user is unsure how a state model, logic, or UI must behave, and throwaway code can show it.
 ---
 
 # Prototype

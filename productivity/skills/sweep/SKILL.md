@@ -1,6 +1,6 @@
 ---
 name: sweep
-description: Use to check the PRs, issues, and threads linked from a `.wayfinder/` tracker, from `orchestrate` or `sup`, or on "sweep".
+description: Use when the user says "sweep", "check the PRs", or "what changed" in a `.wayfinder/` repo, or when `orchestrate` or `sup` calls it.
 ---
 
 # Sweep

@@ -1,6 +1,6 @@
 ---
 name: refresh-vendored
-description: Use when the user wants to check the vendored skills for upstream changes.
+description: Use when the user wants to check the vendored skills for upstream changes, or says "update from mattpocock".
 ---
 
 # Refresh Vendored Skills
