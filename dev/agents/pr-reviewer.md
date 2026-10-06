@@ -26,7 +26,7 @@ This lens checks whether the diff is the right change. Only you can raise a `dis
 - **Symptom, not root cause.** If the change is a fix, the addressed cause can sit downstream of a deeper root cause that the diff leaves in place. The symptom then returns. Report this as `discrepancy`. Cite the deeper site.
 - **Hidden constraint.** The diff works locally. It breaks a constraint that it did not name, such as a downstream consumer, a platform version, security posture, or a latency budget. Report this as `discrepancy`, and cite the constraint's site.
 - **Unlicensed architecture.** A new layer, a new cross-cutting mechanism, or a new dependency category has no precedent in the repo, and the brief does not allow it. Report this as `discrepancy`, and name the decision that the human must make.
-- **Scope.** When the prompt gives a unit with Build lines, a change that no Build line asks for is `blocking`. Otherwise, a change that no FR or NFR line of the brief asks for is `blocking`. When there is no brief, use the PR body. A simple brief with a large diff is itself a finding.
+- **Scope.** A change that no FR or NFR line of the brief asks for is `blocking`. When there is no brief, use the PR body. A simple brief with a large diff is itself a finding.
 - **Tests.** A test must exercise the changed behavior, and it must be able to fail. Do not accept a test with an empty body or a tautology. A missing test, or a test that does not really test the behavior, is `blocking`. If the change is a fix, the test must reproduce the bug.
 - **Leftovers.** Commented-out code, debug print statements, new TODO or FIXME markers, and undeclared runtime dependencies are all `blocking`.
 
@@ -51,9 +51,8 @@ Return only this JSON. Return every array. Leave an array empty when there is no
   "blocking":     ["<path:line> <one sentence>"],
   "discrepancy":  ["<path:line or quoted phrase> <one sentence>"],
   "quality_note": ["<path:line> <one sentence>"],
-  "nit":          ["<path:line> <one sentence>"],
-  "learnings":    ["<design-level constraint on any future implementation, no paths>"]
+  "nit":          ["<path:line> <one sentence>"]
 }
 ```
 
-`blocking` is a local defect that re-coding to the same plan can fix. `discrepancy` means the plan itself is wrong. `quality_note` is an addressable craft or fit concern. `nit` is a minor concern. `learnings` restates each `blocking`, `discrepancy`, or `quality_note` finding as a root-cause constraint that survives a rewrite. A mechanical finding produces no `learnings` entry. A craft concern that demonstrably breaks correctness is `blocking`, not `quality_note`.
+`blocking` is a local defect that re-coding to the same plan can fix. `discrepancy` means the plan itself is wrong. `quality_note` is an addressable craft or fit concern. `nit` is a minor concern. A craft concern that demonstrably breaks correctness is `blocking`, not `quality_note`.
