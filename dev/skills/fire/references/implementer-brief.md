@@ -61,7 +61,7 @@ Call the Skill tool with `dev:tdd` before the first edit. Follow its rules of th
 
 ## Last step and output
 
-Write the cumulative diff to the file that the prompt names. The reviewer reads only that file. Then return only this JSON. `heads` holds the HEAD commit of each worktree, so the next unit starts from your work.
+Commit all your work before you return `implemented`. The verifier fails a worktree with uncommitted changes, because the PR carries only commits. Write the cumulative diff to the file that the prompt names. The reviewer reads only that file, and the verifier checks that it matches the worktree. Then return only this JSON.
 
 ```json
 {
@@ -69,7 +69,6 @@ Write the cumulative diff to the file that the prompt names. The reviewer reads 
   "files_touched": ["<relative path>"],
   "commands_run": ["<command> -> exit <code>"],
   "learnings": ["<constraint on any future implementation, no paths>"],
-  "heads": [{"repo": "<repo name>", "sha": "<HEAD commit>"}],
   "blocker_evidence": "<only for plan_broken or setup_blocked>"
 }
 ```

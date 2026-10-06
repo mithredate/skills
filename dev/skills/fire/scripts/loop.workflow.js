@@ -42,17 +42,9 @@ const IMPLEMENTER_SCHEMA = {
     files_touched: STRING_LIST,
     commands_run: STRING_LIST,
     learnings: STRING_LIST,
-    heads: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { repo: { type: 'string' }, sha: { type: 'string' } },
-        required: ['repo', 'sha'],
-      },
-    },
     blocker_evidence: { type: 'string' },
   },
-  required: ['outcome', 'files_touched', 'commands_run', 'learnings', 'heads'],
+  required: ['outcome', 'files_touched', 'commands_run', 'learnings'],
 }
 
 const REVIEW_SCHEMA = {
@@ -83,11 +75,15 @@ const VERIFY_SCHEMA = {
       },
     },
     verdict: { type: 'string', enum: ['green', 'red', 'could_not_run'] },
+    head: { type: 'string', description: 'the HEAD commit of the worktree, for a repo verifier' },
   },
   required: ['commands', 'verdict'],
 }
 
+const SHA = /^[0-9a-f]{40}$/
+
 const repoByName = Object.fromEntries(args.repos.map(r => [r.name, r]))
+const unknownRepos = args.units.flatMap(u => u.repos.filter(name => !repoByName[name]).map(name => `${u.name}: ${name}`))
 
 // The ledger is append-only and verbatim, shared by all units. The only edit is to drop an exact duplicate.
 const ledger = []
@@ -117,7 +113,7 @@ function unitHeader(unit) {
   return `Unit: ${unit.name}
 Build (your scope, quoted from the brief):
 ${unit.build}
-${others.length ? `Other units build these lines. Do not build them:\n${others.map(u => `- ${u.name}: ${u.build.split('\n')[0]} ...`).join('\n')}` : 'This unit builds the whole brief.'}`
+${others.length ? `Other units build these lines. Do not build them, and do not report them as missing:\n${others.map(u => `- ${u.name}:\n${u.build}`).join('\n')}` : 'This unit builds the whole brief.'}`
 }
 
 function orientPrompt() {
@@ -164,10 +160,10 @@ ${ledgerText()}
 ${patchBlock}
 Last step, always: write the cumulative diff of this unit with
   ${diffCommand(unit.repos, bases, diffFile)}
-Then return the JSON your contract describes, with the HEAD commit of each worktree in "heads".`
+Then return the JSON your contract describes.`
 }
 
-function reviewPrompt(header, repoNames, diffFile) {
+function reviewPrompt(header, repoNames, diffFile, scope) {
   return `Repos: ${repoNames.map(n => `${n} (${repoByName[n].root}, worktree ${repoByName[n].worktree})`).join(', ')}.
 The diff is in the file ${diffFile}. Each line starts with its repo name. Read that file first.
 Kind of change: ${args.kind}. There is no PR yet.
@@ -177,10 +173,10 @@ ${args.briefText}
 
 ${header}
 
-Judge scope against the Build lines above. Check the seams between repos: a contract that one repo serves and another calls must match on both sides. Apply both lenses from your system prompt. Return only the JSON.`
+${scope} Check the seams between repos: a contract that one repo serves and another calls must match on both sides. Apply both lenses from your system prompt. Return only the JSON.`
 }
 
-function verifyPrompt(name, bases) {
+function verifyPrompt(name, bases, diffFile) {
   const repo = repoByName[name]
   const bugfixCheck = args.kind === 'bugfix'
     ? `
@@ -191,12 +187,16 @@ Report the grep as a command. Exit code 0 (a test file changed after the first c
     : ''
   return `Directory that holds the branch under review: ${repo.worktree}
 Read ${repo.root}/AGENTS.md or CLAUDE.md to find the declared test, lint, typecheck and build commands. Run each one in that directory.
+Also run these checks, and report each one as a command. A non-empty output is a failure:
+  git -C "${repo.worktree}" status --porcelain
+  git -C "${repo.worktree}" diff ${bases[name]} | sed 's|^|${name}: |' | diff - <(grep '^${name}: ' "${diffFile}")
 ${bugfixCheck}
+Put the output of git -C "${repo.worktree}" rev-parse HEAD in "head".
 Return only the JSON.`
 }
 
 function gateVerifyPrompt() {
-  return `You verify. You never edit a file. Worktrees:
+  return `You verify. Do not edit a file in a worktree. Worktrees:
 ${args.repos.map(r => `- ${r.name}: ${r.worktree}`).join('\n')}
 
 Brief (from ${args.ticketPath}):
@@ -239,10 +239,13 @@ if (!orientation) log('orientation returned nothing, the implementer explores on
 
 const runBases = Object.fromEntries(args.repos.map(r => [r.name, r.baseSha]))
 const heads = { ...runBases }
-const roundsPerUnit = []
+const roundsByUnit = {}
+const roundsReport = () => Object.entries(roundsByUnit).map(([name, n]) => `${name}: ${n}`)
 let roundCost = ROUND_ESTIMATE_TOKENS
 
 // ponytail: units run one after another, because two units can share a worktree. Run units with disjoint repos in parallel when wall-clock time matters.
+if (unknownRepos.length) return result('plan_broken', { blocker: `a unit names a repo that is not in repos: ${unknownRepos.join(', ')}` })
+
 phase('Units')
 for (const unit of args.units) {
   const bases = Object.fromEntries(unit.repos.map(name => [name, heads[name]]))
@@ -255,9 +258,10 @@ for (const unit of args.units) {
   while (round < maxRounds) {
     if (budget.total && budget.remaining() < roundCost) {
       log(`ceiling: ${Math.round(budget.remaining() / 1000)}k left, a round costs about ${Math.round(roundCost / 1000)}k`)
-      return result('budget', { unit: unit.name, rounds: roundsPerUnit, findings })
+      return result('budget', { unit: unit.name, rounds: roundsReport(), findings })
     }
     round++
+    roundsByUnit[unit.name] = round
     const roundsLeft = round < maxRounds
     const spentBefore = budget.spent()
     log(`${unit.name} round ${round}: ${mode}`)
@@ -269,15 +273,15 @@ for (const unit of args.units) {
       model: args.implementerModel,
       schema: IMPLEMENTER_SCHEMA,
     })
-    if (!impl) return result('agent_failed', { unit: unit.name, rounds: roundsPerUnit, findings, blocker: 'implementer returned nothing' })
+    if (!impl) return result('agent_failed', { unit: unit.name, rounds: roundsReport(), findings, blocker: 'implementer returned nothing' })
     appendLedger(impl.learnings, unit.name, round, 'implementer')
 
     if (impl.outcome === 'plan_broken' || impl.outcome === 'setup_blocked') {
-      return result(impl.outcome, { unit: unit.name, rounds: roundsPerUnit, findings, blocker: impl.blocker_evidence ?? '' })
+      return result(impl.outcome, { unit: unit.name, rounds: roundsReport(), findings, blocker: impl.blocker_evidence ?? '' })
     }
     if (impl.outcome === 'learned') {
       log(`${unit.name} round ${round}: learned, code discarded`)
-      if (!roundsLeft) return result('escalate', { unit: unit.name, rounds: roundsPerUnit, findings, blocker: 'last round ended in learned' })
+      if (!roundsLeft) return result('escalate', { unit: unit.name, rounds: roundsReport(), findings, blocker: 'last round ended in learned' })
       mode = 'fresh'
       findings = null
       roundCost = Math.max(roundCost, budget.spent() - spentBefore)
@@ -286,30 +290,36 @@ for (const unit of args.units) {
 
     // A barrier is correct here. The verdict needs every result.
     const [review, ...verifies] = await parallel([
-      () => agent(reviewPrompt(unitHeader(unit), unit.repos, diffFile), { label: `review:${unit.name}`, phase: 'Units', agentType: 'dev:pr-reviewer', model: UNIT_REVIEW_MODEL, schema: REVIEW_SCHEMA }),
-      ...unit.repos.map(name => () => agent(verifyPrompt(name, bases), { label: `verify:${unit.name}:${name}`, phase: 'Units', agentType: 'dev:verifier', model: REPO_VERIFY_MODEL, schema: VERIFY_SCHEMA })),
+      () => agent(reviewPrompt(unitHeader(unit), unit.repos, diffFile, 'Judge scope against the Build lines above.'), { label: `review:${unit.name}`, phase: 'Units', agentType: 'dev:pr-reviewer', model: UNIT_REVIEW_MODEL, schema: REVIEW_SCHEMA }),
+      ...unit.repos.map(name => () => agent(verifyPrompt(name, bases, diffFile), { label: `verify:${unit.name}:${name}`, phase: 'Units', agentType: 'dev:verifier', model: REPO_VERIFY_MODEL, schema: VERIFY_SCHEMA })),
     ])
-    if (!review || verifies.some(v => !v)) return result('agent_failed', { unit: unit.name, rounds: roundsPerUnit, findings, blocker: 'a reviewer returned nothing' })
+    if (!review || verifies.some(v => !v)) return result('agent_failed', { unit: unit.name, rounds: roundsReport(), findings, blocker: 'a reviewer returned nothing' })
     appendLedger(review.learnings, unit.name, round, 'pr-reviewer')
     findings = { review, verify: verifies }
     roundCost = Math.max(roundCost, budget.spent() - spentBefore)
 
     const v = verdict(review, verifies, roundsLeft)
     log(`${unit.name} round ${round}: ${v} (discrepancy ${review.discrepancy.length}, blocking ${review.blocking.length}, verifiers ${verifies.map(x => x.verdict).join('/')}, quality ${review.quality_note.length})`)
-    if (v === 'escalate') return result('escalate', { unit: unit.name, rounds: roundsPerUnit, findings })
+    if (v === 'escalate') return result('escalate', { unit: unit.name, rounds: roundsReport(), findings })
     if (v === 'pass') {
-      for (const h of impl.heads) heads[h.repo] = h.sha
+      const badHead = unit.repos.find((name, i) => !SHA.test(verifies[i].head ?? ''))
+      if (badHead) return result('agent_failed', { unit: unit.name, rounds: roundsReport(), findings, blocker: `the verifier of ${badHead} returned no HEAD commit` })
+      unit.repos.forEach((name, i) => { heads[name] = verifies[i].head })
       passed = true
       break
     }
     mode = v === 'reset' ? 'fresh' : 'patch'
     if (v === 'reset') findings = null
   }
-  roundsPerUnit.push(`${unit.name}: ${round}`)
-  if (!passed) return result('escalate', { unit: unit.name, rounds: roundsPerUnit, findings, blocker: 'round cap reached' })
+  if (!passed) return result('escalate', { unit: unit.name, rounds: roundsReport(), findings, blocker: 'round cap reached' })
 }
 
 // ponytail: the gate escalates, it does not patch. Add a patch round on the gate when gate failures turn out to be small.
+if (budget.total && budget.remaining() < roundCost) {
+  log(`ceiling: ${Math.round(budget.remaining() / 1000)}k left before the gate`)
+  return result('budget', { rounds: roundsReport() })
+}
+
 phase('Gate')
 const allRepos = args.repos.map(r => r.name)
 const fullDiff = `${args.runDir}/full.diff`
@@ -318,15 +328,15 @@ const gateVerify = await agent(
   `First write the whole diff with\n  ${diffCommand(allRepos, runBases, fullDiff)}\n\n${gateVerifyPrompt()}`,
   { label: 'gate:verify', phase: 'Gate', agentType: 'general-purpose', model: GATE_VERIFY_MODEL, schema: VERIFY_SCHEMA },
 )
-if (!gateVerify) return result('agent_failed', { rounds: roundsPerUnit, blocker: 'the gate verifier returned nothing' })
+if (!gateVerify) return result('agent_failed', { rounds: roundsReport(), blocker: 'the gate verifier returned nothing' })
 const gateReview = args.units.length > 1
   ? await agent(
-    reviewPrompt('Whole change: all units together. Scope is the FR and NFR lines of the brief.', allRepos, fullDiff),
+    reviewPrompt('Whole change: all units together.', allRepos, fullDiff, 'Judge scope against the FR and NFR lines of the brief.'),
     { label: 'gate:review', phase: 'Gate', agentType: 'dev:pr-reviewer', model: GATE_REVIEW_MODEL, schema: REVIEW_SCHEMA },
   )
   : null
-if (args.units.length > 1 && !gateReview) return result('agent_failed', { rounds: roundsPerUnit, blocker: 'the gate reviewer returned nothing' })
+if (args.units.length > 1 && !gateReview) return result('agent_failed', { rounds: roundsReport(), blocker: 'the gate reviewer returned nothing' })
 const gateFindings = { review: gateReview ?? null, verify: [gateVerify] }
 const gateRed = gateVerify.verdict !== 'green' || (gateReview && (gateReview.discrepancy.length || gateReview.blocking.length))
-if (gateRed) return result('gate_failed', { rounds: roundsPerUnit, findings: gateFindings })
-return result('pass', { rounds: roundsPerUnit, findings: gateFindings })
+if (gateRed) return result('gate_failed', { rounds: roundsReport(), findings: gateFindings })
+return result('pass', { rounds: roundsReport(), findings: gateFindings })
