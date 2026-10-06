@@ -50,7 +50,7 @@ A ticket is `tickets/<id>.md`. The tracker fields live in its frontmatter. The b
 | resolution comment | a `## Resolution` section appended on close, plus one gist line under the map's Decisions so far |
 | linked assets | files under `assets/`, linked from the ticket |
 | hand-off | a build `task` ticket whose body is a `## Brief` section, with `skills: [dev:fire]`. The resolution on close links the PRs |
-| human step | a `gate` ticket whose body is a `## Step` checklist. `assignee:` names the human who owns it |
+| human step | a `gate` ticket whose body is a `## Step` checklist. `owner:` names the human who owns it. `assignee:` stays empty |
 | skills to load | `skills: [<plugin>:<skill>, ...]`, set when the ticket is written, from its type and the map's Notes |
 
 The `skills:` field is required. When an agent claims the ticket, the `productivity` plugin hook names these skills to the agent. A skill list in prose is skipped about half the time, and the hook is not.
@@ -65,11 +65,12 @@ When a change happens to a map, ticket, or asset, commit and push it. Concurrent
 - Goal: <what is true when the session hands back>
 - Repos: <each repo and its base branch. The session picks the branches, the PRs, and the order>
 - Read first: <code and decisions to read, with what to copy and what not to copy. A hint, not a scope limit. Optional>
-- FR: <what it must do>
-- NFR: <limits: security, performance, placement, allowed new dependencies, ...>
+- FR: <what it must do, one sub-bullet for each requirement>
+- NFR: <limits, one sub-bullet for each limit: security, performance, placement, allowed new dependencies, ...>
 - Verification: <how the session proves it, with real commands and data. For a bugfix, the failing test first>
 - Safe to deploy when: <the checks that pass before the hand-back>
 - Ponytail: <what stays unbuilt>
+- Budget: <the `+<n>k` output-token ceiling of the `fire` run>
 - Hand back: <the PRs, each named after this ticket by title and path, and the evidence>
 ```
 

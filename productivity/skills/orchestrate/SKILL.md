@@ -7,7 +7,7 @@ description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/`
 
 An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad` and `productivity:sweep` first.
 
-An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. The map is done when nothing is left to decide before someone builds the thing. If you feel the pull to do the work, you are at the edge of the map. Hand off with build and gate tickets.
+An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of tickets. Most tickets are **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. When nothing is left to decide, the map hands off the build as build tickets and gate tickets. If you feel the pull to do the work in this session, write a build ticket.
 
 The file format of the index, the map, and the tickets is in [references/local-markdown-tracker.md](references/local-markdown-tracker.md). The map body, the ticket types, the unspecified questions, and the out-of-scope rules are in [references/map.md](references/map.md). Read both before you chart a map or work a ticket.
 
@@ -51,7 +51,7 @@ A session that names no map works the `active` row. Work one ticket in each sess
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Take the first frontier ticket that is not a `gate`, or the ticket that the user names. Claim it before any other work. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
 3. When you claim the ticket, a hook names the skills in its `skills:` field. Call the Skill tool with each of them before your next tool call. A skill that you know only by its name is not loaded. Then resolve the ticket. The step is done when the Skill tool has returned each skill and the ticket has a resolution.
-4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far.
+4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. A build ticket closes only when `dev:fire` returns `pass`, and its resolution links the PRs. If `fire` returns another status, record the status and the blocker, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. Then go to step 5. Add one gist line under the map's Decisions so far.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting <who> since <date> (<link>)`.
