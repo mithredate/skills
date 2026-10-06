@@ -68,7 +68,7 @@ Write one table. It has one row for each live link whose state is different from
 | [Subscription spec PR](https://github.com/org/repo/pull/12) | waiting Amin since 2026-10-03 | approved 2026-10-04 | index row, status `open` |
 | `acme.atlassian.net` | not in `sources.md` | Jira issues, Live `yes` | `sources.md` |
 
-For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. An open ticket with no `skills:` field also gets a row, with the place "ticket frontmatter". A live link whose state matches the record gets no row. After the table, give the number of links checked. Then list each link marked "not checked" or "check by hand".
+For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked. Then list each link marked "not checked" or "check by hand".
 
 - In write mode, write each row to its place. The step is done when each row is written.
 - In report mode, print the table and write nothing.

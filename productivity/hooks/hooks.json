@@ -1,5 +1,5 @@
 {
-  "description": "When an agent claims an orchestrator ticket, name the skills in the ticket's skills field, so the agent loads them before it works the ticket.",
+  "description": "When an agent claims an orchestrator ticket that holds a brief, tell the agent to load dev:fire before it works the ticket.",
   "hooks": {
     "PostToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-ticket-skills.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-fire-on-brief.mjs\""
           }
         ]
       }
