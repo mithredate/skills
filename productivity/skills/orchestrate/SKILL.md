@@ -78,7 +78,14 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 
 ## Hand-off: the brief
 
-A task ticket whose answer is "build this in repo X" ends its resolution with a **brief**. The brief is the whole input an implementer reads from the ticket file, with no transcript. It holds repo and branch, files, order, tests, FR and NFR, and ponytail limits. The PR names the ticket. Read the tracker reference for the exact format.
+A ticket whose answer is "build this" ends its resolution with one **brief** for each phase. A **phase** is the agent work between two human steps. A human step is a setup that the agent cannot do, a review, a deploy, or a check that only a human can make.
+
+- Split a brief only at a human step. A phase can span more than one repo.
+- The brief gives context, not steps. The session that takes the brief picks the agents, the order of work, the branches, and the PRs.
+- Before you write a brief, collect each fact that the session needs to build and verify the change. Examples are test data, reviewer names, and access. Do not leave a question for a human to answer after the build.
+- A brief with an open question is not ready. Mark the open line `OPEN`, and settle it before the session starts.
+
+The brief is the whole input that the session reads from the ticket file, with no transcript. Each PR names the ticket. Read the tracker reference for the fields.
 
 ---
 _Originally seeded from [mattpocock/skills/skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/wayfinder) — MIT © 2026 Matt Pocock._

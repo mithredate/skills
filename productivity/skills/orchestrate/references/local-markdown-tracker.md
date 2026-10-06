@@ -49,7 +49,7 @@ A ticket is `tickets/<id>.md`. The tracker fields live in its frontmatter. The b
 | frontier | `status: open`, empty `assignee`, every `blocked-by` id closed |
 | resolution comment | a `## Resolution` section appended on close, plus one gist line under the map's Decisions so far |
 | linked assets | files under `assets/`, linked from the ticket |
-| hand-off | a `## Brief` section, placed after the resolution section |
+| hand-off | one `## Brief: <phase>` section for each phase, in phase order, placed after the resolution section |
 | skills to load | `skills: [<plugin>:<skill>, ...]`, set when the ticket is written, from its type and the map's Notes |
 
 The `skills:` field is required. When an agent claims the ticket, the `productivity` plugin hook names these skills to the agent. A skill list in prose is skipped about half the time, and the hook is not.
@@ -59,14 +59,18 @@ When a change happens to a map, ticket, or asset, commit and push it. Concurrent
 ## Brief
 
 ```
-## Brief
+## Brief: <phase>
 
-- Repo and branch: `<repo>`, `feat/<slug>` off `main`
-- Files: <paths to touch; anything outside needs a question first>
-- Order: 1. <step> 2. <step>
-- Tests: <what proves it; for a bugfix, the failing test first>
+- Goal: <what is true when the session hands back>
+- Ready when: <the human steps that are done before the session starts>
+- Repos: <each repo and its base branch. The session picks the branches, the PRs, and the order>
+- Read first: <code and decisions to read. A hint, not a scope limit. Optional>
 - FR: <what it must do>
-- NFR: <limits: performance, security, dependency pins, ...>
+- NFR: <limits: security, performance, placement, allowed new dependencies, ...>
+- Verification: <how the session proves it, with real commands and data. For a bugfix, the failing test first>
+- Safe to deploy when: <the checks that pass before the hand-back>
 - Ponytail: <what stays unbuilt>
-- PR: names this ticket by title and path
+- Hand back: <the PRs, each named after this ticket by title and path, the evidence, and the next human step>
 ```
+
+The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.

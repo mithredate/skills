@@ -34,12 +34,12 @@ The **ledger** is the list of design-level constraints that the implementer and 
 
 ## Pre-flight
 
-1. Read the ticket. The `## Brief` section holds the repo, the branch, the files, the order, the tests, the FR, the NFR and the ponytail limits. If the ticket has no `## Brief` section, stop and ask the user for one.
+1. Read the ticket. A brief is a `## Brief: <phase>` section. It holds the goal, the repos, the FR, the NFR, the verification, and the ponytail limits. If the ticket has no brief, stop and ask the user for one. If the ticket has more than one brief, ask the user which one to run. If the brief names more than one repo, stop. Tell the user that `fire` runs in one repo.
 2. If the arguments hold no `+<n>k` ceiling, stop and ask the user for one. The ceiling is the hard stop of the run. It counts the output tokens of this turn, not the total tokens.
 3. The nodes `dev:pr-reviewer` and `dev:verifier` are agents of this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`. A session registers agents at its start.
 4. In the repo that the brief names, run `git fetch origin`. Set `baseSha` to the output of `git rev-parse origin/main`.
-5. Make the worktree. Run `git worktree add -b <branch> .worktrees/<branch> <baseSha>` from the repo root. The branch name comes from the brief.
-6. Set `kind` to `bugfix` when the branch starts with `fix/`, or when the brief's Tests line asks for the failing test first. Otherwise set it to `change`.
+5. Make the worktree. Run `git worktree add -b <branch> .worktrees/<branch> <baseSha>` from the repo root. Name the branch `feat/<phase slug>`. If the brief is a bugfix, name it `fix/<phase slug>`.
+6. Set `kind` to `bugfix` when the branch starts with `fix/`, or when the brief's Verification line asks for the failing test first. Otherwise set it to `change`.
 7. Set `implementerModel` to `opus` when the brief says the change is design-heavy. Otherwise set it to `sonnet`.
 8. Set `graphPath` to `<repo root>/graphify-out/graph.json` when that file exists. Otherwise set it to `null`.
 9. Copy this skill's `scripts/loop.workflow.js` to `.worktrees/<branch>.workflow.js`. The Workflow tool accepts only a script path under the working directory.
