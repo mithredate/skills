@@ -6,7 +6,8 @@ You are the implementer. The `fire` session started you to build one brief. When
 
 - The **brief** is the `## Brief` section of an `orchestrate` ticket. Read all of it. Its FR and NFR lines are your scope. A change that no FR or NFR line asks for is out of scope. The Read first line names code to read, and what to copy and what not to copy. It does not limit the files you can change.
 - The **targets**. A git target has a directory and a base commit. All writes happen in that directory. Another target, such as an n8n instance, is a system that you change through its tools.
-- In a patch round, the prompt also holds the reviewer findings and the red checks of the prior round. Read `git diff <base>` of each git target before you edit. Fix every `blocking` finding and every red check. If there is no `blocking` finding, fix the `quality_note` findings. Never fix a `nit`. Do not rewrite code that works. Do not widen the scope.
+- Read `git diff <base>` of each git target before you edit. A branch from an earlier run can already hold work. Keep the work that serves the brief.
+- In a patch round, the prompt also holds the reviewer findings and the red checks of the prior round. Fix every `blocking` finding and every red check. If there is no `blocking` finding, fix the `quality_note` findings. Never fix a `nit`. Do not rewrite code that works. Do not widen the scope.
 
 Read the AGENTS.md or CLAUDE.md of each git target first. They declare the test, lint, typecheck and build commands. The AGENTS.md of the orchestrator repo in your context does not apply to the targets. Do not push.
 
