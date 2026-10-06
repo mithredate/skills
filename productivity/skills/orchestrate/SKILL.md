@@ -7,7 +7,7 @@ description: Runs an orchestrator repo, a planning-only repo whose `.wayfinder/`
 
 An **orchestrator repo** plans the work. The sibling repos it plans for hold the implementation. Call the Skill tool with `personal:work-like-mehrdad` and `productivity:sweep` first.
 
-An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. The map is done when nothing is left to decide before someone builds the thing. If you feel the pull to do the work, you are at the edge of the map. Hand off with a brief.
+An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. The map is done when nothing is left to decide before someone builds the thing. If you feel the pull to do the work, you are at the edge of the map. Hand off with build and gate tickets.
 
 The file format of the index, the map, and the tickets is in [references/local-markdown-tracker.md](references/local-markdown-tracker.md). The map body, the ticket types, the unspecified questions, and the out-of-scope rules are in [references/map.md](references/map.md). Read both before you chart a map or work a ticket.
 
@@ -49,7 +49,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 A session that names no map works the `active` row. Work one ticket in each session. Research tickets are the exception.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Take the first frontier ticket, or the ticket that the user names. Claim it before any other work.
+2. Take the first frontier ticket that is not a `gate`, or the ticket that the user names. Claim it before any other work. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
 3. When you claim the ticket, a hook names the skills in its `skills:` field. Call the Skill tool with each of them before your next tool call. A skill that you know only by its name is not loaded. Then resolve the ticket. The step is done when the Skill tool has returned each skill and the ticket has a resolution.
 4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
@@ -76,19 +76,19 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory with `git rm`. Git history keeps every ticket.
 3. Commit and push.
 
-## Hand-off: the brief
+## Hand-off: build and gate tickets
 
-A ticket whose answer is "build this" ends its resolution with one **brief** for each phase. A **phase** is the agent work between two human steps. A human step is a setup that the agent cannot do, a review, a deploy, or a check that only a human can make.
+When the decisions for a change are made, write the build as `task` tickets and each human step as a `gate` ticket. Connect them with `blocked-by` edges.
 
-- Split a brief only at a human step. A phase can span more than one repo.
-- Write the fewest phases. If a human can do a setup before the session starts, put it in Ready when. Do not split for it.
-- The Hand back of one phase and the Ready when of the next phase name the same human step.
-- The brief gives context, not steps. The session that takes the brief picks the agents, the order of work, the branches, and the PRs.
-- Before you write a brief, collect each fact that the session needs to build and verify the change. Examples are test data, reviewer names, and access. Do not leave a question for a human to answer after the build.
-- A brief with an open question is not ready. Mark the open line `OPEN`, and settle it before the session starts.
-- If a fact contradicts a closed decision, mark the line `OPEN` and name the decision. The owner of the decision settles it before the session starts.
+- A **gate** ticket is one human step: a setup that the agent cannot do, a review, a deploy, or a check that only a human can make.
+- A build `task` ticket holds one **brief**. The brief is the whole input of one session, with no transcript. `dev:fire` takes the brief, and plans, implements, and verifies it.
+- A brief holds no human step. A session runs it from start to end when every ticket in its `blocked-by` is closed.
+- Split the build only at a gate. Write the fewest build tickets. A brief can span more than one repo.
+- The brief gives context, not steps. The session picks the agents, the order of work, the branches, and the PRs.
+- Before you write a brief, collect each fact that the session needs to build and verify the change. Examples are test data, reviewer names, and access.
+- If a question needs a human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 
-The brief is the whole input that the session reads from the ticket file, with no transcript. Each PR names the ticket. Read the tracker reference for the fields.
+Read the tracker reference for the brief fields and the gate format.
 
 ---
 _Originally seeded from [mattpocock/skills/skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/wayfinder) — MIT © 2026 Matt Pocock._

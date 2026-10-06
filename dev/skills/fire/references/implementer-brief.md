@@ -15,7 +15,7 @@ A failure is to try approach after approach without a record of what you learned
 
 The prompt gives you these inputs.
 
-- The **brief** is a `## Brief: <phase>` section of an `orchestrate` ticket. It holds the goal, the repos, the FR, the NFR, the verification, and the ponytail limits. Its FR and NFR are your scope. A change that no FR or NFR line asks for is out of scope. The Read first line names code to read. It does not limit the files you can change.
+- The **brief** is the `## Brief` section of an `orchestrate` ticket. It holds the goal, the repos, the FR, the NFR, the verification, and the ponytail limits. Its FR and NFR are your scope. A change that no FR or NFR line asks for is out of scope. The Read first line names code to read. It does not limit the files you can change.
 - The **digest** is a short orientation from a read-only agent. It holds pointers, not content. Read the files yourself.
 - The **ledger** holds numbered constraints from earlier rounds. It is empty in the first round of a new run.
 - The **mode** is `fresh` or `patch`.

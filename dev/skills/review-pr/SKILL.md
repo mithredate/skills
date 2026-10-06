@@ -13,7 +13,7 @@ Review stance, order of findings, and the verify-don't-trust rule come from `per
 ## Gather
 
 1. Run `gh pr view <n> --json title,body,author,baseRefName,headRefName`. Write the diff to a file with `gh pr diff <n> > <scratch>/pr-<n>.diff`. When there is no PR for the branch, use `git diff main...<branch>` instead. A reviewer reads this file.
-2. The brief is the `orchestrate` ticket that the PR body names. Read the `## Brief: <phase>` section that the PR body names. If the PR body names no phase, read the brief whose Repos line names this repo. When there is no brief, the intent comes from the PR body and the Jira ticket named in the title or branch. Use the Atlassian MCP to get the Jira ticket.
+2. The brief is the `orchestrate` ticket that the PR body names. Read its `## Brief` section. When there is no brief, the intent comes from the PR body and the Jira ticket named in the title or branch. Use the Atlassian MCP to get the Jira ticket.
 3. Check the kind of PR. A `fix` prefix or a bug ticket makes it a **bugfix**. If the PR is a bugfix, write down the root cause that the diff implies before you judge the fix. A fix that only addresses a symptom is a `discrepancy`.
 
 ## Choose the mode

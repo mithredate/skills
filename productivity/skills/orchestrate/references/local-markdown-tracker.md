@@ -42,14 +42,15 @@ A ticket is `tickets/<id>.md`. The tracker fields live in its frontmatter. The b
 |---|---|
 | destination | the Destination section of `map.md`, whose last sentence starts with "Closes when" |
 | ticket id, title | `id: <prefix>-<nn>`, `title:` |
-| ticket type | `type: research`, `prototype`, `grilling`, or `task` |
+| ticket type | `type: research`, `prototype`, `grilling`, `task`, or `gate` |
 | open / closed | `status: open` / `status: closed` |
 | claimed by | `assignee:`, empty if unclaimed |
 | blocked by | `blocked-by: [<id>, ...]` |
 | frontier | `status: open`, empty `assignee`, every `blocked-by` id closed |
 | resolution comment | a `## Resolution` section appended on close, plus one gist line under the map's Decisions so far |
 | linked assets | files under `assets/`, linked from the ticket |
-| hand-off | one `## Brief: <phase>` section for each phase, in phase order, placed after the resolution section |
+| hand-off | a build `task` ticket whose body is a `## Brief` section, with `skills: [dev:fire]`. The resolution on close links the PRs |
+| human step | a `gate` ticket whose body is a `## Step` checklist. `assignee:` names the human who owns it |
 | skills to load | `skills: [<plugin>:<skill>, ...]`, set when the ticket is written, from its type and the map's Notes |
 
 The `skills:` field is required. When an agent claims the ticket, the `productivity` plugin hook names these skills to the agent. A skill list in prose is skipped about half the time, and the hook is not.
@@ -59,10 +60,9 @@ When a change happens to a map, ticket, or asset, commit and push it. Concurrent
 ## Brief
 
 ```
-## Brief: <phase>
+## Brief
 
 - Goal: <what is true when the session hands back>
-- Ready when: <the human steps that are done before the session starts>
 - Repos: <each repo and its base branch. The session picks the branches, the PRs, and the order>
 - Read first: <code and decisions to read, with what to copy and what not to copy. A hint, not a scope limit. Optional>
 - FR: <what it must do>
@@ -70,7 +70,18 @@ When a change happens to a map, ticket, or asset, commit and push it. Concurrent
 - Verification: <how the session proves it, with real commands and data. For a bugfix, the failing test first>
 - Safe to deploy when: <the checks that pass before the hand-back>
 - Ponytail: <what stays unbuilt>
-- Hand back: <the PRs, each named after this ticket by title and path, the evidence, and the next human step>
+- Hand back: <the PRs, each named after this ticket by title and path, and the evidence>
 ```
 
 The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
+
+## Gate
+
+```
+## Step
+
+- [ ] <one action, with the system and the exact names>
+- Closes when: <the fact that shows the step is done>
+```
+
+An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
