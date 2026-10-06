@@ -2,20 +2,27 @@ export const meta = {
   name: 'fire',
   description: 'Fulfil one brief across its repos: units of implement, review, and verify rounds, then one gate on the whole change',
   phases: [
-    { title: 'Orient', detail: 'one Haiku node reads the blast radius of the code the brief names, in every repo' },
+    { title: 'Orient', detail: 'one Sonnet node reads the blast radius of the code the brief names, in every repo' },
     { title: 'Units', detail: 'per unit: implementer, then reviewer and one verifier per repo, verdict in code' },
     { title: 'Gate', detail: 'whole-change review when there is more than one unit, then the brief Verification and Safe to deploy checks' },
   ],
 }
 
 // args, set by the skill's pre-flight:
-//   ticketPath, briefText, runDir, kind ('bugfix' | 'change'), implementerModel ('sonnet' | 'opus'),
+//   ticketPath, briefText, runDir, kind ('bugfix' | 'change'), implementerModel ('opus' | 'fable'),
 //   maxRounds, skillDir,
 //   repos: [{ name, root, worktree, branch, baseSha, graphPath (string | null) }],
 //   units: [{ name, build (verbatim brief lines), repos (repo names) }], in run order
 
 // budget counts output tokens only. A toy round cost 14K; the floor covers a real repo.
 const ROUND_ESTIMATE_TOKENS = 50_000
+
+// Opus and Fable do the work that decides quality. Sonnet only reads, Haiku only runs declared commands.
+const ORIENT_MODEL = 'sonnet'
+const UNIT_REVIEW_MODEL = 'opus'
+const REPO_VERIFY_MODEL = 'haiku'
+const GATE_VERIFY_MODEL = 'opus'
+const GATE_REVIEW_MODEL = 'fable'
 const maxRounds = args.maxRounds ?? 3
 const briefPath = `${args.skillDir}/references/implementer-brief.md`
 const startSpent = budget.spent()
@@ -223,7 +230,7 @@ phase('Orient')
 const orientation = await agent(orientPrompt(), {
   label: 'orient',
   agentType: 'Explore',
-  model: 'haiku',
+  model: ORIENT_MODEL,
   effort: 'low',
   schema: DIGEST_SCHEMA,
 })
@@ -279,8 +286,8 @@ for (const unit of args.units) {
 
     // A barrier is correct here. The verdict needs every result.
     const [review, ...verifies] = await parallel([
-      () => agent(reviewPrompt(unitHeader(unit), unit.repos, diffFile), { label: `review:${unit.name}`, phase: 'Units', agentType: 'dev:pr-reviewer', schema: REVIEW_SCHEMA }),
-      ...unit.repos.map(name => () => agent(verifyPrompt(name, bases), { label: `verify:${unit.name}:${name}`, phase: 'Units', agentType: 'dev:verifier', schema: VERIFY_SCHEMA })),
+      () => agent(reviewPrompt(unitHeader(unit), unit.repos, diffFile), { label: `review:${unit.name}`, phase: 'Units', agentType: 'dev:pr-reviewer', model: UNIT_REVIEW_MODEL, schema: REVIEW_SCHEMA }),
+      ...unit.repos.map(name => () => agent(verifyPrompt(name, bases), { label: `verify:${unit.name}:${name}`, phase: 'Units', agentType: 'dev:verifier', model: REPO_VERIFY_MODEL, schema: VERIFY_SCHEMA })),
     ])
     if (!review || verifies.some(v => !v)) return result('agent_failed', { unit: unit.name, rounds: roundsPerUnit, findings, blocker: 'a reviewer returned nothing' })
     appendLedger(review.learnings, unit.name, round, 'pr-reviewer')
@@ -309,13 +316,13 @@ const fullDiff = `${args.runDir}/full.diff`
 // The verifier writes the whole diff first, because dev:pr-reviewer has no shell.
 const gateVerify = await agent(
   `First write the whole diff with\n  ${diffCommand(allRepos, runBases, fullDiff)}\n\n${gateVerifyPrompt()}`,
-  { label: 'gate:verify', phase: 'Gate', agentType: 'general-purpose', model: 'sonnet', schema: VERIFY_SCHEMA },
+  { label: 'gate:verify', phase: 'Gate', agentType: 'general-purpose', model: GATE_VERIFY_MODEL, schema: VERIFY_SCHEMA },
 )
 if (!gateVerify) return result('agent_failed', { rounds: roundsPerUnit, blocker: 'the gate verifier returned nothing' })
 const gateReview = args.units.length > 1
   ? await agent(
     reviewPrompt('Whole change: all units together. Scope is the FR and NFR lines of the brief.', allRepos, fullDiff),
-    { label: 'gate:review', phase: 'Gate', agentType: 'dev:pr-reviewer', schema: REVIEW_SCHEMA },
+    { label: 'gate:review', phase: 'Gate', agentType: 'dev:pr-reviewer', model: GATE_REVIEW_MODEL, schema: REVIEW_SCHEMA },
   )
   : null
 if (args.units.length > 1 && !gateReview) return result('agent_failed', { rounds: roundsPerUnit, blocker: 'the gate reviewer returned nothing' })

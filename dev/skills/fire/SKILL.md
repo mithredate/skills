@@ -13,7 +13,7 @@ The session plans the units. The Workflow tool runs the script [scripts/loop.wor
 ## The graph
 
 ```
-orient (Haiku, read-only, once, every repo)
+orient (Sonnet, read-only, once, every repo)
    |
    v
 for each unit, in plan order:
@@ -48,7 +48,7 @@ The **ledger** is the list of design-level constraints that the implementers and
    4. Set `graphPath` to `<repo root>/graphify-out/graph.json` when that file exists. Otherwise set it to `null`.
 6. Plan the units. A **unit** is the part of the brief that one implementer builds in one loop. Write the fewest units, because each round costs a lot of tokens and time. One unit for the whole brief is the default. Split only when one implementer cannot hold the work. Order the units so that a unit that serves a contract comes before a unit that calls it. Give each unit a name, its repos, and its `build` lines quoted verbatim from the FR and NFR of the brief. Every FR and NFR line goes into exactly one unit. Write the plan to `<runDir>/plan.md`.
 7. Set `kind` to `bugfix` when the brief is a bugfix, or when its Verification line asks for the failing test first. Otherwise set it to `change`.
-8. Set `implementerModel` to `opus` when the brief or a unit is design-heavy. Otherwise set it to `sonnet`.
+8. Set `implementerModel` to `fable` when the brief or a unit is design-heavy. Otherwise set it to `opus`. The script sets the other models: Opus for the unit review and the gate checks, Fable for the whole-change review, Sonnet for the orient read, and Haiku for the declared repo commands.
 9. Copy this skill's `scripts/loop.workflow.js` to `<runDir>/loop.workflow.js`. The Workflow tool accepts only a script path under the working directory.
 10. Call the Workflow tool with `scriptPath` set to that copy and with these `args`. Pass them as a JSON object, not as a string.
 
@@ -58,7 +58,7 @@ The **ledger** is the list of design-level constraints that the implementers and
   "briefText": "<the Brief section, verbatim>",
   "runDir": "<absolute path of runDir>",
   "kind": "bugfix | change",
-  "implementerModel": "sonnet | opus",
+  "implementerModel": "opus | fable",
   "maxRounds": 3,
   "skillDir": "<absolute path of this skill's directory>",
   "repos": [
