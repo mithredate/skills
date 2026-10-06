@@ -15,8 +15,6 @@ This file holds the file shapes of an orchestrator repo. It uses plain files und
     assets/                  research, specs, digests, linked from tickets
 ```
 
-When a change happens to a map, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
-
 ## Index
 
 ```

@@ -40,7 +40,7 @@ A **live link** is a link to a host with `Live: yes`. Its target can change. A h
    ```
 3. Match each link to the longest Host in `sources.md`. Skip a link whose host has `Live: no`.
 4. If no Host matches a link, the host is new. Give the host one row in the result table, with the place `sources.md`. If `sources.md` is missing, every host is new.
-5. If a ticket has a `## Brief` and no PR link, search for the PR with `gh search prs "<ticket path>"`. The brief requires that the PR names the ticket path.
+5. If a ticket has a `## Brief` with a git repo in its Targets, and no PR link, search for the PR with `gh search prs "<ticket path>"`. `dev:fire` names the ticket path in each PR body.
 6. If a `waiting` row has no link, mark the row "check by hand".
 
 The step is done when each live link is listed with the file that holds it, and each new host has a row.

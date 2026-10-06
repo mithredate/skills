@@ -29,6 +29,8 @@ The file shapes of the index, the map, the tickets, the brief, and the gate are 
 
 `.wayfinder/<YYYY-MM-DD>-<slug>/` holds one map with its tickets and assets. For a new initiative, first create its directory and its index row. Then chart the map inside the directory.
 
+When a change happens to a map, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
+
 Refer to a map or a ticket by its title in everything the user reads. Put the path inside the title's link. A list of bare ids is not readable.
 
 ## The map
@@ -38,7 +40,7 @@ The map is an index of decisions, not a store. A decision lives in one place, it
 An **unspecified question** is an in-scope question that you cannot state precisely yet, because it waits on open tickets. The map's Not yet specified section holds them.
 
 - If you can state the question precisely now, write a ticket, also when the ticket is blocked.
-- If you cannot state it precisely yet, keep it under Not yet specified. Do not cut it into ticket-sized pieces.
+- If you cannot state it precisely yet, keep it under Not yet specified. Do not cut it into ticket-sized pieces. One unspecified question can become several tickets, or none.
 - Not yet specified holds no decided question, no live ticket, and no out-of-scope work.
 
 The destination fixes the scope. When a ticket turns out to be past the destination, close it and add one line under Out of scope with its reason and a link. It does not go under Decisions so far. Out-of-scope work comes back only as a new initiative.
@@ -48,10 +50,10 @@ The destination fixes the scope. When a ticket turns out to be past the destinat
 A **HITL** ticket resolves only in a live exchange with the user. The agent never takes the user's side of a HITL ticket. It answers only the questions that `grilling` sorts to the agent.
 
 - **grilling** (HITL): the default type.
-- **prototype** (HITL): make a cheap, rough artifact for the user to react to, with `productivity:prototype`. Use it when "how must it look" or "how must it behave" is the key question.
+- **prototype** (HITL): make a cheap, rough artifact for the user to react to, with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question.
 - **research** (agent alone): find a fact outside the working directory that a decision waits on. A subagent calls the Skill tool with `productivity:research`.
-- **task** (agent alone): work that the agent does alone. A task before a decision makes a fact visible, for example data moved so that its shape shows. A build task holds a `## Brief`.
-- **gate** (HITL): one human step, for example a setup that the agent cannot do, a review, or a deploy. The agent never claims it.
+- **task** (agent alone): work that the agent does alone. A task before a decision makes a fact visible, for example data moved so that its shape shows. A build task holds a `## Brief`. The resolution records what was done and the facts that later tickets need.
+- **gate** (HITL): one human step, for example a setup that the agent cannot do, a review, a deploy, or a check that only a human can make. The agent never claims it.
 
 ## chart
 
@@ -72,7 +74,7 @@ A session that names no map works the `active` row. Work one ticket in each sess
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Take the first frontier ticket that is not a `gate`, or the ticket that the user names. Claim it before any other work. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
 3. Resolve the ticket. When you claim a ticket with a `## Brief`, a hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
-4. Record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far. A build ticket closes only when `fire` returns `pass`, and its resolution links the PRs or the Verification evidence. If `fire` returns another status, keep the ticket open, record the blocker in it, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket.
+4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
@@ -104,7 +106,7 @@ When the decisions for a change are made, write the build as `task` tickets with
 - The **brief** is the whole input of one `dev:fire` session, with no transcript. Its targets can be git repos or other systems, for example an n8n instance.
 - A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed.
 - Split the build only at a gate. Write the fewest build tickets.
-- The brief gives context, not steps. The session picks the order of work, the branches, and the PRs.
+- The brief gives context, not steps. The session picks the order of work.
 - Before you write a brief, collect each fact that the session needs to build and verify the change. Examples are test data, reviewer names, and access.
 - If a question needs a human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
