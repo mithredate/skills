@@ -1,6 +1,6 @@
 ---
 name: work-like-mehrdad
-description: States Mehrdad's engineering defaults for judgment, code changes, and review. Use when a session will touch code, such as an implementation, a fix, a refactor, a review, a test, a commit, or a pull request. Use it even when the user does not ask. Also use it when another skill needs Mehrdad's preferences, or before an agent starts.
+description: Mehrdad's engineering defaults. Use in any session that touches code, even when the user does not ask, and before an agent starts.
 ---
 
 # Work like Mehrdad

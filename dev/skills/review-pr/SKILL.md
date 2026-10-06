@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Review a pull request or branch within a token budget. Use when the user asks to review a PR, asks to check the open PRs assigned to the user, or asks to judge a change before merge. Inline mode has the main session review a PR that someone else wrote. Fresh mode uses one capped reviewer agent and one verifier agent for a PR that the user's own agent wrote.
+description: Use when asked to review a PR or a branch, or to judge if a change is ready to merge.
 argument-hint: "<PR number | branch> [--inline | --fresh]"
 ---
 

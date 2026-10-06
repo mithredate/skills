@@ -1,6 +1,6 @@
 ---
 name: write-a-skill
-description: Writes or rewrites a skill, an agent file, or a reference in this marketplace, from the name and the outline to the PR. Use when the user asks for a new skill, a rename, a rewrite, or an edit to a SKILL.md, an agent file, or a reference. Use it also when another skill needs the skill-writing rules.
+description: Use when creating, renaming, or editing a skill, an agent file, or a reference in this marketplace.
 ---
 
 # Write a skill
@@ -31,9 +31,11 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 ## Frontmatter
 
 - `name` is the directory name.
-- `description` is the routing signal. The agent sees only the name and the description of each skill when it chooses which skill to load. Write the text that makes that choice right, not a summary of the body.
-- The first sentence names the capability and the key terms, in the third person. Short phrases are correct: "Checks PRs, issues, and threads linked from the tracker." The second sentence starts with "Use when" and lists each trigger once. A trigger is a situation, a calling skill, or the words the user types.
-- Put no step, rule, or reason from the body in the description. The listing cuts `description` and `when_to_use` together at 1,536 characters, so put the key use case first.
+- `description` is the routing signal. The agent sees only the name and the description of each skill when it chooses which skill to load. Write when to load the skill, not what the body does.
+- Start with "Use when" and list the triggers. A trigger is the words the user types, a symptom the agent sees, a moment in a session, or a calling skill. If the name does not say what the skill is, put a short noun phrase first: "Deep-module vocabulary."
+- Keep the description under 150 characters. Every session carries every description in its context.
+- If the agent must load the skill with no request, add "even when the user does not ask". An agent uses a skill less often than it must.
+- Put no step, count, or rule from the body in the description. An agent that reads a workflow summary in the description follows the summary and skips the body.
 - A colon followed by a space inside the value breaks the YAML, unless the whole value is in double quotes. The skill then loads with no metadata. Only CI catches this, so check it by eye.
 - A user-invoked skill sets `disable-model-invocation: true` and an `argument-hint`. Its description is a one-line summary for the human.
 - Check the field list against https://code.claude.com/docs/en/skills before you ship. The spec changes.

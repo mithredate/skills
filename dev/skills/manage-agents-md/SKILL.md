@@ -1,6 +1,6 @@
 ---
 name: manage-agents-md
-description: Writes, improves, and housekeeps a repo's agent instruction file, `CLAUDE.md` or `AGENTS.md` with a `CLAUDE.md` bridge, and graduates corrections from auto-memory into it. Use when the user asks for a new or better `AGENTS.md` or `CLAUDE.md`, or asks what belongs in one. Use when a line in it is stale or wrong, or the user asks to sweep or graduate corrections and memories.
+description: Use when creating, improving, or fixing a repo's `CLAUDE.md` or `AGENTS.md`, or moving auto-memory corrections into it.
 ---
 
 # Agent instructions

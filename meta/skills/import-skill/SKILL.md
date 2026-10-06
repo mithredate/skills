@@ -1,6 +1,6 @@
 ---
 name: import-skill
-description: Imports a skill from a GitHub upstream into this repo, copies the files when the target name is free, and calls `merge-skill` when a local skill of the same concept exists, so it never creates a parallel skill. Use when the user wants to vendor a skill from a repo, pull one in from mattpocock-skills, superpowers, or another GitHub source, or invoke `/import-skill`.
+description: Use when the user wants to vendor or import a skill from a GitHub repo into this marketplace.
 ---
 
 # Import Skill

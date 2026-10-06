@@ -1,6 +1,6 @@
 ---
 name: merge-skill
-description: Reconciles a local `current` skill with an `incoming` version, from a fresh upstream, a refreshed upstream, or another local skill, as a list of items with three flags, asks the user to decide each item, and applies the accepted changes to the `current` version in place. Use when called by `import-skill` on conflict, by `refresh-vendored` for any refresh comparison, or directly with `/merge-skill <current-path> <incoming-path>` to absorb one skill into another.
+description: Use when two versions of one skill must become one, from `import-skill`, `refresh-vendored`, or `/merge-skill`.
 ---
 
 # Merge Skill
