@@ -106,7 +106,7 @@ Good: `- FR: A call with an expired token, or a token for another audience, retu
 </example>
 <example>
 Bad: `- Read first: AzureLoginService.php. Copy the JWKS check, not the appid check.`
-Good: `- Decisions: A custom authenticator, not the existing firewall. It checks aud, not appid. [wmcp-23]`
+Good: `- Decisions: A custom authenticator, not the existing firewall. It checks aud, not appid. [Write the phase 1 MVP brief](tickets/wmcp-23.md)`
 </example>
 <example>
 Bad: `- NFR: Add an index on order.booking_number.`

@@ -22,7 +22,7 @@ Every finding cites `path:line` with a relative path, and states what the cited 
 
 This lens checks whether the diff is the right change. Only you can raise a `discrepancy` finding. Use it when the shape of the change is wrong, and re-coding to the same plan cannot fix it.
 
-- **Wrong problem.** The diff solves something that the brief or PR did not ask for, or the diff skips something that the brief or PR asked for. Report this as `discrepancy`.
+- **Wrong problem.** The diff solves something that the brief or PR did not ask for, or the diff skips something that the brief or PR asked for. Report this as `discrepancy`. A line in the Decisions of the brief binds the diff. Any other how in the brief, such as a path, a class, or a step, is a hint. A diff that departs from a hint is not a finding.
 - **Symptom, not root cause.** If the change is a fix, the addressed cause can sit downstream of a deeper root cause that the diff leaves in place. The symptom then returns. Report this as `discrepancy`. Cite the deeper site.
 - **Hidden constraint.** The diff works locally. It breaks a constraint that it did not name, such as a downstream consumer, a platform version, security posture, or a latency budget. Report this as `discrepancy`, and cite the constraint's site.
 - **Unlicensed architecture.** A new layer, a new cross-cutting mechanism, or a new dependency category has no precedent in the repo, and the brief does not allow it. Report this as `discrepancy`, and name the decision that the human must make.
