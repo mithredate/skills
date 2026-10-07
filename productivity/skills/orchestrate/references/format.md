@@ -84,13 +84,35 @@ A build `task` ticket holds this section as its body.
 ```
 ## Brief
 
+- Why: <the problem, and who has it. One or two sentences>
 - Goal: <what is true when the session hands back>
 - Targets: <each git repo with its base branch, or each other system, for example an n8n instance>
-- Read first: <code and decisions to read, with what to copy and what not to copy. A hint, not a scope limit. Optional>
-- FR: <what it must do, one sub-bullet for each requirement>
-- NFR: <limits, one sub-bullet for each limit: security, performance, placement, allowed new dependencies, what stays unbuilt>
+- Decisions: <each decision that a human made, one line each, with a link to its ticket or ADR. Optional>
+- FR: <behavior that a caller, a user, or a test can see, one sub-bullet for each requirement>
+- NFR: <limits, one sub-bullet for each limit: security, performance, allowed new dependencies, what stays unbuilt>
 - Verification: <how the session proves it, with real commands and data, and the checks that pass before the hand-back. For a bugfix, the failing test first>
 ```
+
+The brief gives the why and the what. The implementer picks the how. Each pair below shows a line that gives the how, then the same line rewritten.
+
+<examples>
+<example>
+Bad: `- Why: Build the agent API.` This repeats the Goal.
+Good: `- Why: The Damage Dispute agent reads bookings through a shared admin login. Each read must carry the identity of the caller.`
+</example>
+<example>
+Bad: `- FR: A custom authenticator in src/AgentApiModule/ checks the token against the JWKS.`
+Good: `- FR: A call with an expired token, or a token for another audience, returns 401.`
+</example>
+<example>
+Bad: `- Read first: AzureLoginService.php. Copy the JWKS check, not the appid check.`
+Good: `- Decisions: A custom authenticator, not the existing firewall. It checks aud, not appid. [wmcp-23]`
+</example>
+<example>
+Bad: `- NFR: Add an index on order.booking_number.`
+Good: `- NFR: The order list returns in under 200 ms for a booking with 100 orders.`
+</example>
+</examples>
 
 ## Gate
 
