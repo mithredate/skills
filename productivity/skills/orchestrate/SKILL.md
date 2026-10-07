@@ -106,8 +106,8 @@ When the decisions for a change are made, write the build as `task` tickets with
 - The **brief** is the whole input of one `dev:fire` session, with no transcript. Its targets can be git repos or other systems, for example an n8n instance.
 - A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed.
 - Split the build only at a gate. Write the fewest build tickets.
-- The brief gives context, not steps. The session picks the order of work.
-- Before you write a brief, collect each fact that the session needs to build and verify the change. Examples are test data, reviewer names, and access.
+- The brief gives the why and the what. The implementer picks the how and the order of work. A how goes in the brief only as a decision that a human made, in the Decisions line.
+- Before you write a brief, collect each fact that the session cannot get by itself. Examples are test data, reviewer names, access, and decisions. Do not collect code facts. The implementer reads the code.
 - If a question needs a human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
