@@ -34,6 +34,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 - **personal** — Mehrdad's personal working defaults
   - `work-like-mehrdad` — engineering defaults for judgment, orchestrating agents, spending quota, building, and reviewing; loads at the start of any code-touching session
   - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` except reads that return no secret, and hands the command to the human
+  - mod `effort-floor` — while a listed skill such as `grilling` is loaded, raises the effort of each model request to that skill's minimum. It never lowers the effort
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
 - **deprecated** — skills phased out, kept installable during transitions
