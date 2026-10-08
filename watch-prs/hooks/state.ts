@@ -1,4 +1,7 @@
-export const PR_FIELDS = 'number,title,url,state,reviewDecision,headRefOid,reviews,comments,statusCheckRollup'
+export const PR_FIELDS = 'number,title,url,state,reviewDecision,reviews,comments,statusCheckRollup'
+
+// Caps the automatic turns for one PR, so a bot comment on each push or a flaky check cannot loop.
+export const MAX_TURNS_PER_PR = 5
 
 export type Checks = 'none' | 'pending' | 'pass' | 'fail'
 
@@ -56,12 +59,16 @@ export function toSnapshot(json: string, now: number): Snapshot {
 }
 
 // Reviews and comments the session has not seen, without the user's own: Claude replies through gh as the user.
+// While the user's login is unknown, only Copilot's activity counts, so Claude's replies cannot start a loop.
 export function newActivity(json: string, prev: Snapshot, self: string) {
   const pr = JSON.parse(json)
-  const isNew = (seen: string[]) => (x: Comment) => !seen.includes(x.id) && x.author?.login !== self
+  const isNew = (seen: string[]) => (x: Comment) => {
+    const login = x.author?.login ?? ''
+    return !seen.includes(x.id) && (self ? login !== self : isCopilot(login))
+  }
   return {
     reviews: (pr.reviews as Review[] ?? []).filter(isNew(prev.reviewIds)),
-    comments: (pr.comments as Comment[] ?? []).filter(isNew(prev.commentIds ?? [])),
+    comments: (pr.comments as Comment[] ?? []).filter(isNew(prev.commentIds)),
   }
 }
 
@@ -104,4 +111,31 @@ export function contextBlock(snaps: Snapshot[], now: number) {
     return `- ${s.url} "${s.title}": ${s.state}, review decision ${s.reviewDecision || 'none'}, checks ${s.checks}, ${s.reviewIds.length} reviews (fetched ${age}s ago)`
   })
   return ['Live state of the PRs this session watches. It is newer than anything earlier in the conversation:', ...rows].join('\n')
+}
+
+// What Claude does about the changes. `turn` is the automatic turn's number for this PR, or 0 inside the user's own turn.
+export function instructions(s: Snapshot, found: Change[], turn: number) {
+  const what = found.map(describe).join('; ')
+  const steps: string[] = []
+  const [, owner, repo] = s.url.match(/github\.com\/([^/]+)\/([^/]+)/) ?? []
+  const inline = `\`gh api repos/${owner}/${repo}/pulls/${s.number}/comments\``
+  if (found.some(c => c.kind === 'review' && c.isCopilot))
+    steps.push(
+      `Copilot reviewed. Read its inline comments with ${inline}. Judge each one critically. ` +
+        `Fix it if it is right; otherwise reply on the comment with the reason. Push the fixes, then re-request Copilot's review.`,
+    )
+  if (found.some(c => (c.kind === 'review' && !c.isCopilot && c.state !== 'APPROVED') || c.kind === 'comment'))
+    steps.push(
+      `A person reviewed or commented. Read the review bodies and comments with \`gh pr view ${s.url} --comments\`, ` +
+        `and the inline comments with ${inline}. ` +
+        `Judge each point critically. Fix it if it is right; otherwise reply with the reason. Push the fixes, then re-request that person's review.`,
+    )
+  if (found.some(c => c.kind === 'checks' && c.to === 'fail'))
+    steps.push(`Find the failing check with \`gh pr checks ${s.url}\`, read its log, and fix the cause.`)
+  const merged = found.some(c => c.kind === 'merged')
+  if (merged) steps.push('Continue with the steps that come after the merge. Remove the merged worktree and its local branch.')
+  // A merge happens once, so it cannot loop; it passes the cap.
+  if (turn > MAX_TURNS_PER_PR && !merged)
+    return { what: `${what} (watch-prs started ${MAX_TURNS_PER_PR} turns for this PR, so it only reports now)`, steps: [] }
+  return { what, steps }
 }

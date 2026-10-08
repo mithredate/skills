@@ -2,27 +2,28 @@ import { test, expect } from 'claude-code/testing'
 import { parseWorktreeAdd } from './rules.ts'
 
 const REPO = '/repo'
+const NO_ORIGIN = '/home'
 
-// Answers git as a repo whose main checkout is /repo and whose worktrees sit under /repo/.worktrees.
-function fakeGit(on: any, calls: string[][] = []) {
+// A fake git: /repo has an origin and worktrees under /repo/.worktrees/wt; /home has no origin.
+function fakeGit(on: any, { calls = [] as string[][], originHead = 'origin/main\n', cwd = REPO } = {}) {
   on('fs.exists', async () => ({ value: true }))
-  on('process.run', async ($: unknown, e: { argv: readonly string[] }) => {
+  on('session.cwd', async () => ({ value: cwd }))
+  on('process.run', async (_$: unknown, e: { argv: readonly string[] }) => {
     const argv = [...e.argv]
     calls.push(argv)
     const dir = argv[2] ?? ''
-    if (argv.includes('rev-parse') && dir.startsWith('/home')) return { value: { exitCode: 0, stdout: '/home\n/home/.git\n/home/.git\n', stderr: '' } }
+    const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '' } })
+    const fail = { value: { exitCode: 1, stdout: '', stderr: '' } }
     if (argv.includes('rev-parse')) {
-      const linked = dir.startsWith(REPO + '/.worktrees/wt')
-      const top = linked ? REPO + '/.worktrees/wt' : REPO
-      const gitDir = linked ? REPO + '/.git/worktrees/wt' : REPO + '/.git'
-      return { value: { exitCode: 0, stdout: `${top}\n${gitDir}\n${REPO}/.git\n`, stderr: '' } }
+      if (dir.startsWith(NO_ORIGIN)) return ok(`${NO_ORIGIN}\n${NO_ORIGIN}/.git\n${NO_ORIGIN}/.git\n`)
+      if (dir.startsWith(REPO + '/.worktrees/wt')) return ok(`${REPO}/.worktrees/wt\n${REPO}/.git/worktrees/wt\n${REPO}/.git\n`)
+      return ok(`${REPO}\n${REPO}/.git\n${REPO}/.git\n`)
     }
-    if (argv.includes('get-url')) return { value: { exitCode: dir === '/home' ? 2 : 0, stdout: 'git@github.com:acme/api.git\n', stderr: '' } }
-    if (argv.includes('symbolic-ref')) return { value: { exitCode: 0, stdout: 'origin/main\n', stderr: '' } }
-    if (argv.includes('check-ignore')) return { value: { exitCode: argv.at(-1)!.includes('/dist/') ? 0 : 1, stdout: '', stderr: '' } }
-    return { value: { exitCode: 0, stdout: '', stderr: '' } }
+    if (argv.includes('get-url')) return dir === NO_ORIGIN ? fail : ok('git@github.com:acme/api.git\n')
+    if (argv.includes('symbolic-ref')) return originHead ? ok(originHead) : fail
+    if (argv.includes('check-ignore')) return argv.at(-1)!.includes('/dist/') ? ok('') : fail
+    return ok('')
   })
-  on('session.cwd', async () => ({ value: REPO }))
   on('tool.call', async () => ({ result: 'ran' }))
 }
 
@@ -32,6 +33,18 @@ test('refuses an edit in the main checkout', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' } as any)
   expect(refusal(ran)).toContain('worktree add .worktrees/<branch> -b <branch> origin/main')
+})
+
+test('refuses a notebook edit in the main checkout', async ($, on) => {
+  fakeGit(on)
+  const ran = await $.tool.call({ tool: 'NotebookEdit', notebook_path: REPO + '/n.ipynb', new_source: 'x' } as any)
+  expect(refusal(ran)).toContain('main checkout')
+})
+
+test('names no made-up branch when origin/HEAD is unset', async ($, on) => {
+  fakeGit(on, { originHead: '' })
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' } as any)
+  expect(refusal(ran)).toContain('-b <branch> origin/<default branch>')
 })
 
 test('allows an edit in a linked worktree', async ($, on) => {
@@ -50,15 +63,15 @@ test('allows tracker edits and ignored files in the main checkout', async ($, on
 
 test('allows an edit in a repo with no origin', async ($, on) => {
   fakeGit(on)
-  const ran = await $.tool.call({ tool: 'Write', file_path: '/home/notes/a.md', content: 'x' } as any)
+  const ran = await $.tool.call({ tool: 'Write', file_path: NO_ORIGIN + '/notes/a.md', content: 'x' } as any)
   expect(refusal(ran)).toBeUndefined()
 })
 
 test('fetches, then refuses a new worktree branch from a local base', async ($, on) => {
   const calls: string[][] = []
-  fakeGit(on, calls)
+  fakeGit(on, { calls })
   const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add .worktrees/x -b x main' } as any)
-  expect(refusal(ran)).toContain('origin/main')
+  expect(refusal(ran)).toContain('`origin/main` as the start point')
   expect(calls.some(c => c.includes('fetch'))).toBe(true)
 })
 
@@ -68,8 +81,25 @@ test('lets a new worktree branch from origin through', async ($, on) => {
   expect(refusal(ran)).toBeUndefined()
 })
 
-test('parses worktree add commands', async () => {
+test('leaves worktree commands alone in a repo with no origin', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls, cwd: NO_ORIGIN })
+  const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add ../y -b y main' } as any)
+  expect(refusal(ran)).toBeUndefined()
+  expect(calls.some(c => c.includes('fetch'))).toBe(false)
+})
+
+test('ignores worktree text inside a quoted argument', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls })
+  const ran = await $.tool.call({ tool: 'Bash', command: 'git commit -m "docs: run git worktree add -b x main"' } as any)
+  expect(refusal(ran)).toBeUndefined()
+  expect(calls.some(c => c.includes('fetch'))).toBe(false)
+})
+
+test('parses worktree add commands at a command position', async () => {
   expect(parseWorktreeAdd('git -C /r worktree add .worktrees/x -b x origin/main')).toEqual({ dir: '/r', createsBranch: true, startPoint: 'origin/main' })
-  expect(parseWorktreeAdd('git worktree add ../y existing')).toEqual({ dir: undefined, createsBranch: false, startPoint: 'existing' })
+  expect(parseWorktreeAdd('cd /r && git worktree add ../y existing')).toEqual({ dir: undefined, createsBranch: false, startPoint: 'existing' })
+  expect(parseWorktreeAdd('echo "git worktree add -b x main"')).toBeUndefined()
   expect(parseWorktreeAdd('git status')).toBeUndefined()
 })

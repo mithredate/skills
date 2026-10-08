@@ -3,10 +3,11 @@ export function isMainCheckout(gitDir: string, commonDir: string) {
   return gitDir.replace(/\/$/, '') === commonDir.replace(/\/$/, '')
 }
 
-export function worktreeAdvice(top: string, defaultBranch: string, path: string) {
+export function worktreeAdvice(top: string, base: string | undefined, path: string) {
+  const start = base ?? 'origin/<default branch>'
   return (
     `guard-worktree: ${path} is in the main checkout of ${top}. Code changes go in a worktree. ` +
-    `Run \`git -C ${top} fetch origin && git -C ${top} worktree add .worktrees/<branch> -b <branch> ${defaultBranch}\`, ` +
+    `Run \`git -C ${top} fetch origin && git -C ${top} worktree add .worktrees/<branch> -b <branch> ${start}\`, ` +
     `then make this edit under ${top}/.worktrees/<branch>/.`
   )
 }
@@ -15,9 +16,10 @@ export type WorktreeAdd = { dir?: string; createsBranch: boolean; startPoint?: s
 
 const VALUE_FLAGS = new Set(['-b', '-B', '--reason', '--orphan'])
 
-// Reads the first `git [-C dir] worktree add ...` in a command. Quotes are not handled.
+// Reads the first `git [-C dir] worktree add ...` that starts a command: at the start, or after `;`, `&`, `|` or `(`.
+// Text inside a quoted argument, such as a commit message, does not match. Quotes inside the command itself are not handled.
 export function parseWorktreeAdd(command: string): WorktreeAdd | undefined {
-  const match = command.match(/\bgit\s+(?:-C\s+(\S+)\s+)?worktree\s+add\b([^;&|\n]*)/)
+  const match = command.match(/(?:^|[;&|(])\s*git\s+(?:-C\s+(\S+)\s+)?worktree\s+add\b([^;&|\n]*)/)
   if (!match) return undefined
   const args = (match[2] ?? '').trim().split(/\s+/).filter(Boolean)
   const positional: string[] = []

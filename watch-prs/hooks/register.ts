@@ -1,30 +1,35 @@
 import type { Register, EngineInterface } from 'claude-code'
-import { PR_FIELDS, PR_URL, changes, contextBlock, describe, line, newActivity, toSnapshot } from './state.ts'
+import { PR_FIELDS, PR_URL, changes, contextBlock, instructions, line, newActivity, toSnapshot } from './state.ts'
 import type { Change, Snapshot } from './state.ts'
 
 const POLL_MS = 60_000
-const MAX_COPILOT_ROUNDS = 3
 const MAX_WATCHED = 20
 
-type Watch = { prs: Record<string, Snapshot>; copilotRounds: Record<string, number> }
+type Watch = { prs: Record<string, Snapshot>; turns: Record<string, number>; unwatched: string[] }
 
-let watch: Watch = { prs: {}, copilotRounds: {} }
+const empty = (): Watch => ({ prs: {}, turns: {}, unwatched: [] })
+
+let watch = empty()
 let storeKey = ''
+// The gh user. Claude replies through gh as this user, so their reviews and comments are not news.
 let self = ''
 // A plugin's prompt waits until Claude is idle, so news found mid-turn can be stale by then.
 // Polls skip while a turn runs; the first poll after it compares against the last snapshot.
 const runningTurns = new Set<string>()
-// What each queued prompt reports, so a prompt that went stale while it waited can be dropped.
-const queued = new Map<string, { url: string; found: Change[] }>()
+
+async function lookUpSelf($: EngineInterface) {
+  if (self) return
+  try {
+    const ran = await $.process.run(['gh', 'api', 'user', '--jq', '.login'], { timeoutMs: 20_000 })
+    if (ran.exitCode === 0) self = ran.stdout.trim()
+  } catch {}
+}
 
 // Loads this session's watch from the store once, whichever hook runs first.
 async function load($: EngineInterface) {
   if (storeKey) return
   storeKey = 'watch:' + (await $.session.id())
-  try {
-    self = (await $.process.run(['gh', 'api', 'user', '--jq', '.login'], { timeoutMs: 20_000 })).stdout.trim()
-  } catch {}
-  watch = ((await $.store.get(storeKey)) as Watch | undefined) ?? { prs: {}, copilotRounds: {} }
+  watch = { ...empty(), ...((await $.store.get(storeKey)) as Partial<Watch> | undefined) }
 }
 
 async function save($: EngineInterface) {
@@ -42,32 +47,9 @@ async function fetchPr($: EngineInterface, url: string) {
   }
 }
 
-function instructions(s: Snapshot, found: Change[], copilotRound: number) {
-  const what = found.map(describe).join('; ')
-  const steps: string[] = []
-  const [, owner, repo] = s.url.match(/github\.com\/([^/]+)\/([^/]+)/) ?? []
-  if (found.some(c => c.kind === 'review' && c.isCopilot) && copilotRound <= MAX_COPILOT_ROUNDS) {
-    steps.push(
-      `Copilot review round ${copilotRound} of ${MAX_COPILOT_ROUNDS}: read its inline comments with ` +
-        `\`gh api repos/${owner}/${repo}/pulls/${s.number}/comments\`. Judge each one critically. ` +
-        `Fix it if it is right; otherwise reply on the comment with the reason. Push the fixes, then re-request Copilot's review.`,
-    )
-  }
-  if (found.some(c => (c.kind === 'review' && !c.isCopilot && c.state !== 'APPROVED') || c.kind === 'comment'))
-    steps.push(
-      `A person reviewed or commented. Read the review bodies and comments with \`gh pr view ${s.url} --comments\`, ` +
-        `and the inline comments with \`gh api repos/${owner}/${repo}/pulls/${s.number}/comments\`. ` +
-        `Judge each point critically. Fix it if it is right; otherwise reply with the reason. Push the fixes, then re-request that person's review.`,
-    )
-  if (found.some(c => c.kind === 'checks' && c.to === 'fail'))
-    steps.push(`Find the failing check with \`gh pr checks ${s.url}\`, read its log, and fix the cause.`)
-  if (found.some(c => c.kind === 'merged'))
-    steps.push('Continue with the steps that come after the merge. Remove the merged worktree and its local branch.')
-  return { what, steps }
-}
-
-// Refreshes every open PR. Returns what changed, keyed by URL.
+// Refreshes every open PR and returns the PRs that changed.
 async function refresh($: EngineInterface) {
+  await lookUpSelf($)
   const report: { snap: Snapshot; found: Change[] }[] = []
   await Promise.all(
     Object.values(watch.prs)
@@ -81,20 +63,16 @@ async function refresh($: EngineInterface) {
         if (found.length) report.push({ snap, found })
       }),
   )
-  for (const { snap, found } of report)
-    if (found.some(c => c.kind === 'review' && c.isCopilot))
-      watch.copilotRounds[snap.url] = (watch.copilotRounds[snap.url] ?? 0) + 1
   await save($)
   return report
 }
 
 async function add($: EngineInterface, url: string) {
-  if (watch.prs[url] || Object.keys(watch.prs).length >= MAX_WATCHED) return false
+  if (watch.prs[url] || watch.unwatched.includes(url) || Object.keys(watch.prs).length >= MAX_WATCHED) return
   const json = await fetchPr($, url)
-  if (!json) return false
+  if (!json) return
   watch.prs[url] = toSnapshot(json, await $.clock.now())
   await save($)
-  return true
 }
 
 export const register: Register = on => {
@@ -106,12 +84,13 @@ export const register: Register = on => {
     $.clock.every(POLL_MS, async () => {
       if (runningTurns.size) return
       for (const { snap, found } of await refresh($)) {
-        const { what, steps } = instructions(snap, found, watch.copilotRounds[snap.url] ?? 0)
+        const turn = (watch.turns[snap.url] ?? 0) + 1
+        const { what, steps } = instructions(snap, found, turn)
         $.ui.toast(`#${snap.number} ${what}`)
         if (!steps.length) continue
-        const text = `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}`
-        queued.set(text, { url: snap.url, found })
-        void $.prompt.submit({ text })
+        watch.turns[snap.url] = turn
+        await save($)
+        $.prompt.submit({ text: `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}` }).catch(() => $.ui.toast(`watch-prs could not start a turn for #${snap.number}`))
       }
     })
 
@@ -130,43 +109,33 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Every PR the session looks at or opens joins the watch.
+  // A PR joins the watch when a gh command names it, or when `gh pr create` prints it.
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     const ran = await next(e)
     if (!/\bgh\s+(pr|api)\b/.test(e.command)) return ran
     await load($)
-    const urls = new Set([...(e.command.match(PR_URL) ?? []), ...((ran.text ?? '').match(PR_URL) ?? [])])
-    for (const url of urls) await add($, url)
+    const printed = /\bgh\s+pr\s+create\b/.test(e.command) ? (ran.text ?? '').match(PR_URL) ?? [] : []
+    for (const url of new Set([...(e.command.match(PR_URL) ?? []), ...printed])) await add($, url)
     return ran
   })
 
   // The user's prompt carries state fetched now, not at the start of the session.
   on('prompt.submit', async ($, e, next) => {
     await load($)
-    if (e.origin.kind === 'plugin' && e.origin.name === $.plugin.name) {
-      // A prompt waits until Claude is idle; a failure fixed in the meantime is no news.
-      const report = queued.get(e.text)
-      queued.delete(e.text)
-      if (report && report.found.every(c => c.kind === 'checks' && c.to === 'fail')) {
-        const json = await fetchPr($, report.url)
-        if (json && toSnapshot(json, 0).checks !== 'fail') return { drop: 'the checks pass again' }
-      }
-      return next(e)
-    }
     if (e.origin.kind === 'plugin' || Object.keys(watch.prs).length === 0) return next(e)
     const report = await refresh($)
-    const now = await $.clock.now()
-    const extra = [contextBlock(Object.values(watch.prs), now)]
+    const extra = [contextBlock(Object.values(watch.prs), await $.clock.now())]
     for (const { snap, found } of report) {
-      const { what, steps } = instructions(snap, found, watch.copilotRounds[snap.url] ?? 0)
-      extra.push(`Since the last check, PR ${snap.url} ${what}.` + (steps.length ? ' After the user\'s request: ' + steps.join(' ') : ''))
+      const { what, steps } = instructions(snap, found, 0)
+      extra.push(`Since the last check, PR ${snap.url} ${what}.` + (steps.length ? " After the user's request: " + steps.join(' ') : ''))
     }
     return next({ ...e, context: [...(e.context ?? []), ...extra] })
   })
 
   on('command.run', { command: 'watch-prs' }, async ($, e) => {
     await load($)
-    const urls = e.args.match(PR_URL) ?? []
+    const urls: string[] = e.args.match(PR_URL) ?? []
+    watch.unwatched = watch.unwatched.filter(url => !urls.includes(url))
     for (const url of urls) await add($, url)
     if (!urls.length) await refresh($)
     const snaps = Object.values(watch.prs)
@@ -176,9 +145,14 @@ export const register: Register = on => {
   on('command.run', { command: 'unwatch-prs' }, async ($, e) => {
     await load($)
     const target = e.args.trim()
-    if (target === 'all') watch = { prs: {}, copilotRounds: {} }
-    else delete watch.prs[target]
+    const urls = target === 'all' ? Object.keys(watch.prs) : [target]
+    for (const url of urls) {
+      delete watch.prs[url]
+      delete watch.turns[url]
+    }
+    watch.unwatched = [...new Set([...watch.unwatched, ...urls])]
     await save($)
-    return { text: `Watching ${Object.keys(watch.prs).length} PRs.` }
+    return { text: `Watching ${Object.keys(watch.prs).length} PRs. Use /watch-prs <url> to watch one again.` }
   })
 }
+
