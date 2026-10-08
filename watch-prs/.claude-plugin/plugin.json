@@ -1,6 +1,6 @@
 {
   "name": "watch-prs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Watches the PRs a session touches, keeps their live state in every prompt, and starts a turn when Copilot reviews, checks fail, or a PR merges.",
   "author": {
     "name": "Mehrdad Hedayati",

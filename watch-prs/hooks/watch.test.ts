@@ -17,11 +17,12 @@ function pr(over: Partial<PrJson> = {}): PrJson {
   }
 }
 
-// The world beneath the plugin: gh prints `pr` for any PR and `me` for the user; prompts are recorded.
+// The world beneath the plugin: gh prints `pr` for any PR and `me` for the user; prompts and toasts are recorded.
 async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: string }) {
   const clock = mock.clock(on)
   mock.store(on)
   const submitted: string[] = []
+  const toasts: string[] = []
   on('session.id', async () => ({ value: 's1' }))
   on('process.run', async (_$, e) =>
     e.argv.includes('user')
@@ -37,9 +38,12 @@ async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: st
   on('turn.complete', async () => ({ text: '' }))
   on('command.register', async (_$, e) => ({ value: { command: e.name } }))
   on('ui.status', async () => ({ value: undefined }))
-  on('ui.toast', async () => ({ value: undefined }))
+  on('ui.toast', async (_$, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
   await $.session.start({ cwd: '/repo', surface: 'terminal', isInteractive: true })
-  return { clock, submitted }
+  return { clock, submitted, toasts }
 }
 
 test('summarizes checks', async () => {
@@ -148,4 +152,42 @@ test('watches only the PR a command names, and keeps an unwatched PR unwatched',
   await $.command.run({ command: 'unwatch-prs', args: URL, ...TYPED })
   await $.tool.call({ tool: 'Bash', command: `gh pr view ${URL}` })
   expect((await $.command.run({ command: 'watch-prs', args: '', ...TYPED })).text).toContain('No PRs watched')
+})
+
+test('starts no turn for a merge this session ran, even with no PR named, and still shows a toast', async ($, on) => {
+  const gh = { pr: pr() }
+  const { clock, submitted, toasts } = await startSession($, on, gh)
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+
+  gh.pr = pr({ state: 'MERGED' })
+  await $.tool.call({ tool: 'Bash', command: 'gh pr merge --squash --delete-branch' })
+  await clock.advance(60_000)
+  expect(submitted).toEqual([])
+  expect(toasts).toContain('#74 was merged')
+})
+
+test("leaves the merge step out of the user's own turn after a merge this session ran", async ($, on) => {
+  const gh = { pr: pr() }
+  await startSession($, on, gh)
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+
+  gh.pr = pr({ state: 'MERGED' })
+  await $.tool.call({ tool: 'Bash', command: 'gh pr merge 74 --squash' })
+  const typed = await $.prompt.submit({ text: 'what next?', wait: false, origin: { kind: 'composer' } })
+  const context = (typed.context ?? []).join('\n')
+  expect(context).toContain('was merged')
+  expect(context).not.toContain('Remove the merged worktree')
+})
+
+test('starts a turn when a merge this session asked for lands later, as with --auto', async ($, on) => {
+  const gh = { pr: pr() }
+  const { clock, submitted } = await startSession($, on, gh)
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+
+  await $.tool.call({ tool: 'Bash', command: 'gh pr merge 74 --auto --squash' })
+  gh.pr = pr({ state: 'MERGED' })
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('Remove the merged worktree and its local branch.')
+  expect(submitted[0]?.endsWith('If nothing is left to do, reply in one line.')).toBe(true)
 })

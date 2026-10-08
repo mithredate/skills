@@ -137,7 +137,8 @@ export function contextBlock(snaps: Snapshot[], now: number) {
 }
 
 // What Claude does about the changes. `turn` is the automatic turn's number for this PR, or 0 inside the user's own turn.
-export function instructions(s: Snapshot, found: Change[], turn: number) {
+// A merge this session ran is not news: the session already knows what comes after it.
+export function instructions(s: Snapshot, found: Change[], turn: number, isMergedHere = false) {
   const what = found.map(describe).join('; ')
   const steps: string[] = []
   const [, owner, repo] = s.url.match(/github\.com\/([^/]+)\/([^/]+)/) ?? []
@@ -156,7 +157,7 @@ export function instructions(s: Snapshot, found: Change[], turn: number) {
   if (found.some(c => c.kind === 'checks' && c.to === 'fail'))
     steps.push(`Find the failing check with \`gh pr checks ${s.url}\`, read its log, and fix the cause.`)
   const merged = found.some(c => c.kind === 'merged')
-  if (merged) steps.push('Continue with the steps that come after the merge. Remove the merged worktree and its local branch.')
+  if (merged && !isMergedHere) steps.push('Continue with the steps that come after the merge. Remove the merged worktree and its local branch.')
   // A merge happens once, so it cannot loop; it passes the cap.
   if (turn > MAX_TURNS_PER_PR && !merged)
     return { what: `${what} (watch-prs started ${MAX_TURNS_PER_PR} turns for this PR, so it only reports now)`, steps: [] }

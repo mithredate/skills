@@ -4,10 +4,13 @@ import type { Change, Snapshot } from './state.js'
 
 const POLL_MS = 60_000
 const MAX_WATCHED = 20
+// A turn that finds its work already done costs the user one line to read, not a paragraph.
+const NOTHING_LEFT = 'If nothing is left to do, reply in one line.'
 
-type Watch = { prs: Record<string, Snapshot>; turns: Record<string, number>; unwatched: string[] }
+// `mergedHere` holds the URLs of the PRs this session merged with `gh pr merge`.
+type Watch = { prs: Record<string, Snapshot>; turns: Record<string, number>; unwatched: string[]; mergedHere: string[] }
 
-const empty = (): Watch => ({ prs: {}, turns: {}, unwatched: [] })
+const empty = (): Watch => ({ prs: {}, turns: {}, unwatched: [], mergedHere: [] })
 
 let watch = empty()
 let storeKey = ''
@@ -67,6 +70,18 @@ async function refresh($: EngineInterface) {
   return report
 }
 
+// The watched PRs that turned MERGED while a `gh pr merge` ran. GitHub is asked, not the command parsed: a merge
+// with no PR named, `-R`, `--auto`, or a merge queue all leave the command's arguments a poor guide.
+// The snapshots stay as they are, so the next poll still reports the merge, as a toast.
+async function noteMergesHere($: EngineInterface) {
+  const open = Object.values(watch.prs).filter(s => s.state === 'OPEN')
+  const merged = await Promise.all(open.map(async s => ((await fetchPr($, s.url))?.state === 'MERGED' ? s.url : undefined)))
+  const urls = merged.filter(url => url !== undefined)
+  if (!urls.length) return
+  watch.mergedHere = [...new Set([...watch.mergedHere, ...urls])]
+  await save($)
+}
+
 async function add($: EngineInterface, url: string) {
   if (watch.prs[url] || watch.unwatched.includes(url) || Object.keys(watch.prs).length >= MAX_WATCHED) return
   const pr = await fetchPr($, url)
@@ -85,12 +100,12 @@ export const register: Register = on => {
       if (runningTurns.size) return
       for (const { snap, found } of await refresh($)) {
         const turn = (watch.turns[snap.url] ?? 0) + 1
-        const { what, steps } = instructions(snap, found, turn)
+        const { what, steps } = instructions(snap, found, turn, watch.mergedHere.includes(snap.url))
         $.ui.toast(`#${snap.number} ${what}`)
         if (!steps.length) continue
         watch.turns[snap.url] = turn
         await save($)
-        $.prompt.submit({ text: `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}` }).catch(() => $.ui.toast(`watch-prs could not start a turn for #${snap.number}`))
+        $.prompt.submit({ text: `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}\n\n${NOTHING_LEFT}` }).catch(() => $.ui.toast(`watch-prs could not start a turn for #${snap.number}`))
       }
     })
 
@@ -114,6 +129,7 @@ export const register: Register = on => {
     const ran = await next(e)
     if (!/\bgh\s+(pr|api)\b/.test(e.command)) return ran
     await load($)
+    if (/\bgh\s+pr\s+merge\b/.test(e.command)) await noteMergesHere($)
     const printed = /\bgh\s+pr\s+create\b/.test(e.command) ? (ran.text ?? '').match(PR_URL) ?? [] : []
     for (const url of new Set([...(e.command.match(PR_URL) ?? []), ...printed])) await add($, url)
     return ran
@@ -126,7 +142,7 @@ export const register: Register = on => {
     const report = await refresh($)
     const extra = [contextBlock(Object.values(watch.prs), await $.clock.now())]
     for (const { snap, found } of report) {
-      const { what, steps } = instructions(snap, found, 0)
+      const { what, steps } = instructions(snap, found, 0, watch.mergedHere.includes(snap.url))
       extra.push(`Since the last check, PR ${snap.url} ${what}.` + (steps.length ? " After the user's request: " + steps.join(' ') : ''))
     }
     return next({ ...e, context: [...(e.context ?? []), ...extra] })
@@ -150,6 +166,7 @@ export const register: Register = on => {
       delete watch.prs[url]
       delete watch.turns[url]
     }
+    watch.mergedHere = watch.mergedHere.filter(url => !urls.includes(url))
     watch.unwatched = [...new Set([...watch.unwatched, ...urls])]
     await save($)
     return { text: `Watching ${Object.keys(watch.prs).length} PRs. Use /watch-prs <url> to watch one again.` }
