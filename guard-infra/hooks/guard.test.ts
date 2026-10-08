@@ -48,6 +48,18 @@ const CASES: [command: string, calls: string[]][] = [
   ['parallel kubectl delete pod ::: web-1 web-2', ['kubectl delete pod ::: web-1 web-2']],
   ['time nohup kubectl delete pod web-1', ['kubectl delete pod web-1']],
   ['sudo kubectl get pods', []],
+  // A read ends the scan only where the tool is the program. Elsewhere a later word can run too.
+  ['find . -exec kubectl get -f {} \\; -exec kubectl delete -f {} \\;', ['kubectl delete -f {} ;']],
+  ['ssh host kubectl get pods \\; kubectl delete pod web-1', ['kubectl delete pod web-1']],
+  // `git` and `gh` run a command with some words.
+  ["git -c alias.x='!kubectl delete pod web-1' x", ['alias.x=!kubectl delete pod web-1']],
+  ["git rebase -x 'kubectl delete pod web-1' main", ['kubectl delete pod web-1']],
+  ['git bisect run kubectl delete pod web-1', ['kubectl delete pod web-1']],
+  ["gh alias set --shell k 'kubectl delete pod web-1'", ['kubectl delete pod web-1']],
+  // macOS finds a tool's file in any case. A version suffix is the tool too, but no known read.
+  ['Kubectl delete pod web-1', ['Kubectl delete pod web-1']],
+  ['KUBECTL get pods', []],
+  ['helm3 uninstall web', ['helm3 uninstall web']],
   // A word that holds a script runs it.
   ["watch 'kubectl delete pod web-1'", ['kubectl delete pod web-1']],
   ["watch 'kubectl get pods'", []],
@@ -59,6 +71,8 @@ const CASES: [command: string, calls: string[]][] = [
   ["for c in 'kubectl delete pod web-1'; do echo \"$c\"; done", ['kubectl delete pod web-1']],
   // A tool's name inside a word that is not a script asks, because the guard cannot tell what runs.
   ['ls kubectl/', ['ls kubectl/']],
+  // A word that splits into itself is not split again.
+  ['kubectl delete pod web-1', ['kubectl delete']],
   // Every place the shell runs a command.
   ['echo `kubectl delete pod web-1`', ['kubectl delete pod web-1']],
   ['diff <(kubectl get pods) <(helm uninstall web)', ['helm uninstall web']],
@@ -67,15 +81,29 @@ const CASES: [command: string, calls: string[]][] = [
   ['while true; do helm uninstall web; done', ['helm uninstall web']],
   ['function f { kubectl delete pod web-1; }; f', ['kubectl delete pod web-1']],
   ["$'kubectl' delete pod web-1", ['kubectl delete pod web-1']],
+  ["$'\\x6bubectl' delete pod web-1", ['kubectl delete pod web-1']],
+  ["echo $'it\\'s'; kubectl delete pod web-1", ['kubectl delete pod web-1']],
   ['echo ${X:-$(kubectl delete pod web-1)}', ['kubectl delete pod web-1']],
+  ["echo ${X:-$(kubectl get pods -o 'jsonpath={.items}'; kubectl delete pod web-1)}", ['kubectl delete pod web-1']],
   ['echo hi > "$(kubectl delete pod web-1)"', ['kubectl delete pod web-1']],
   ['cat <<EOF\n$(kubectl delete pod web-1)\nEOF', ['kubectl delete pod web-1']],
   ['cat <<\\EOF\nhi\nEOF\nkubectl delete pod web-1', ['kubectl delete pod web-1']],
-  // A shell that reads its script from a pipe, a heredoc, or a here-string asks when the line names a tool.
-  ["bash <<'EOF'\nkubectl delete pod web-1\nEOF", ['bash']],
-  ["sh <<< 'kubectl delete pod web-1'", ['sh']],
+  // A `<<` that never closes may be a shift, so the lines after it are read as commands too.
+  ['echo $[1<<2]\nkubectl delete pod web-1', ['kubectl delete pod web-1']],
+  // A program that is not text-only reads its heredoc or here-string as a script.
+  ["bash <<'EOF'\nkubectl delete pod web-1\nEOF", ['kubectl delete pod web-1']],
+  ["sh <<< 'kubectl delete pod web-1'", ['kubectl delete pod web-1']],
+  // Text that names a tool asks when a program that is not text-only reads it from a pipe or a substitution.
   ["echo 'kubectl delete pod web-1' | sh", ['sh']],
   ["cat <<'EOF' | bash\nkubectl delete pod web-1\nEOF", ['bash']],
+  ["{ echo 'kubectl delete pod web-1'; } | sh", ['sh']],
+  ["echo 'kubectl delete pod web-1' | sudo bash", ['sudo bash']],
+  ["echo 'kubectl delete pod web-1' | bash -s -- -c", ['bash -s -- -c']],
+  ["echo 'import os; os.system(\"kubectl delete pod web-1\")' | python3", ['python3']],
+  ["echo 'kubectl delete pod web-1' |\n  sh", ['sh']],
+  ["source <(echo 'kubectl delete pod web-1')", ['source $(…)']],
+  ["eval \"$(echo 'kubectl delete pod web-1')\"", ['eval $(…)']],
+  ["bash -c \"$(cat <<'EOF'\nkubectl delete pod web-1\nEOF\n)\"", ['bash -c $(…)']],
   // The false alarms the old guard raised: a tool's name as text for a program that runs no words.
   ['grep -n kubectl README.md', []],
   ["rg 'aws s3' docs/", []],
@@ -86,6 +114,19 @@ const CASES: [command: string, calls: string[]][] = [
   ['command -v kubectl && which helm', []],
   ['if grep -q kubectl Makefile; then echo found; fi', []],
   ['LC_ALL=C grep -n helm README.md', []],
+  ['while grep -q kubectl Makefile; do echo helm; done', []],
+  ['until ! grep -q kubectl log; do sleep 1; done', []],
+  ['if true; then echo kubectl; elif true; then echo helm; else { echo aws; }; fi', []],
+  ["printf 'kubectl delete %s\\n' web-1", []],
+  ['type helm', []],
+  ['grep -rn kubectl . | head -5 | sort || echo none', []],
+  ['grep -q kubectl Makefile || exit 1', []],
+  ["git commit -m \"$(cat <<'EOF'\nfix(helm): bump the chart\nEOF\n)\"", []],
+  ['AWS_PROFILE=prod aws s3 ls', []],
+  // Reads that take another read's output stay quiet.
+  ['kubectl logs $(kubectl get pod -l app=web -o name)', []],
+  ['for p in $(kubectl get pods -o name); do kubectl describe $p; done', []],
+  ['kubectl get pods -o json | jq .items | tee pods.json', []],
 ]
 
 test('finds the privileged calls that are not reads, wherever the shell runs them', async () => {
