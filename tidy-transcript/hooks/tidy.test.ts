@@ -303,3 +303,32 @@ test("names the mod and the first line of its text, with or without Claude Code'
   expect(promptLine('watch-prs', 'The watch-prs plugin sent a message: PR #79 was merged.')).toBe('› watch-prs: PR #79 was merged.')
   expect(promptLine('watch-prs', '  PR #79 was merged.\r\nMore.')).toBe('› watch-prs: PR #79 was merged.')
 })
+
+test('draws a note that a tool call follows dim, and keeps the last reply of the turn as Claude Code draws it', async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf('Checking the tests.')])
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+  await reply($, 'r3', [textOf('All tests pass.')])
+
+  const note = await drawReply($, 'r1', 'Checking the tests.')
+  const dim = await note.find({ type: 'Markdown' })
+  expect(dim?.props).toMatchObject({ text: 'Checking the tests.', dimColor: true })
+  expect(await note.find({ type: 'Text', text: '● ' })).toBeDefined()
+  await note.unmount()
+
+  const last = await drawReply($, 'r3', 'All tests pass.')
+  expect(await last.find({ type: 'Markdown' })).toBeUndefined()
+  expect(await last.find({ type: 'Text', text: 'All tests pass.' })).toBeDefined()
+  await last.unmount()
+})
+
+test('draws a note dim as soon as a tool call in the same row follows it', async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf('Running the build.'), useOf('t1', 'Bash')])
+
+  const note = await drawReply($, 'r1', 'Running the build.')
+  expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ dimColor: true })
+  await note.unmount()
+})
