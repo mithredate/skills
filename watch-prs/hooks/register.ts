@@ -1,5 +1,5 @@
 import type { Register, EngineInterface } from 'claude-code'
-import { PR_FIELDS, PR_URL, changes, contextBlock, describe, line, newReviews, toSnapshot } from './state.ts'
+import { PR_FIELDS, PR_URL, changes, contextBlock, describe, line, newActivity, toSnapshot } from './state.ts'
 import type { Change, Snapshot } from './state.ts'
 
 const POLL_MS = 60_000
@@ -10,6 +10,7 @@ type Watch = { prs: Record<string, Snapshot>; copilotRounds: Record<string, numb
 
 let watch: Watch = { prs: {}, copilotRounds: {} }
 let storeKey = ''
+let self = ''
 // A plugin's prompt waits until Claude is idle, so news found mid-turn can be stale by then.
 // Polls skip while a turn runs; the first poll after it compares against the last snapshot.
 const runningTurns = new Set<string>()
@@ -20,6 +21,9 @@ const queued = new Map<string, { url: string; found: Change[] }>()
 async function load($: EngineInterface) {
   if (storeKey) return
   storeKey = 'watch:' + (await $.session.id())
+  try {
+    self = (await $.process.run(['gh', 'api', 'user', '--jq', '.login'], { timeoutMs: 20_000 })).stdout.trim()
+  } catch {}
   watch = ((await $.store.get(storeKey)) as Watch | undefined) ?? { prs: {}, copilotRounds: {} }
 }
 
@@ -49,8 +53,12 @@ function instructions(s: Snapshot, found: Change[], copilotRound: number) {
         `Fix it if it is right; otherwise reply on the comment with the reason. Push the fixes, then re-request Copilot's review.`,
     )
   }
-  if (found.some(c => c.kind === 'review' && !c.isCopilot && c.state !== 'APPROVED'))
-    steps.push('Read the human review and address each point critically, the same way.')
+  if (found.some(c => (c.kind === 'review' && !c.isCopilot && c.state !== 'APPROVED') || c.kind === 'comment'))
+    steps.push(
+      `A person reviewed or commented. Read the review bodies and comments with \`gh pr view ${s.url} --comments\`, ` +
+        `and the inline comments with \`gh api repos/${owner}/${repo}/pulls/${s.number}/comments\`. ` +
+        `Judge each point critically. Fix it if it is right; otherwise reply with the reason. Push the fixes, then re-request that person's review.`,
+    )
   if (found.some(c => c.kind === 'checks' && c.to === 'fail'))
     steps.push(`Find the failing check with \`gh pr checks ${s.url}\`, read its log, and fix the cause.`)
   if (found.some(c => c.kind === 'merged'))
@@ -68,7 +76,7 @@ async function refresh($: EngineInterface) {
         const json = await fetchPr($, prev.url)
         if (!json) return
         const snap = toSnapshot(json, await $.clock.now())
-        const found = changes(prev, snap, newReviews(json, prev.reviewIds))
+        const found = changes(prev, snap, newActivity(json, prev, self))
         watch.prs[prev.url] = snap
         if (found.length) report.push({ snap, found })
       }),

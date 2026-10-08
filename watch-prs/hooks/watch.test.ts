@@ -1,12 +1,12 @@
 import { test, expect, mock } from 'claude-code/testing'
-import { changes, summarizeChecks, toSnapshot, newReviews } from './state.ts'
+import { changes, summarizeChecks, toSnapshot, newActivity } from './state.ts'
 
 const URL = 'https://github.com/acme/api/pull/74'
 
 function pr(over: Record<string, unknown> = {}) {
   return JSON.stringify({
     number: 74, title: 'Add export', url: URL, state: 'OPEN', reviewDecision: 'REVIEW_REQUIRED', headRefOid: 'abc',
-    reviews: [], statusCheckRollup: [{ status: 'IN_PROGRESS' }], ...over,
+    reviews: [], comments: [], statusCheckRollup: [{ status: 'IN_PROGRESS' }], ...over,
   })
 }
 
@@ -24,7 +24,7 @@ test('finds a Copilot review, a new decision, and settled checks', async () => {
     reviews: [{ id: 'r1', author: { login: 'copilot-pull-request-reviewer' }, state: 'COMMENTED' }],
     statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }],
   })
-  const found = changes(before, toSnapshot(json, 1), newReviews(json, before.reviewIds))
+  const found = changes(before, toSnapshot(json, 1), newActivity(json, before, 'me'))
   expect(found).toEqual([
     { kind: 'decision', from: 'REVIEW_REQUIRED', to: 'APPROVED' },
     { kind: 'review', author: 'copilot-pull-request-reviewer', state: 'COMMENTED', isCopilot: true },
@@ -34,8 +34,9 @@ test('finds a Copilot review, a new decision, and settled checks', async () => {
 
 test('reports a merge once', async () => {
   const merged = toSnapshot(pr({ state: 'MERGED' }), 1)
-  expect(changes(toSnapshot(pr(), 0), merged, [])).toEqual([{ kind: 'merged' }])
-  expect(changes(merged, merged, [])).toEqual([])
+  const none = { reviews: [], comments: [] }
+  expect(changes(toSnapshot(pr(), 0), merged, none)).toEqual([{ kind: 'merged' }])
+  expect(changes(merged, merged, none)).toEqual([])
 })
 
 test('watches a PR that gh opens, and starts a turn when Copilot reviews it', async ($, on) => {
@@ -45,7 +46,7 @@ test('watches a PR that gh opens, and starts a turn when Copilot reviews it', as
   const submitted: string[] = []
   const world = on as any
   world('session.id', async () => ({ value: 's1' }))
-  world('process.run', async () => ({ value: { exitCode: 0, stdout: current, stderr: '' } }))
+  world('process.run', async (_$: unknown, e: { argv: string[] }) => ({ value: { exitCode: 0, stdout: e.argv.includes('user') ? 'me\n' : current, stderr: '' } }))
   world('prompt.submit', async (_$: unknown, e: { text: string; context?: string[] }) => {
     submitted.push(e.text)
     return { text: e.text, context: e.context }
@@ -67,12 +68,18 @@ test('watches a PR that gh opens, and starts a turn when Copilot reviews it', as
   expect(submitted[0]).toContain('Copilot review round 1 of 3')
   expect(submitted[0]).toContain('gh api repos/acme/api/pulls/74/comments')
 
-  current = pr({ reviewDecision: 'APPROVED', reviews: [{ id: 'r1', author: { login: 'copilot-pull-request-reviewer' }, state: 'COMMENTED' }] })
+  current = pr({ reviews: [{ id: 'r1', author: { login: 'copilot-pull-request-reviewer' }, state: 'COMMENTED' }], comments: [{ id: 'c1', author: { login: 'sara' } }] })
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(2)
+  expect(submitted[1]).toContain('sara commented')
+  expect(submitted[1]).toContain(`gh pr view ${URL} --comments`)
+
+  current = pr({ reviewDecision: 'APPROVED', reviews: [{ id: 'r1', author: { login: 'copilot-pull-request-reviewer' }, state: 'COMMENTED' }], comments: [{ id: 'c1', author: { login: 'sara' } }] })
   const typed = await $.prompt.submit({ text: 'is it approved?', wait: false, origin: { kind: 'composer' } } as any)
   const context = ((typed as { context?: string[] }).context ?? []).join('\n')
   expect(context).toContain('review decision APPROVED')
   expect(context).toContain('review decision is now APPROVED')
-  expect(submitted.length).toBe(2)
+  expect(submitted.length).toBe(3)
 })
 
 test('skips polls during a turn, so a failure fixed in that turn is never reported', async ($, on) => {
@@ -82,7 +89,7 @@ test('skips polls during a turn, so a failure fixed in that turn is never report
   const submitted: string[] = []
   const world = on as any
   world('session.id', async () => ({ value: 's2' }))
-  world('process.run', async () => ({ value: { exitCode: 0, stdout: current, stderr: '' } }))
+  world('process.run', async (_$: unknown, e: { argv: string[] }) => ({ value: { exitCode: 0, stdout: e.argv.includes('user') ? 'me\n' : current, stderr: '' } }))
   world('prompt.submit', async (_$: unknown, e: { text: string }) => {
     submitted.push(e.text)
     return { text: e.text }
@@ -104,4 +111,16 @@ test('skips polls during a turn, so a failure fixed in that turn is never report
   await $.turn.complete({ turnId: 't1', answer: 'fixed', reason: 'answer', isAborted: false, durationMs: 1 } as any)
   await clock.advance(60_000)
   expect(submitted).toEqual([])
+})
+
+test('ignores the user\'s own reviews and comments, reports a person\'s', async () => {
+  const before = toSnapshot(pr(), 0)
+  const json = pr({
+    reviews: [{ id: 'r1', author: { login: 'me' }, state: 'COMMENTED' }, { id: 'r2', author: { login: 'amin' }, state: 'CHANGES_REQUESTED' }],
+    comments: [{ id: 'c1', author: { login: 'me' } }, { id: 'c2', author: { login: 'sara' } }],
+  })
+  expect(changes(before, toSnapshot(json, 1), newActivity(json, before, 'me'))).toEqual([
+    { kind: 'review', author: 'amin', state: 'CHANGES_REQUESTED', isCopilot: false },
+    { kind: 'comment', author: 'sara' },
+  ])
 })
