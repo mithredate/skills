@@ -1,6 +1,6 @@
 import type { Color, EngineInterface, Register, RenderElement, RenderInput } from 'claude-code'
 import { firstPromptLine, foldReply } from './fold.js'
-import { addResult, addToolUse, endThread, threadLine } from './threads.js'
+import { addResult, addToolUse, endThread, threadLine, toggleFold } from './threads.js'
 import type { Thread, ThreadState, Threads } from './threads.js'
 
 // The glyph pairs each color with a shape, so the state reads without color too.
@@ -33,27 +33,45 @@ function resultOf(block: Block) {
     : undefined
 }
 
-// The row of a thread's first call draws the thread's line. The rows of its other calls draw nothing.
+// The row of a thread's first call draws the thread's line. The rows of its other calls draw nothing until a click unfolds the thread.
 // This holds while a call runs, because a row that shows for a second and then folds is a flicker.
 async function drawRow($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, id: string | undefined, own: () => Promise<RenderElement>) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
   if (!thread) return own()
+  const isFirst = thread.firstId === id
+  if (thread.isUnfolded && !isFirst) return own()
   const { Box } = $.ui.resolve(e)
-  if (thread.firstId !== id) return <Box />
-  return drawThreadLine($, e, thread)
+  if (!isFirst) return <Box />
+  if (!thread.isUnfolded) return drawThreadLine($, e, thread)
+  return (
+    <Box flexDirection="column">
+      {drawThreadLine($, e, thread)}
+      {await own()}
+    </Box>
+  )
 }
 
+// The tool names are the button, so the pointer inverts the part a click acts on.
 function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, thread: Thread) {
-  const { Text } = $.ui.resolve(e)
+  const { Box, Text, Button } = $.ui.resolve(e)
   const line = threadLine(thread)
   const mark = STATE_MARK[line.state]
+  const time = line.seconds === undefined ? '' : `  ${line.seconds}s`
   return (
-    <Text>
+    <Box flexDirection="row">
       <Text color={mark.color}>{`${mark.glyph} `}</Text>
-      {line.tools}
+      <Button
+        key={`fold-${thread.firstId}`}
+        label={line.tools}
+        plain
+        onPress={() => {
+          toggleFold(thread)
+          $.ui.invalidate('ui.render')
+        }}
+      />
       {line.failed ? <Text color="error">{` · ${line.failed} failed`}</Text> : undefined}
-      {line.seconds === undefined ? undefined : <Text dimColor>{`  ${line.seconds}s`}</Text>}
-    </Text>
+      <Text dimColor>{`${time} ${line.isUnfolded ? '▾' : '▸'}`}</Text>
+    </Box>
   )
 }
 
@@ -126,9 +144,10 @@ export const register: Register = on => {
     )
   })
 
-  // A result draws under its row, so it shows only where the row is Claude Code's own.
+  // A result draws under its row, so it shows only where Claude Code draws the row.
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
-    if (!threads.byId.has(e.props.tool_use_id)) return next(e)
+    const thread = threads.byId.get(e.props.tool_use_id)
+    if (!thread || thread.isUnfolded) return next(e)
     const { Box } = $.ui.resolve(e)
     return <Box />
   })

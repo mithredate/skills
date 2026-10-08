@@ -81,9 +81,9 @@ test('names each tool once with its count, the failures, and the time a finished
   addToolUse(threads, 't3', 'Bash', 3_000)
   addResult(threads, 't3', true)
   const thread = threads.byId.get('t1')
-  expect(thread && threadLine(thread)).toEqual({ state: 'open', tools: 'Bash ×2 · Read', failed: 1 })
+  expect(thread && threadLine(thread)).toEqual({ state: 'open', tools: 'Bash ×2 · Read', failed: 1, isUnfolded: false })
   endThread(threads, 42_000)
-  expect(thread && threadLine(thread)).toEqual({ state: 'failed', tools: 'Bash ×2 · Read', failed: 1, seconds: 41 })
+  expect(thread && threadLine(thread)).toEqual({ state: 'failed', tools: 'Bash ×2 · Read', failed: 1, seconds: 41, isUnfolded: false })
 })
 
 test('folds a finished run of tools into one line on its first row, and draws nothing for the rest', async ($, on) => {
@@ -94,9 +94,9 @@ test('folds a finished run of tools into one line on its first row, and draws no
   await reply($, 'r3', [textOf('The build passed.')])
 
   const first = await drawToolRow($, 't1', 'Bash', false)
-  expect(await first.find({ type: 'Text', text: '✓ Bash · Read  41s' })).toBeDefined()
+  expect(await first.find({ type: 'Box', text: '✓ Bash · Read  41s ▸' })).toBeDefined()
   expect((await first.find({ type: 'Text', text: /^✓ $/ }))?.props).toMatchObject({ color: 'success' })
-  expect((await first.find({ type: 'Text', text: /^ {2}41s$/ }))?.props).toMatchObject({ dimColor: true })
+  expect((await first.find({ type: 'Text', text: /^ {2}41s ▸$/ }))?.props).toMatchObject({ dimColor: true })
   expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await first.unmount()
 
@@ -109,15 +109,43 @@ test('folds a finished run of tools into one line on its first row, and draws no
   await secondResult.unmount()
 })
 
+test("opens a finished thread's calls on a click on its line, and folds them again on a second click", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Read')])
+  await reply($, 'r2', [textOf('Both done.')])
+
+  const first = await drawToolRow($, 't1', 'Bash', false)
+  const second = await drawToolRow($, 't2', 'Read', false)
+  const firstResult = await drawToolResult($, 't1')
+  const secondResult = await drawToolResult($, 't2')
+  expect(await first.find({ type: 'Box', text: '✓ Bash · Read  0s ▸' })).toBeDefined()
+  expect(await second.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  expect(await secondResult.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+
+  await first.press({ key: 'fold-t1' })
+  expect(await first.find({ type: 'Box', text: '✓ Bash · Read  0s ▾' })).toBeDefined()
+  expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect(await second.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect(await firstResult.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect(await secondResult.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+
+  await first.press({ key: 'fold-t1' })
+  expect(await first.find({ type: 'Box', text: '✓ Bash · Read  0s ▸' })).toBeDefined()
+  expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  expect(await second.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  expect(await secondResult.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  for (const row of [first, second, firstResult, secondResult]) await row.unmount()
+})
+
 test('redraws a row that drew while its thread was open, once the thread ends', async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash')])
   const row = await drawToolRow($, 't1', 'Bash', false)
-  expect(await row.find({ type: 'Text', text: '● Bash' })).toBeDefined()
+  expect(await row.find({ type: 'Box', text: '● Bash ▸' })).toBeDefined()
   expect((await row.find({ type: 'Text', text: /^● $/ }))?.props).toMatchObject({ color: 'claude' })
 
   await reply($, 'r2', [textOf('Done.')])
-  expect(await row.find({ type: 'Text', text: '✓ Bash  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Box', text: '✓ Bash  0s ▸' })).toBeDefined()
   await row.unmount()
 })
 
@@ -126,7 +154,7 @@ test("draws a running call as its thread's line only, so no row shows and then f
   await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
 
   const first = await drawToolRow($, 't1', 'Bash', true)
-  expect(await first.find({ type: 'Text', text: '● Bash ×2' })).toBeDefined()
+  expect(await first.find({ type: 'Box', text: '● Bash ×2 ▸' })).toBeDefined()
   expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await first.unmount()
 
@@ -142,7 +170,7 @@ test('counts a call whose result is an error', async ($, on) => {
   await reply($, 'r2', [textOf('The build failed.')])
 
   const row = await drawToolRow($, 't1', 'Bash', false)
-  expect(await row.find({ type: 'Text', text: '✗ Bash · 1 failed  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Box', text: '✗ Bash · 1 failed  0s ▸' })).toBeDefined()
   expect((await row.find({ type: 'Text', text: /^✗ $/ }))?.props).toMatchObject({ color: 'error' })
   expect((await row.find({ type: 'Text', text: /^ · 1 failed$/ }))?.props).toMatchObject({ color: 'error' })
   await row.unmount()
@@ -160,7 +188,7 @@ test('never folds a question or a plan, and starts a new thread after one', asyn
     await row.unmount()
   }
   const after = await drawToolRow($, 't2', 'Read', false)
-  expect(await after.find({ type: 'Text', text: '✓ Read  0s' })).toBeDefined()
+  expect(await after.find({ type: 'Box', text: '✓ Read  0s ▸' })).toBeDefined()
   await after.unmount()
 })
 
@@ -170,7 +198,7 @@ test("draws a group of reads as its thread's line, and keeps an expanded group a
   await reply($, 'r2', [textOf('Read both.')])
 
   const folded = await drawGroup($, ['g1', 'g2'], false)
-  expect(await folded.find({ type: 'Text', text: '✓ Read ×2  0s' })).toBeDefined()
+  expect(await folded.find({ type: 'Box', text: '✓ Read ×2  0s ▸' })).toBeDefined()
   await folded.unmount()
 
   const expanded = await drawGroup($, ['g1', 'g2'], true)
@@ -184,7 +212,7 @@ test('ends the open thread when the turn ends', async ($, on) => {
   await $.turn.complete({ turnId: 'turn-1', answer: '', reason: 'aborted', isAborted: true, durationMs: 1 })
 
   const row = await drawToolRow($, 't1', 'Bash', false)
-  expect(await row.find({ type: 'Text', text: '✓ Bash  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Box', text: '✓ Bash  0s ▸' })).toBeDefined()
   await row.unmount()
 })
 
@@ -263,7 +291,7 @@ test("draws a running group as its thread's line only", async ($, on) => {
     { tool_use_id: 'g2', tool: 'Read', input: {}, isRunning: true, isErrored: false, isInterrupted: false },
   ]
   const group = await $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'ToolGroup', requestId: 'g1', props: { calls, isActive: true, isExpanded: false } })
-  expect(await group.find({ type: 'Text', text: '● Read ×2' })).toBeDefined()
+  expect(await group.find({ type: 'Box', text: '● Read ×2 ▸' })).toBeDefined()
   expect(await group.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await group.unmount()
 })
