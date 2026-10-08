@@ -67,8 +67,8 @@ export function newActivity(json: string, prev: Snapshot, self: string) {
     return !seen.includes(x.id) && (self ? login !== self : isCopilot(login))
   }
   return {
-    reviews: (pr.reviews as Review[] ?? []).filter(isNew(prev.reviewIds)),
-    comments: (pr.comments as Comment[] ?? []).filter(isNew(prev.commentIds)),
+    reviews: (pr.reviews as Review[] ?? []).filter(isNew(prev.reviewIds ?? [])),
+    comments: (pr.comments as Comment[] ?? []).filter(isNew(prev.commentIds ?? [])),
   }
 }
 

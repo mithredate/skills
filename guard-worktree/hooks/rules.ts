@@ -16,10 +16,10 @@ export type WorktreeAdd = { dir?: string; createsBranch: boolean; startPoint?: s
 
 const VALUE_FLAGS = new Set(['-b', '-B', '--reason', '--orphan'])
 
-// Reads the first `git [-C dir] worktree add ...` that starts a command: at the start, or after `;`, `&`, `|` or `(`.
-// Text inside a quoted argument, such as a commit message, does not match. Quotes inside the command itself are not handled.
+// Reads the first `git [-C dir] worktree add ...` that starts a command: at the start of a line, or after `;`, `&`, `|` or `(`.
+// Quoted text matches only when one of those characters comes right before it, as in `-m "x; git worktree add ..."`.
 export function parseWorktreeAdd(command: string): WorktreeAdd | undefined {
-  const match = command.match(/(?:^|[;&|(])\s*git\s+(?:-C\s+(\S+)\s+)?worktree\s+add\b([^;&|\n]*)/)
+  const match = command.match(/(?:^|[\n;&|(])\s*git\s+(?:-C\s+(\S+)\s+)?worktree\s+add\b([^;&|\n]*)/)
   if (!match) return undefined
   const args = (match[2] ?? '').trim().split(/\s+/).filter(Boolean)
   const positional: string[] = []

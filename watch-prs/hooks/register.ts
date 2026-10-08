@@ -145,7 +145,7 @@ export const register: Register = on => {
   on('command.run', { command: 'unwatch-prs' }, async ($, e) => {
     await load($)
     const target = e.args.trim()
-    const urls = target === 'all' ? Object.keys(watch.prs) : [target]
+    const urls = target === 'all' ? Object.keys(watch.prs) : target.match(PR_URL) ?? []
     for (const url of urls) {
       delete watch.prs[url]
       delete watch.turns[url]
@@ -155,4 +155,3 @@ export const register: Register = on => {
     return { text: `Watching ${Object.keys(watch.prs).length} PRs. Use /watch-prs <url> to watch one again.` }
   })
 }
-

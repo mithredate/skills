@@ -100,6 +100,7 @@ test('ignores worktree text inside a quoted argument', async ($, on) => {
 test('parses worktree add commands at a command position', async () => {
   expect(parseWorktreeAdd('git -C /r worktree add .worktrees/x -b x origin/main')).toEqual({ dir: '/r', createsBranch: true, startPoint: 'origin/main' })
   expect(parseWorktreeAdd('cd /r && git worktree add ../y existing')).toEqual({ dir: undefined, createsBranch: false, startPoint: 'existing' })
+  expect(parseWorktreeAdd('cd /r\ngit worktree add ../z -b z main')).toEqual({ dir: undefined, createsBranch: true, startPoint: 'main' })
   expect(parseWorktreeAdd('echo "git worktree add -b x main"')).toBeUndefined()
   expect(parseWorktreeAdd('git status')).toBeUndefined()
 })
