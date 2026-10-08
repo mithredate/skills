@@ -1,4 +1,4 @@
-import type { AgentInfo, On, SessionMessage } from 'claude-code'
+import type { AgentInfo, CommandSpec, On, SessionMessage } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
@@ -102,4 +102,16 @@ test('opens the pane on /show-session and closes it on the next /show-session', 
   expect(panes).toEqual([PANE])
   await $.command.run(typed)
   expect(panes).toEqual([])
+})
+
+test('registers /show-session to run at once, so the pane opens while a turn runs', async ($, on) => {
+  claudeCode(on)
+  const registered: CommandSpec[] = []
+  on('session.start', async (_$, e) => ({ cwd: e.cwd }))
+  on('command.register', async (_$, e) => {
+    registered.push(e)
+    return { value: { command: e.name } }
+  })
+  await $.session.start({ cwd: '/repo', surface: 'terminal', isInteractive: true })
+  expect(registered).toMatchObject([{ name: 'show-session', immediate: true }])
 })

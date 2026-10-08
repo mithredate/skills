@@ -142,7 +142,11 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'show-session', description: 'Open or close the session pane: skills, folders, shell commands, and agents' })
+    await $.command.register({
+      name: 'show-session',
+      description: 'Open or close the session pane: skills, folders, shell commands, and agents',
+      immediate: true,
+    })
     return next(e)
   })
 
