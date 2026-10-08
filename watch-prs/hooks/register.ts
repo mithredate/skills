@@ -1,5 +1,5 @@
 import type { Register, EngineInterface } from 'claude-code'
-import { PR_FIELDS, PR_URL, changes, contextBlock, instructions, line, mergeTargets, newActivity, parsePr, toSnapshot } from './state.js'
+import { PR_FIELDS, PR_URL, changes, contextBlock, instructions, line, newActivity, parsePr, toSnapshot } from './state.js'
 import type { Change, Snapshot } from './state.js'
 
 const POLL_MS = 60_000
@@ -70,6 +70,18 @@ async function refresh($: EngineInterface) {
   return report
 }
 
+// The watched PRs that turned MERGED while a `gh pr merge` ran. GitHub is asked, not the command parsed: a merge
+// with no PR named, `-R`, `--auto`, or a merge queue all leave the command's arguments a poor guide.
+// The snapshots stay as they are, so the next poll still reports the merge, as a toast.
+async function noteMergesHere($: EngineInterface) {
+  const open = Object.values(watch.prs).filter(s => s.state === 'OPEN')
+  const merged = await Promise.all(open.map(async s => ((await fetchPr($, s.url))?.state === 'MERGED' ? s.url : undefined)))
+  const urls = merged.filter(url => url !== undefined)
+  if (!urls.length) return
+  watch.mergedHere = [...new Set([...watch.mergedHere, ...urls])]
+  await save($)
+}
+
 async function add($: EngineInterface, url: string) {
   if (watch.prs[url] || watch.unwatched.includes(url) || Object.keys(watch.prs).length >= MAX_WATCHED) return
   const pr = await fetchPr($, url)
@@ -117,13 +129,7 @@ export const register: Register = on => {
     const ran = await next(e)
     if (!/\bgh\s+(pr|api)\b/.test(e.command)) return ran
     await load($)
-    if (!ran.deny && !ran.isError) {
-      const merged = mergeTargets(e.command, Object.values(watch.prs))
-      if (merged.length) {
-        watch.mergedHere = [...new Set([...watch.mergedHere, ...merged])]
-        await save($)
-      }
-    }
+    if (/\bgh\s+pr\s+merge\b/.test(e.command)) await noteMergesHere($)
     const printed = /\bgh\s+pr\s+create\b/.test(e.command) ? (ran.text ?? '').match(PR_URL) ?? [] : []
     for (const url of new Set([...(e.command.match(PR_URL) ?? []), ...printed])) await add($, url)
     return ran
@@ -160,6 +166,7 @@ export const register: Register = on => {
       delete watch.prs[url]
       delete watch.turns[url]
     }
+    watch.mergedHere = watch.mergedHere.filter(url => !urls.includes(url))
     watch.unwatched = [...new Set([...watch.unwatched, ...urls])]
     await save($)
     return { text: `Watching ${Object.keys(watch.prs).length} PRs. Use /watch-prs <url> to watch one again.` }

@@ -136,12 +136,6 @@ export function contextBlock(snaps: Snapshot[], now: number) {
   return ['Live state of the PRs this session watches. It is newer than anything earlier in the conversation:', ...rows].join('\n')
 }
 
-// The watched PRs that `gh pr merge` commands name, by URL or by number.
-export function mergeTargets(command: string, watched: Snapshot[]) {
-  const args = [...command.matchAll(/\bgh\s+pr\s+merge\b([^;&|\n]*)/g)].flatMap(m => (m[1] ?? '').trim().split(/\s+/))
-  return watched.filter(s => args.includes(s.url) || args.includes(String(s.number))).map(s => s.url)
-}
-
 // What Claude does about the changes. `turn` is the automatic turn's number for this PR, or 0 inside the user's own turn.
 // A merge this session ran is not news: the session already knows what comes after it.
 export function instructions(s: Snapshot, found: Change[], turn: number, isMergedHere = false) {

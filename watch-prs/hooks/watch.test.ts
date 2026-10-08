@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import { MAX_TURNS_PER_PR, changes, instructions, mergeTargets, newActivity, summarizeChecks, toSnapshot } from './state.js'
+import { MAX_TURNS_PER_PR, changes, instructions, newActivity, summarizeChecks, toSnapshot } from './state.js'
 import type { PrJson, Review } from './state.js'
 
 const URL = 'https://github.com/acme/api/pull/74'
@@ -154,31 +154,37 @@ test('watches only the PR a command names, and keeps an unwatched PR unwatched',
   expect((await $.command.run({ command: 'watch-prs', args: '', ...TYPED })).text).toContain('No PRs watched')
 })
 
-test('finds the watched PRs that gh pr merge commands name, by URL or by number', async () => {
-  const watched = [toSnapshot(pr(), 0), toSnapshot(pr({ number: 80, url: OTHER }), 0)]
-  expect(mergeTargets('gh pr merge 74 --squash --delete-branch', watched)).toEqual([URL])
-  expect(mergeTargets(`cd /repo && gh pr merge --squash ${OTHER}`, watched)).toEqual([OTHER])
-  expect(mergeTargets('gh pr merge 99 && gh pr view 74', watched)).toEqual([])
-  expect(mergeTargets('gh pr view 74', watched)).toEqual([])
-})
-
-test('starts no turn for a merge this session ran, and still shows it in a toast', async ($, on) => {
+test('starts no turn for a merge this session ran, even with no PR named, and still shows a toast', async ($, on) => {
   const gh = { pr: pr() }
   const { clock, submitted, toasts } = await startSession($, on, gh)
   await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
 
-  await $.tool.call({ tool: 'Bash', command: 'gh pr merge 74 --squash --delete-branch' })
   gh.pr = pr({ state: 'MERGED' })
+  await $.tool.call({ tool: 'Bash', command: 'gh pr merge --squash --delete-branch' })
   await clock.advance(60_000)
   expect(submitted).toEqual([])
   expect(toasts).toContain('#74 was merged')
 })
 
-test('starts a turn for a merge made elsewhere, and asks for one line when nothing is left', async ($, on) => {
+test("leaves the merge step out of the user's own turn after a merge this session ran", async ($, on) => {
+  const gh = { pr: pr() }
+  await startSession($, on, gh)
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+
+  gh.pr = pr({ state: 'MERGED' })
+  await $.tool.call({ tool: 'Bash', command: 'gh pr merge 74 --squash' })
+  const typed = await $.prompt.submit({ text: 'what next?', wait: false, origin: { kind: 'composer' } })
+  const context = (typed.context ?? []).join('\n')
+  expect(context).toContain('was merged')
+  expect(context).not.toContain('Remove the merged worktree')
+})
+
+test('starts a turn when a merge this session asked for lands later, as with --auto', async ($, on) => {
   const gh = { pr: pr() }
   const { clock, submitted } = await startSession($, on, gh)
   await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
 
+  await $.tool.call({ tool: 'Bash', command: 'gh pr merge 74 --auto --squash' })
   gh.pr = pr({ state: 'MERGED' })
   await clock.advance(60_000)
   expect(submitted.length).toBe(1)
