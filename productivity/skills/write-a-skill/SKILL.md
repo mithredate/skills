@@ -44,6 +44,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 
 - An agent file lives at `<plugin>/agents/<name>.md`. It holds one role.
 - The frontmatter holds `name`, `description`, `tools` as an allowlist, `model`, and `maxTurns`. The description names the skills that spawn the agent.
+- Do not set `effort` in a skill. A skill that loads in the main session keeps its level for the rest of the session, and that level can be lower than the user's level. An agent file can set `effort`, because the level applies only inside the agent. Set a judgment agent, such as a reviewer, to `xhigh` so it never runs below the user's level.
 - The body ends with the exact JSON that the agent returns. A caller that uses the Workflow tool copies that JSON as its schema.
 - A caller spawns the agent as `<plugin>:<name>`. A session registers plugin agents at its start, so a new agent resolves only in a session started after the plugin update.
 
