@@ -37,17 +37,55 @@ const CASES: [command: string, calls: string[]][] = [
   ['/opt/homebrew/bin/kubectl delete pod web-1', ['/opt/homebrew/bin/kubectl delete pod web-1']],
   ['echo "pods: $(kubectl delete pod web-1)"', ['kubectl delete pod web-1']],
   ['if kubectl delete pod web-1; then echo gone; fi', ['kubectl delete pod web-1']],
-  // Wrappers run the command after them.
+  // Any other program can run the words it is given. A tool's name in them is a call, unless it is a read.
   ['env AWS_PROFILE=prod aws s3 rm s3://bucket/key', ['aws s3 rm s3://bucket/key']],
   ['xargs kubectl delete pod < pods.txt', ['kubectl delete pod']],
   ['sudo -u ops terraform destroy', ['terraform destroy']],
   ['timeout 30 helm rollback api 3 2>&1 | tail -5', ['helm rollback api 3']],
-  // The false alarms the old guard raised: a tool's name as text, not as the command that runs.
+  ['sudo --user root kubectl delete pod web-1', ['kubectl delete pod web-1']],
+  ['timeout --signal KILL 5 kubectl delete pod web-1', ['kubectl delete pod web-1']],
+  ['find . -name "*.yaml" -exec kubectl delete -f {} \\;', ['kubectl delete -f {} ;']],
+  ['parallel kubectl delete pod ::: web-1 web-2', ['kubectl delete pod ::: web-1 web-2']],
+  ['time nohup kubectl delete pod web-1', ['kubectl delete pod web-1']],
+  ['sudo kubectl get pods', []],
+  // A word that holds a script runs it.
+  ["watch 'kubectl delete pod web-1'", ['kubectl delete pod web-1']],
+  ["watch 'kubectl get pods'", []],
+  ["fish -c 'kubectl delete pod web-1'", ['kubectl delete pod web-1']],
+  ["bash -c -x 'kubectl delete pod web-1'", ['kubectl delete pod web-1']],
+  ["eval 'kubectl delete pod web-1'", ['kubectl delete pod web-1']],
+  ["python3 - <<'EOF'\nimport os; os.system('kubectl delete pod web-1')\nEOF", ['kubectl delete pod web-1']],
+  // A loop's words can run as `$c`.
+  ["for c in 'kubectl delete pod web-1'; do echo \"$c\"; done", ['kubectl delete pod web-1']],
+  // A tool's name inside a word that is not a script asks, because the guard cannot tell what runs.
+  ['ls kubectl/', ['ls kubectl/']],
+  // Every place the shell runs a command.
+  ['echo `kubectl delete pod web-1`', ['kubectl delete pod web-1']],
+  ['diff <(kubectl get pods) <(helm uninstall web)', ['helm uninstall web']],
+  ['! kubectl delete pod web-1', ['kubectl delete pod web-1']],
+  ['{ kubectl delete pod web-1; }', ['kubectl delete pod web-1']],
+  ['while true; do helm uninstall web; done', ['helm uninstall web']],
+  ['function f { kubectl delete pod web-1; }; f', ['kubectl delete pod web-1']],
+  ["$'kubectl' delete pod web-1", ['kubectl delete pod web-1']],
+  ['echo ${X:-$(kubectl delete pod web-1)}', ['kubectl delete pod web-1']],
+  ['echo hi > "$(kubectl delete pod web-1)"', ['kubectl delete pod web-1']],
+  ['cat <<EOF\n$(kubectl delete pod web-1)\nEOF', ['kubectl delete pod web-1']],
+  ['cat <<\\EOF\nhi\nEOF\nkubectl delete pod web-1', ['kubectl delete pod web-1']],
+  // A shell that reads its script from a pipe, a heredoc, or a here-string asks when the line names a tool.
+  ["bash <<'EOF'\nkubectl delete pod web-1\nEOF", ['bash']],
+  ["sh <<< 'kubectl delete pod web-1'", ['sh']],
+  ["echo 'kubectl delete pod web-1' | sh", ['sh']],
+  ["cat <<'EOF' | bash\nkubectl delete pod web-1\nEOF", ['bash']],
+  // The false alarms the old guard raised: a tool's name as text for a program that runs no words.
   ['grep -n kubectl README.md', []],
   ["rg 'aws s3' docs/", []],
   ['echo "run kubectl delete pod web-1 yourself"', []],
-  ["for c in 'kubectl delete pod web-1'; do echo \"$c\"; done", []],
   ["cat <<'EOF'\nkubectl delete pod web-1\nEOF", []],
+  ["git commit -m 'guard kubectl delete and helm uninstall'", []],
+  ['gh pr create --body "helm uninstall now asks"', []],
+  ['command -v kubectl && which helm', []],
+  ['if grep -q kubectl Makefile; then echo found; fi', []],
+  ['LC_ALL=C grep -n helm README.md', []],
 ]
 
 test('finds the privileged calls that are not reads, wherever the shell runs them', async () => {
@@ -92,6 +130,12 @@ test('refuses a privileged write when no one answers, as in claude -p or after E
   claudeCode(on, new Error('dismissed'))
   const ran = await $.tool.call({ tool: 'Bash', command: 'kubectl delete pod web-1' })
   expect(refusal(ran)).toContain('no one answered')
+})
+
+test('refuses the call when the guard itself fails, so an error never lets a call through', async ($, on) => {
+  claudeCode(on, 'Run')
+  const ran = await $.tool.call({ tool: 'Bash', command: null as never })
+  expect(refusal(ran)).toContain('guard-infra failed')
 })
 
 test('runs a read and a command with no privileged call without a question', async ($, on) => {

@@ -1,9 +1,16 @@
-// A command line split the way the shell splits it, so a tool's name counts only where the shell runs it.
+// A command line split the way the shell splits it. A word that names a tool asks, unless the guard can tell it is text or a read.
+// An unknown form then costs one question, not a missed call.
 // ponytail: no expansion. A program word built from a variable or a substitution, such as `$KUBECTL delete`, is not seen.
 
-const PRIVILEGED = new Set(['aws', 'aws-vault', 'kubectl', 'helm'])
+const TOOLS = new Set(['aws', 'aws-vault', 'kubectl', 'helm', 'terraform'])
+// A tool's name inside a word, such as `kubectl/` or `/opt/bin/kubectl`, but not inside a longer name, such as `kubectl-prod`.
+const TOOL_NAME = new RegExp(`(^|[^A-Za-z0-9_-])(${[...TOOLS].join('|')})(?![A-Za-z0-9_-])`)
 const TERRAFORM_WRITES = new Set(['apply', 'destroy'])
-const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh'])
+// These programs never run the words they are given.
+const TEXT_ONLY = new Set(['echo', 'printf', 'grep', 'rg', 'cat', 'git', 'gh', 'which', 'type'])
+// A shell with no `-c` script reads its script from a pipe, a heredoc, a here-string, or a file.
+const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish'])
+const SCRIPT_FLAG = /^-[A-Za-z]*c[A-Za-z]*$/
 
 const AWS_READ_OPERATION = /^(get|describe|list)-/
 const AWS_CREDENTIAL_OPERATION = /^get-(secret-value|login-password|session-token|federation-token|token|authorization-token|credentials|.*-credentials)$/
@@ -11,34 +18,21 @@ const KUBECTL_READ_VERBS = new Set(['get', 'describe', 'logs', 'top', 'explain',
 const KUBECTL_READ_CONFIG = new Set(['get-contexts', 'current-context'])
 const HELM_READ_VERBS = new Set(['list', 'ls', 'status', 'history'])
 
-// A wrapper runs the command after its own options. `flagsWithValue` take the next word, and `positionals` words come before the command.
-type Wrapper = { flagsWithValue: Set<string>; positionals: number }
-const WRAPPERS: Record<string, Wrapper> = {
-  env: { flagsWithValue: new Set(['-u', '-C']), positionals: 0 },
-  sudo: { flagsWithValue: new Set(['-u', '-g', '-C', '-D', '-h', '-p', '-r', '-t', '-U', '-T']), positionals: 0 },
-  doas: { flagsWithValue: new Set(['-u', '-C']), positionals: 0 },
-  command: { flagsWithValue: new Set(), positionals: 0 },
-  exec: { flagsWithValue: new Set(['-a']), positionals: 0 },
-  nohup: { flagsWithValue: new Set(), positionals: 0 },
-  nice: { flagsWithValue: new Set(['-n']), positionals: 0 },
-  time: { flagsWithValue: new Set(['-f', '-o']), positionals: 0 },
-  timeout: { flagsWithValue: new Set(['-s', '-k']), positionals: 1 },
-  xargs: { flagsWithValue: new Set(['-n', '-I', '-P', '-L', '-d', '-E', '-s', '-a']), positionals: 0 },
-  watch: { flagsWithValue: new Set(['-n']), positionals: 0 },
-}
 // `command -v kubectl` names a command and runs nothing.
 const LOOKUP_FLAGS = new Set(['-v', '-V'])
 
 // A reserved word before a command, as in `if kubectl …` or `do kubectl …`.
 const RESERVED_PREFIXES = new Set(['if', 'then', 'else', 'elif', 'do', 'while', 'until', '!', '{'])
-// A command that starts with one of these runs none of its words, as in `for c in 'kubectl delete'`.
-const NO_COMMAND = new Set(['for', 'case', 'select', 'function', 'fi', 'done', 'esac', '}', 'in'])
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*\+?=/
 const REDIRECTION = /^(&>>|&>|<<<|<<-|<<|<&|>&|>>|>\||<>|<|>)/
 const SEPARATORS = new Set([';', '&', '|', '(', ')'])
 const BLANKS = new Set([' ', '\t'])
+const WHITESPACE = /\s/
 
-type Script = { commands: string[][]; nested: string[] }
+// A simple command: its words, and the text it reads from a heredoc or a here-string.
+type Command = { words: string[]; input: string[] }
+type Script = { commands: Command[]; nested: string[] }
+type Heredoc = { delimiter: string; isQuoted: boolean; command: Command }
 
 const basename = (word: string) => word.slice(word.lastIndexOf('/') + 1)
 const endOf = (index: number, text: string) => (index < 0 ? text.length : index)
@@ -95,55 +89,50 @@ function doubleQuoted(inner: string, nested: string[]) {
   return text
 }
 
-// The word a redirection points at, with its quotes taken off, and the index after it.
-function redirectionTarget(text: string, from: number) {
+// Gives each heredoc that the line before `from` opened its body, and returns the index after the bodies.
+// The shell runs the substitutions in a body whose delimiter has no quotes.
+function readHeredocs(text: string, from: number, heredocs: Heredoc[], nested: string[]) {
   let i = from
-  while (BLANKS.has(text[i] ?? '')) i++
-  let word = ''
-  while (i < text.length && !BLANKS.has(text[i] ?? '') && !SEPARATORS.has(text[i] ?? '') && text[i] !== '\n') {
-    const c = text[i] ?? ''
-    if (c === "'" || c === '"') {
-      const end = endOf(text.indexOf(c, i + 1), text)
-      word += text.slice(i + 1, end)
-      i = end + 1
-    } else {
-      word += c
-      i++
-    }
-  }
-  return { word, end: i }
-}
-
-// The index after the bodies of the heredocs that the line before `from` opened.
-function skipHeredocs(text: string, from: number, delimiters: string[]) {
-  let i = from
-  for (const delimiter of delimiters) {
+  for (const { delimiter, isQuoted, command } of heredocs) {
+    const lines: string[] = []
     while (i < text.length) {
       const end = endOf(text.indexOf('\n', i), text)
-      const line = text.slice(i, end).replace(/^\t+/, '')
+      const line = text.slice(i, end)
       i = end + 1
-      if (line === delimiter) break
+      if (line.replace(/^\t+/, '') === delimiter) break
+      lines.push(line)
     }
+    const body = lines.join('\n')
+    command.input.push(isQuoted ? body : doubleQuoted(body, nested))
   }
   return i
 }
 
-export function splitScript(text: string): Script {
-  const commands: string[][] = []
+function splitScript(text: string): Script {
+  const commands: Command[] = []
   const nested: string[] = []
-  let words: string[] = []
+  let command: Command = { words: [], input: [] }
   let word = ''
   let hasWord = false
-  let heredocs: string[] = []
+  let isQuoted = false
+  // The operator whose target the next word is. A file name target is dropped.
+  let redirection: string | undefined
+  let heredocs: Heredoc[] = []
   const endWord = () => {
-    if (hasWord) words.push(word)
+    if (!hasWord) return
+    if (redirection === '<<' || redirection === '<<-') heredocs.push({ delimiter: word, isQuoted, command })
+    else if (redirection === '<<<') command.input.push(word)
+    else if (redirection === undefined) command.words.push(word)
+    redirection = undefined
     word = ''
     hasWord = false
+    isQuoted = false
   }
   const endCommand = () => {
     endWord()
-    if (words.length) commands.push(words)
-    words = []
+    redirection = undefined
+    if (command.words.length) commands.push(command)
+    command = { words: [], input: [] }
   }
   const substitute = (script: string) => {
     nested.push(script)
@@ -157,17 +146,23 @@ export function splitScript(text: string): Script {
       if (text[i + 1] !== '\n') {
         word += text[i + 1] ?? ''
         hasWord = true
+        isQuoted = true
       }
       i += 2
+    } else if (c === '$' && (text[i + 1] === "'" || text[i + 1] === '"')) {
+      // `$'…'` and `$"…"` quote a word as `'…'` and `"…"` do.
+      i++
     } else if (c === "'") {
       const end = endOf(text.indexOf("'", i + 1), text)
       word += text.slice(i + 1, end)
       hasWord = true
+      isQuoted = true
       i = end + 1
     } else if (c === '"') {
       const end = closingQuote(text, i + 1)
       word += doubleQuoted(text.slice(i + 1, end), nested)
       hasWord = true
+      isQuoted = true
       i = end + 1
     } else if (text.startsWith('$(', i) || text.startsWith('<(', i) || text.startsWith('>(', i)) {
       const end = closingParen(text, i + 2)
@@ -178,29 +173,29 @@ export function splitScript(text: string): Script {
       substitute(text.slice(i + 1, end))
       i = end + 1
     } else if (text.startsWith('${', i)) {
+      // A substitution inside the braces, as in `${X:-$(…)}`, runs too.
       const end = endOf(text.indexOf('}', i), text)
-      word += text.slice(i, end + 1)
+      word += doubleQuoted(text.slice(i, end + 1), nested)
       hasWord = true
       i = end + 1
     } else if (c === '#' && !hasWord) {
       i = endOf(text.indexOf('\n', i), text)
     } else if (c === '\n') {
       endCommand()
-      i = skipHeredocs(text, i + 1, heredocs)
+      i = readHeredocs(text, i + 1, heredocs, nested)
       heredocs = []
     } else if (BLANKS.has(c)) {
       endWord()
       i++
     } else if (c === '<' || c === '>' || (c === '&' && text[i + 1] === '>')) {
       // A file descriptor number before the operator belongs to the redirection, as in `2>&1`.
-      if (/^\d+$/.test(word)) {
+      if (/^\d+$/.test(word) && !isQuoted) {
         word = ''
         hasWord = false
       } else endWord()
       const operator = REDIRECTION.exec(text.slice(i))?.[0] ?? c
-      const target = redirectionTarget(text, i + operator.length)
-      if (operator === '<<' || operator === '<<-') heredocs.push(target.word)
-      i = target.end
+      redirection = operator
+      i += operator.length
     } else if (SEPARATORS.has(c)) {
       endCommand()
       i++
@@ -214,31 +209,12 @@ export function splitScript(text: string): Script {
   return { commands, nested }
 }
 
-// The words from the program on, after reserved words, assignments, and wrappers. Undefined when the command runs nothing.
-function commandWords(words: string[]) {
+// The words from the program on, after reserved words and assignments, so `if grep kubectl …` is a text-only program.
+function programWords(words: string[]) {
   let i = 0
   while (RESERVED_PREFIXES.has(words[i] ?? '')) i++
-  if (NO_COMMAND.has(words[i] ?? '')) return undefined
-  for (;;) {
-    while (ASSIGNMENT.test(words[i] ?? '')) i++
-    const name = basename(words[i] ?? '')
-    const wrapper = WRAPPERS[name]
-    if (!wrapper) break
-    i++
-    let positionals = wrapper.positionals
-    while (i < words.length) {
-      const word = words[i] ?? ''
-      if (word === '--') {
-        i++
-        break
-      }
-      if (name === 'command' && LOOKUP_FLAGS.has(word)) return undefined
-      if (word.startsWith('-')) i += wrapper.flagsWithValue.has(word) ? 2 : 1
-      else if (ASSIGNMENT.test(word) || positionals-- > 0) i++
-      else break
-    }
-  }
-  return i < words.length ? words.slice(i) : undefined
+  while (ASSIGNMENT.test(words[i] ?? '')) i++
+  return words.slice(i)
 }
 
 // Global flags sit between the tool and its verb, for example `--profile x` or `-n x`.
@@ -264,31 +240,36 @@ function isReadOnly(tool: string, args: string[]) {
     return KUBECTL_READ_VERBS.has(first ?? '') && !args.some(arg => /secret/.test(arg))
   }
   if (tool === 'helm') return HELM_READ_VERBS.has(first ?? '')
+  if (tool === 'terraform') return !TERRAFORM_WRITES.has(first ?? '')
   return false
 }
 
-// The script a shell runs with `-c`, as in `sh -c '…'` or `bash -lc "…"`.
-function shellScript(args: string[]) {
-  const flag = args.findIndex(arg => /^-[A-Za-z]*c[A-Za-z]*$/.test(arg))
-  return flag < 0 ? undefined : args[flag + 1]
+// The call from the tool's word on, unless it is a read.
+function toolCall(words: string[]) {
+  const [program = '', ...args] = words
+  return isReadOnly(basename(program), args) ? [] : [words.join(' ')]
 }
 
-function privilegedCallsIn(words: string[]): string[] {
-  const command = commandWords(words)
-  if (!command) return []
-  const [program = '', ...args] = command
+function privilegedCallsIn({ words, input }: Command, script: string): string[] {
+  const run = programWords(words)
+  const [program = '', ...args] = run
   const name = basename(program)
-  if (SHELLS.has(name)) {
-    const script = shellScript(args)
-    return script === undefined ? [] : privilegedCalls(script)
+  if (TEXT_ONLY.has(name) || (name === 'command' && LOOKUP_FLAGS.has(args[0] ?? ''))) return []
+  if (SHELLS.has(name) && !args.some(arg => SCRIPT_FLAG.test(arg))) return TOOL_NAME.test(script) ? [run.join(' ')] : []
+  // Any other program can run a word it is given, as `sudo`, `xargs`, `find -exec`, and `watch` do.
+  const calls = input.flatMap(privilegedCalls)
+  for (const [i, word] of run.entries()) {
+    if (!TOOL_NAME.test(word)) continue
+    // A word with a blank in it is a script, as in `sh -c '…'`. A word that splits into itself is not.
+    if (WHITESPACE.test(word) && word !== script) calls.push(...privilegedCalls(word))
+    else if (TOOLS.has(basename(word))) return [...calls, ...toolCall(run.slice(i))]
+    else return [...calls, run.join(' ')]
   }
-  if (name === 'eval') return privilegedCalls(args.join(' '))
-  if (name === 'terraform') return TERRAFORM_WRITES.has(positionalArgs(args)[0] ?? '') ? [command.join(' ')] : []
-  return PRIVILEGED.has(name) && !isReadOnly(name, args) ? [command.join(' ')] : []
+  return calls
 }
 
-// Each call of a privileged tool in the command that is not a read, as written from its program word on.
+// Each call of a privileged tool in the command that is not a read, as written from the tool's word on.
 export function privilegedCalls(command: string): string[] {
   const { commands, nested } = splitScript(command)
-  return [...commands.flatMap(privilegedCallsIn), ...nested.flatMap(privilegedCalls)]
+  return [...commands.flatMap(each => privilegedCallsIn(each, command)), ...nested.flatMap(privilegedCalls)]
 }
