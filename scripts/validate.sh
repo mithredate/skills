@@ -71,14 +71,16 @@ else for hooks_json in */hooks/hooks.json; do
 done; fi
 
 # A mod's types come from the claude build. A `--plugin-dir` load writes them
-# to .claude-plugin/types/ with no sign-in, and the empty prompt then makes
-# claude exit. A build with no mods writes none.
+# to .claude-plugin/types/, and the empty prompt then makes claude exit. A
+# build or an environment where mods are off writes none. The old types go
+# first, so a failed load cannot pass against them.
 echo
 echo "→ mod types"
 for hooks_json in */hooks/hooks.json; do
   jq -e '.modules' "$hooks_json" >/dev/null || continue
   plugin_dir=$(dirname "$(dirname "$hooks_json")")
-  claude -p --plugin-dir "$plugin_dir" "" >/dev/null 2>&1 || true
+  rm -rf "$plugin_dir/.claude-plugin/types"
+  claude -p --plugin-dir "$plugin_dir" "" </dev/null >/dev/null 2>&1 || true
   if [ ! -f "$plugin_dir/.claude-plugin/types/tsconfig.json" ]; then
     echo "⚠ this claude wrote no mod types; skipped the type check of $plugin_dir. Run it locally."
     # In a folder with no mod, `claude plugin test` prints why mods cannot load.

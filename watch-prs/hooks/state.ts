@@ -11,7 +11,11 @@ export type ReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED' | 'DISM
 
 export type Review = { id: string; author?: { login?: string }; state: ReviewState }
 type Comment = { id: string; author?: { login?: string } }
-type Check = { status?: string; conclusion?: string; state?: string }
+type CheckStatus = 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED' | 'WAITING' | 'PENDING' | 'REQUESTED'
+type CheckConclusion = 'ACTION_REQUIRED' | 'CANCELLED' | 'FAILURE' | 'NEUTRAL' | 'SKIPPED' | 'STALE' | 'STARTUP_FAILURE' | 'SUCCESS' | 'TIMED_OUT'
+type StatusState = 'ERROR' | 'EXPECTED' | 'FAILURE' | 'PENDING' | 'SUCCESS'
+// A CheckRun has a status and a conclusion, and a StatusContext has a state. gh prints null for the fields a kind does not have.
+type Check = { status?: CheckStatus | null; conclusion?: CheckConclusion | '' | null; state?: StatusState | null }
 
 // What `gh pr view --json` prints for PR_FIELDS.
 export type PrJson = {
@@ -19,10 +23,10 @@ export type PrJson = {
   number: number
   title: string
   state: 'OPEN' | 'MERGED' | 'CLOSED'
-  reviewDecision?: ReviewDecision | null
-  reviews?: Review[]
-  comments?: Comment[]
-  statusCheckRollup?: Check[]
+  reviewDecision: ReviewDecision
+  reviews: Review[]
+  comments: Comment[]
+  statusCheckRollup: Check[]
 }
 
 export type Snapshot = {
@@ -44,7 +48,7 @@ export type Change =
   | { kind: 'comment'; author: string }
   | { kind: 'checks'; to: 'pass' | 'fail' }
 
-const FAILED = new Set(['FAILURE', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR'])
+const FAILED = new Set<CheckConclusion | StatusState | ''>(['FAILURE', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR'])
 
 export const PR_URL = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g
 
@@ -54,7 +58,7 @@ export function isCopilot(login = '') {
 
 export function summarizeChecks(rollup: Check[] = []): Checks {
   if (rollup.length === 0) return 'none'
-  if (rollup.some(c => FAILED.has(c.conclusion ?? c.state ?? ''))) return 'fail'
+  if (rollup.some(c => FAILED.has(c.conclusion || c.state || ''))) return 'fail'
   if (rollup.some(c => (c.status && c.status !== 'COMPLETED') || c.state === 'PENDING' || c.state === 'EXPECTED')) return 'pending'
   return 'pass'
 }
@@ -70,10 +74,10 @@ export function toSnapshot(pr: PrJson, now: number): Snapshot {
     number: pr.number,
     title: pr.title,
     state: pr.state,
-    reviewDecision: pr.reviewDecision ?? '',
+    reviewDecision: pr.reviewDecision,
     checks: summarizeChecks(pr.statusCheckRollup),
-    reviewIds: (pr.reviews ?? []).map(r => r.id),
-    commentIds: (pr.comments ?? []).map(c => c.id),
+    reviewIds: pr.reviews.map(r => r.id),
+    commentIds: pr.comments.map(c => c.id),
     fetchedAt: now,
   }
 }
@@ -86,8 +90,8 @@ export function newActivity(pr: PrJson, prev: Snapshot, self: string) {
     return !seen.includes(x.id) && (self ? login !== self : isCopilot(login))
   }
   return {
-    reviews: (pr.reviews ?? []).filter(isNew(prev.reviewIds ?? [])),
-    comments: (pr.comments ?? []).filter(isNew(prev.commentIds ?? [])),
+    reviews: pr.reviews.filter(isNew(prev.reviewIds ?? [])),
+    comments: pr.comments.filter(isNew(prev.commentIds ?? [])),
   }
 }
 

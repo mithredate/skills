@@ -1,4 +1,4 @@
-import type { Register, EngineInterface } from 'claude-code'
+import type { Register, EngineInterface, ProcessRunResult } from 'claude-code'
 import { isMainCheckout, parseWorktreeAdd, worktreeAdvice } from './rules.js'
 
 // The orchestrator tracker is edited on the main checkout by design.
@@ -10,11 +10,11 @@ type Checkout = { top: string; isMain: boolean; base?: string }
 
 const checkouts = new Map<string, Checkout | null>()
 
-async function git($: EngineInterface, args: string[]) {
+async function git($: EngineInterface, args: string[]): Promise<ProcessRunResult> {
   try {
     return await $.process.run(['git', ...args])
   } catch {
-    return { exitCode: -1, stdout: '', stderr: '' }
+    return { exitCode: -1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false }
   }
 }
 
