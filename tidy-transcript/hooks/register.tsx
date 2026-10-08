@@ -9,7 +9,8 @@ const threads: Threads = { byId: new Map(), done: new Set() }
 
 // Each prompt the user sends, typed or by Remote Control, starts a turn. A reply from an earlier turn folds, so only the newest stays in full.
 // A mod's prompt starts no turn here: the user may not have read the reply before it yet.
-const replies = { turn: 0, turnOf: new Map<string, number>() }
+// A text block that a tool call follows is a note on the way, so it draws dim. `lastText` is the newest text block.
+const replies = { turn: 0, turnOf: new Map<string, number>(), notes: new Set<string>(), lastText: undefined as string | undefined }
 
 const isReplyText = (block: Block) => block.type === 'text' && typeof block.text === 'string' && block.text.trim() !== ''
 
@@ -56,14 +57,20 @@ export const register: Register = on => {
     let changed = false
     if (e.door === 'prompt' && (e.origin.kind === 'composer' || e.origin.kind === 'bridge')) {
       replies.turn += 1
+      replies.lastText = undefined
       changed = true
     }
     for (const block of e.message.content) {
       if (isReply && isReplyText(block)) {
         replies.turnOf.set(e.uuid, replies.turn)
+        replies.lastText = e.uuid
         changed = endThread(threads, now) || changed
       }
       const use = toolUseOf(block)
+      if (use && replies.lastText !== undefined) {
+        replies.notes.add(replies.lastText)
+        replies.lastText = undefined
+      }
       if (use) changed = addToolUse(threads, use.id, use.tool, now) || changed
       const result = resultOf(block)
       if (result) changed = addResult(threads, result.id, result.isError) || changed
@@ -80,10 +87,20 @@ export const register: Register = on => {
   on('ui.render', { component: 'ToolUse' }, async ($, e, next) =>
     drawRow($, e, e.props.tool_use_id, isLive(threads, e.props.tool_use_id, e.props.isRunning), () => next(e)))
 
+  // A note draws dim, so the last reply of a turn is the one bright text. The bullet stays, dim too.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const turn = replies.turnOf.get(e.requestId)
     const folded = turn !== undefined && turn < replies.turn ? foldReply(e.props.text) : undefined
-    return next(folded === undefined ? e : { ...e, props: { ...e.props, text: folded } })
+    if (!replies.notes.has(e.requestId)) return next(folded === undefined ? e : { ...e, props: { ...e.props, text: folded } })
+    const { Box, Text, Markdown } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="row">
+        <Text dimColor>{e.props.isFirstOfReply ? '● ' : '  '}</Text>
+        <Box flexGrow={1}>
+          <Markdown text={folded ?? e.props.text} dimColor />
+        </Box>
+      </Box>
+    )
   })
 
   // A mod's prompt draws as one dim line. Expanded, as in the ctrl+o transcript, it keeps Claude Code's row.
