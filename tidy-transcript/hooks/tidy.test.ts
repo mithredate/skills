@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import { promptLine } from './fold.js'
+import { firstPromptLine } from './fold.js'
 import { addResult, addToolUse, endThread, threadLine } from './threads.js'
 import type { Threads } from './threads.js'
 
@@ -81,9 +81,9 @@ test('names each tool once with its count, the failures, and the time a finished
   addToolUse(threads, 't3', 'Bash', 3_000)
   addResult(threads, 't3', true)
   const thread = threads.byId.get('t1')
-  expect(thread && threadLine(thread)).toBe('▾ Bash ×2 · Read · 1 failed')
+  expect(thread && threadLine(thread)).toEqual({ state: 'open', tools: 'Bash ×2 · Read', failed: 1 })
   endThread(threads, 42_000)
-  expect(thread && threadLine(thread)).toBe('▸ Bash ×2 · Read · 1 failed  41s')
+  expect(thread && threadLine(thread)).toEqual({ state: 'failed', tools: 'Bash ×2 · Read', failed: 1, seconds: 41 })
 })
 
 test('folds a finished run of tools into one line on its first row, and draws nothing for the rest', async ($, on) => {
@@ -94,7 +94,9 @@ test('folds a finished run of tools into one line on its first row, and draws no
   await reply($, 'r3', [textOf('The build passed.')])
 
   const first = await drawToolRow($, 't1', 'Bash', false)
-  expect(await first.find({ type: 'Text', text: '▸ Bash · Read  41s' })).toBeDefined()
+  expect(await first.find({ type: 'Text', text: '✓ Bash · Read  41s' })).toBeDefined()
+  expect((await first.find({ type: 'Text', text: /^✓ $/ }))?.props).toMatchObject({ color: 'success' })
+  expect((await first.find({ type: 'Text', text: /^ {2}41s$/ }))?.props).toMatchObject({ dimColor: true })
   expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await first.unmount()
 
@@ -111,10 +113,11 @@ test('redraws a row that drew while its thread was open, once the thread ends', 
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash')])
   const row = await drawToolRow($, 't1', 'Bash', false)
-  expect(await row.find({ type: 'Text', text: '▾ Bash' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: '● Bash' })).toBeDefined()
+  expect((await row.find({ type: 'Text', text: /^● $/ }))?.props).toMatchObject({ color: 'claude' })
 
   await reply($, 'r2', [textOf('Done.')])
-  expect(await row.find({ type: 'Text', text: '▸ Bash  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: '✓ Bash  0s' })).toBeDefined()
   await row.unmount()
 })
 
@@ -123,7 +126,7 @@ test("draws a running call as its thread's line only, so no row shows and then f
   await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
 
   const first = await drawToolRow($, 't1', 'Bash', true)
-  expect(await first.find({ type: 'Text', text: '▾ Bash ×2' })).toBeDefined()
+  expect(await first.find({ type: 'Text', text: '● Bash ×2' })).toBeDefined()
   expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await first.unmount()
 
@@ -139,7 +142,9 @@ test('counts a call whose result is an error', async ($, on) => {
   await reply($, 'r2', [textOf('The build failed.')])
 
   const row = await drawToolRow($, 't1', 'Bash', false)
-  expect(await row.find({ type: 'Text', text: '▸ Bash · 1 failed  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: '✗ Bash · 1 failed  0s' })).toBeDefined()
+  expect((await row.find({ type: 'Text', text: /^✗ $/ }))?.props).toMatchObject({ color: 'error' })
+  expect((await row.find({ type: 'Text', text: /^ · 1 failed$/ }))?.props).toMatchObject({ color: 'error' })
   await row.unmount()
 })
 
@@ -155,7 +160,7 @@ test('never folds a question or a plan, and starts a new thread after one', asyn
     await row.unmount()
   }
   const after = await drawToolRow($, 't2', 'Read', false)
-  expect(await after.find({ type: 'Text', text: '▸ Read  0s' })).toBeDefined()
+  expect(await after.find({ type: 'Text', text: '✓ Read  0s' })).toBeDefined()
   await after.unmount()
 })
 
@@ -165,7 +170,7 @@ test("draws a group of reads as its thread's line, and keeps an expanded group a
   await reply($, 'r2', [textOf('Read both.')])
 
   const folded = await drawGroup($, ['g1', 'g2'], false)
-  expect(await folded.find({ type: 'Text', text: '▸ Read ×2  0s' })).toBeDefined()
+  expect(await folded.find({ type: 'Text', text: '✓ Read ×2  0s' })).toBeDefined()
   await folded.unmount()
 
   const expanded = await drawGroup($, ['g1', 'g2'], true)
@@ -179,7 +184,7 @@ test('ends the open thread when the turn ends', async ($, on) => {
   await $.turn.complete({ turnId: 'turn-1', answer: '', reason: 'aborted', isAborted: true, durationMs: 1 })
 
   const row = await drawToolRow($, 't1', 'Bash', false)
-  expect(await row.find({ type: 'Text', text: '▸ Bash  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: '✓ Bash  0s' })).toBeDefined()
   await row.unmount()
 })
 
@@ -192,13 +197,15 @@ test("leaves a subagent's tool rows alone", async ($, on) => {
   await row.unmount()
 })
 
-test("draws a mod's prompt as one line with the mod's name, and in full when expanded", async ($, on) => {
+test("draws a mod's prompt as one line, the mod's name as a label, and in full when expanded", async ($, on) => {
   claudeCode(on)
   const text = 'The watch-prs plugin sent a message:\nPR #79 was merged.\n\nContinue with the steps that come after the merge.'
   const origin = { kind: 'plugin', name: 'watch-prs' } as const
 
   const folded = await drawPrompt($, text, origin, false)
-  expect(await folded.find({ type: 'Text', text: '› watch-prs: PR #79 was merged.' })).toBeDefined()
+  expect(await folded.find({ type: 'Text', text: ' watch-prs  PR #79 was merged.' })).toBeDefined()
+  expect((await folded.find({ type: 'Text', text: /^ watch-prs $/ }))?.props).toMatchObject({ backgroundColor: 'merged', color: 'inverseText' })
+  expect((await folded.find({ type: 'Text', text: /^ PR #79 was merged\.$/ }))?.props).toMatchObject({ dimColor: true })
   await folded.unmount()
 
   const expanded = await drawPrompt($, text, origin, true)
@@ -256,7 +263,7 @@ test("draws a running group as its thread's line only", async ($, on) => {
     { tool_use_id: 'g2', tool: 'Read', input: {}, isRunning: true, isErrored: false, isInterrupted: false },
   ]
   const group = await $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'ToolGroup', requestId: 'g1', props: { calls, isActive: true, isExpanded: false } })
-  expect(await group.find({ type: 'Text', text: '▾ Read ×2' })).toBeDefined()
+  expect(await group.find({ type: 'Text', text: '● Read ×2' })).toBeDefined()
   expect(await group.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await group.unmount()
 })
@@ -273,10 +280,10 @@ test('keeps a short reply in full after the next prompt', async ($, on) => {
   await row.unmount()
 })
 
-test("names the mod and the first line of its text, with or without Claude Code's framing line", async () => {
-  expect(promptLine('watch-prs', 'The watch-prs plugin sent a message:\nPR #79 was merged.')).toBe('› watch-prs: PR #79 was merged.')
-  expect(promptLine('watch-prs', 'The watch-prs plugin sent a message: PR #79 was merged.')).toBe('› watch-prs: PR #79 was merged.')
-  expect(promptLine('watch-prs', '  PR #79 was merged.\r\nMore.')).toBe('› watch-prs: PR #79 was merged.')
+test("takes the first line of a mod's text, with or without Claude Code's framing line", async () => {
+  expect(firstPromptLine('The watch-prs plugin sent a message:\nPR #79 was merged.')).toBe('PR #79 was merged.')
+  expect(firstPromptLine('The watch-prs plugin sent a message: PR #79 was merged.')).toBe('PR #79 was merged.')
+  expect(firstPromptLine('  PR #79 was merged.\r\nMore.')).toBe('PR #79 was merged.')
 })
 
 test('draws a note that a tool call follows dim, and keeps the last reply of the turn as Claude Code draws it', async ($, on) => {

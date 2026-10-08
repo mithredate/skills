@@ -1,7 +1,14 @@
-import type { EngineInterface, Register, RenderElement, RenderInput } from 'claude-code'
-import { foldReply, promptLine } from './fold.js'
+import type { Color, EngineInterface, Register, RenderElement, RenderInput } from 'claude-code'
+import { firstPromptLine, foldReply } from './fold.js'
 import { addResult, addToolUse, endThread, threadLine } from './threads.js'
-import type { Threads } from './threads.js'
+import type { Thread, ThreadState, Threads } from './threads.js'
+
+// The glyph pairs each color with a shape, so the state reads without color too.
+const STATE_MARK = {
+  open: { glyph: '●', color: 'claude' },
+  failed: { glyph: '✗', color: 'error' },
+  done: { glyph: '✓', color: 'success' },
+} as const satisfies Record<ThreadState, { glyph: string; color: Color }>
 
 type Block = { type: string; [field: string]: unknown }
 
@@ -31,9 +38,23 @@ function resultOf(block: Block) {
 async function drawRow($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, id: string | undefined, own: () => Promise<RenderElement>) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
   if (!thread) return own()
-  const { Box, Text } = $.ui.resolve(e)
+  const { Box } = $.ui.resolve(e)
   if (thread.firstId !== id) return <Box />
-  return <Text dimColor>{threadLine(thread)}</Text>
+  return drawThreadLine($, e, thread)
+}
+
+function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, thread: Thread) {
+  const { Text } = $.ui.resolve(e)
+  const line = threadLine(thread)
+  const mark = STATE_MARK[line.state]
+  return (
+    <Text>
+      <Text color={mark.color}>{`${mark.glyph} `}</Text>
+      {line.tools}
+      {line.failed ? <Text color="error">{` · ${line.failed} failed`}</Text> : undefined}
+      {line.seconds === undefined ? undefined : <Text dimColor>{`  ${line.seconds}s`}</Text>}
+    </Text>
+  )
 }
 
 export const register: Register = on => {
@@ -92,14 +113,15 @@ export const register: Register = on => {
     )
   })
 
-  // A mod's prompt draws as one dim line. Expanded, as in the ctrl+o transcript, it keeps Claude Code's row.
+  // A mod's prompt draws as one line: the mod's name as a label, then its text dim. Expanded, as in the ctrl+o transcript, it keeps Claude Code's row.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const { origin } = e.props
     if (origin.kind !== 'plugin' || e.props.isExpanded) return next(e)
     const { Text } = $.ui.resolve(e)
     return (
-      <Text dimColor wrap="truncate-end">
-        {promptLine(origin.name, e.props.text)}
+      <Text wrap="truncate-end">
+        <Text backgroundColor="merged" color="inverseText">{` ${origin.name} `}</Text>
+        <Text dimColor>{` ${firstPromptLine(e.props.text)}`}</Text>
       </Text>
     )
   })
