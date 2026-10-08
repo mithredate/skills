@@ -1,13 +1,16 @@
 import type { Register, EngineInterface } from 'claude-code'
-import { PR_FIELDS, PR_URL, changes, contextBlock, instructions, line, newActivity, parsePr, toSnapshot } from './state.js'
+import { PR_FIELDS, PR_URL, changes, contextBlock, instructions, line, mergeTargets, newActivity, parsePr, toSnapshot } from './state.js'
 import type { Change, Snapshot } from './state.js'
 
 const POLL_MS = 60_000
 const MAX_WATCHED = 20
+// A turn that finds its work already done costs the user one line to read, not a paragraph.
+const NOTHING_LEFT = 'If nothing is left to do, reply in one line.'
 
-type Watch = { prs: Record<string, Snapshot>; turns: Record<string, number>; unwatched: string[] }
+// `mergedHere` holds the URLs of the PRs this session merged with `gh pr merge`.
+type Watch = { prs: Record<string, Snapshot>; turns: Record<string, number>; unwatched: string[]; mergedHere: string[] }
 
-const empty = (): Watch => ({ prs: {}, turns: {}, unwatched: [] })
+const empty = (): Watch => ({ prs: {}, turns: {}, unwatched: [], mergedHere: [] })
 
 let watch = empty()
 let storeKey = ''
@@ -85,12 +88,12 @@ export const register: Register = on => {
       if (runningTurns.size) return
       for (const { snap, found } of await refresh($)) {
         const turn = (watch.turns[snap.url] ?? 0) + 1
-        const { what, steps } = instructions(snap, found, turn)
+        const { what, steps } = instructions(snap, found, turn, watch.mergedHere.includes(snap.url))
         $.ui.toast(`#${snap.number} ${what}`)
         if (!steps.length) continue
         watch.turns[snap.url] = turn
         await save($)
-        $.prompt.submit({ text: `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}` }).catch(() => $.ui.toast(`watch-prs could not start a turn for #${snap.number}`))
+        $.prompt.submit({ text: `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}\n\n${NOTHING_LEFT}` }).catch(() => $.ui.toast(`watch-prs could not start a turn for #${snap.number}`))
       }
     })
 
@@ -114,6 +117,13 @@ export const register: Register = on => {
     const ran = await next(e)
     if (!/\bgh\s+(pr|api)\b/.test(e.command)) return ran
     await load($)
+    if (!ran.deny && !ran.isError) {
+      const merged = mergeTargets(e.command, Object.values(watch.prs))
+      if (merged.length) {
+        watch.mergedHere = [...new Set([...watch.mergedHere, ...merged])]
+        await save($)
+      }
+    }
     const printed = /\bgh\s+pr\s+create\b/.test(e.command) ? (ran.text ?? '').match(PR_URL) ?? [] : []
     for (const url of new Set([...(e.command.match(PR_URL) ?? []), ...printed])) await add($, url)
     return ran
@@ -126,7 +136,7 @@ export const register: Register = on => {
     const report = await refresh($)
     const extra = [contextBlock(Object.values(watch.prs), await $.clock.now())]
     for (const { snap, found } of report) {
-      const { what, steps } = instructions(snap, found, 0)
+      const { what, steps } = instructions(snap, found, 0, watch.mergedHere.includes(snap.url))
       extra.push(`Since the last check, PR ${snap.url} ${what}.` + (steps.length ? " After the user's request: " + steps.join(' ') : ''))
     }
     return next({ ...e, context: [...(e.context ?? []), ...extra] })
