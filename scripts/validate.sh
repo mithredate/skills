@@ -55,6 +55,17 @@ echo
 echo "→ hook tests"
 node --test */hooks/*.test.mjs || failed=1
 
+# Mod tests run the hooks module against the engine's test kit.
+echo
+echo "→ mod tests"
+for hooks_json in */hooks/hooks.json; do
+  if jq -e '.modules' "$hooks_json" >/dev/null; then
+    plugin_dir=$(dirname "$(dirname "$hooks_json")")
+    echo "  $plugin_dir"
+    claude plugin test "$plugin_dir" || failed=1
+  fi
+done
+
 echo
 if [ "$failed" -ne 0 ]; then
   echo "✘ One or more validations failed."
