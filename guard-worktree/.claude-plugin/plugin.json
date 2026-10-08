@@ -1,0 +1,9 @@
+{
+  "name": "guard-worktree",
+  "version": "0.1.0",
+  "description": "Refuses file edits in a repo's main checkout until the work moves to a worktree off a freshly fetched origin default branch.",
+  "author": {
+    "name": "Mehrdad Hedayati",
+    "email": "mehrdad.hedayati@gmail.com"
+  }
+}

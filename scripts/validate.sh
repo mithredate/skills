@@ -55,6 +55,20 @@ echo
 echo "→ hook tests"
 node --test */hooks/*.test.mjs || failed=1
 
+# Mod tests run the hooks module against the engine's test kit. Some builds,
+# such as npm's latest in CI, have no `claude plugin test` yet.
+echo
+echo "→ mod tests"
+if ! claude plugin --help 2>&1 | grep -E '^ +test\b' >/dev/null; then
+  echo "⚠ this claude has no \`plugin test\`; skipped mod tests. Run them locally."
+else for hooks_json in */hooks/hooks.json; do
+  if jq -e '.modules' "$hooks_json" >/dev/null; then
+    plugin_dir=$(dirname "$(dirname "$hooks_json")")
+    echo "  $plugin_dir"
+    claude plugin test "$plugin_dir" || failed=1
+  fi
+done; fi
+
 echo
 if [ "$failed" -ne 0 ]; then
   echo "✘ One or more validations failed."
