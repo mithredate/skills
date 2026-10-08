@@ -1,0 +1,9 @@
+{
+  "name": "fold-tools",
+  "version": "0.1.0",
+  "description": "Folds each run of tool calls between two pieces of reply text into one line, and keeps the running call's live row under it.",
+  "author": {
+    "name": "Mehrdad Hedayati",
+    "email": "mehrdad.hedayati@gmail.com"
+  }
+}
