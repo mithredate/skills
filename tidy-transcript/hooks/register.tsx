@@ -19,6 +19,29 @@ const threads: Threads = { byId: new Map() }
 // A text block that a tool call follows is a note on the way, so it draws dim. `lastText` is the newest text block.
 const replies = { turn: 0, turnOf: new Map<string, number>(), notes: new Set<string>(), lastText: undefined as string | undefined }
 
+// The tools and failures of the turn that runs now. When a turn ends, its footer keeps them with the context and the cost.
+const turnNow = { tools: 0, failed: 0 }
+type TurnEnd = { tools: number; failed: number; contextPercent?: number; usd?: number }
+// ponytail: keyed by the turn's duration, the one value the turn line and turn.complete share. Two turns of the same millisecond share a footer.
+const turnEnds = new Map<number, TurnEnd>()
+
+// The context share colors green below the first limit, yellow below the second, and red from there.
+const CONTEXT_WARNING_PERCENT = 50
+const CONTEXT_DANGER_PERCENT = 80
+
+const contextColor = (percent: number) =>
+  percent < CONTEXT_WARNING_PERCENT ? 'success' : percent < CONTEXT_DANGER_PERCENT ? 'warning' : 'error'
+
+// As Claude Code writes a turn's time: 3s, 1m 20s, 1h 5m.
+function formatDuration(ms: number) {
+  const total = Math.round(ms / 1000)
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  if (hours) return `${hours}h ${minutes}m`
+  if (minutes) return `${minutes}m ${total % 60}s`
+  return `${total}s`
+}
+
 const isReplyText = (block: Block) => block.type === 'text' && typeof block.text === 'string' && block.text.trim() !== ''
 
 function toolUseOf(block: Block) {
@@ -97,11 +120,22 @@ export const register: Register = on => {
         replies.notes.add(replies.lastText)
         replies.lastText = undefined
       }
-      if (use) changed = addToolUse(threads, use.id, use.tool, now) || changed
+      if (use) {
+        turnNow.tools += 1
+        changed = addToolUse(threads, use.id, use.tool, now) || changed
+      }
       const result = resultOf(block)
+      if (result?.isError) turnNow.failed += 1
       if (result) changed = addResult(threads, result.id, result.isError) || changed
     }
     if (changed) $.ui.invalidate('ui.render')
+    return next(e)
+  })
+
+  // A subagent's run raises no turn.start, so this is always the main conversation's turn.
+  on('turn.start', async ($, e, next) => {
+    turnNow.tools = 0
+    turnNow.failed = 0
     return next(e)
   })
 
@@ -110,7 +144,35 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined) replies.lastText = undefined
     if (endThread(threads, await $.clock.now())) $.ui.invalidate('ui.render')
+    if (e.agentId === undefined) {
+      const usage = await $.session.usage()
+      turnEnds.set(e.durationMs, { ...turnNow, contextPercent: usage.context.percent, usd: usage.cost?.usd })
+      $.ui.invalidate('ui.render')
+    }
     return next(e)
+  })
+
+  // The line that closes a turn draws as a footer. A turn this module did not see end keeps Claude Code's line.
+  on('ui.render', { component: 'TurnDuration' }, async ($, e, next) => {
+    const end = turnEnds.get(e.props.durationMs)
+    if (!end) return next(e)
+    const { Text } = $.ui.resolve(e)
+    const parts = [
+      <Text>{formatDuration(e.props.durationMs)}</Text>,
+      end.tools ? <Text color="bashBorder">{`${end.tools} ${end.tools === 1 ? 'tool' : 'tools'}`}</Text> : undefined,
+      end.failed ? <Text color="error">{`✗ ${end.failed} failed`}</Text> : undefined,
+      end.contextPercent === undefined ? undefined : (
+        <Text color={contextColor(end.contextPercent)}>{`ctx ${Math.round(end.contextPercent)}%`}</Text>
+      ),
+      end.usd === undefined ? undefined : <Text dimColor>{`$${end.usd.toFixed(2)}`}</Text>,
+    ].filter(part => part !== undefined)
+    return (
+      <Text wrap="truncate-end">
+        <Text dimColor>{'── '}</Text>
+        {parts.flatMap((part, i) => (i === 0 ? [part] : [<Text dimColor>{' · '}</Text>, part]))}
+        <Text dimColor>{' ──'}</Text>
+      </Text>
+    )
   })
 
   on('ui.render', { component: 'ToolUse' }, async ($, e, next) => drawRow($, e, e.props.tool_use_id, () => next(e)))

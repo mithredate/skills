@@ -10,10 +10,13 @@ const OWN_ROW = 'drawn by Claude Code'
 type Block = { type: string; [field: string]: unknown }
 
 // Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text. A reply draws its text.
+// The session has used 62% of its context and cost $0.31 so far.
 function claudeCode(on: On) {
   const clock = mock.clock(on)
   on('session.append', async (_$, e, next) => next(e))
+  on('turn.start', async (_$, e) => ({ turnId: e.turnId }))
   on('turn.complete', async () => ({ text: '' }))
+  on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000, percent: 62 }, rateLimits: [], cost: { usd: 0.31 } } }))
   on('ui.render', async (_$, e) => ({ type: 'Text', props: {}, children: [e.component === 'AssistantMessage' ? e.props.text : OWN_ROW] }))
   return clock
 }
@@ -367,4 +370,49 @@ test("still draws a note dim when a subagent's turn ends between the note and it
   const note = await drawReply($, 'r1', 'Checking the tests.')
   expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ dimColor: true })
   await note.unmount()
+})
+
+function drawTurnLine($: Engine, durationMs: number) {
+  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'TurnDuration', requestId: `line-${durationMs}`, props: { word: 'Cooked', durationMs } })
+}
+
+test("draws the line that closes a turn as a footer: the turn's time, its tools, its failures, the context and the cost", async ($, on) => {
+  claudeCode(on)
+  await $.turn.start({ text: 'build it', turnId: 'turn-1' })
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Read')])
+  await toolResult($, 'u1', [{ type: 'tool_result', tool_use_id: 't1', is_error: true, content: 'exit 1' }])
+  await reply($, 'r2', [textOf('The build failed.')])
+  await $.turn.complete({ turnId: 'turn-1', answer: 'The build failed.', reason: 'answer', isAborted: false, durationMs: 80_000 })
+
+  const line = await drawTurnLine($, 80_000)
+  expect(await line.find({ type: 'Text', text: '── 1m 20s · 2 tools · ✗ 1 failed · ctx 62% · $0.31 ──' })).toBeDefined()
+  expect((await line.find({ type: 'Text', text: /^2 tools$/ }))?.props).toMatchObject({ color: 'bashBorder' })
+  expect((await line.find({ type: 'Text', text: /^✗ 1 failed$/ }))?.props).toMatchObject({ color: 'error' })
+  expect((await line.find({ type: 'Text', text: /^ctx 62%$/ }))?.props).toMatchObject({ color: 'warning' })
+  expect(await line.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  await line.unmount()
+})
+
+test('counts only the tools of its own turn, and leaves out the parts a turn has none of', async ($, on) => {
+  claudeCode(on)
+  await $.turn.start({ text: 'build it', turnId: 'turn-1' })
+  await reply($, 'r1', [useOf('t1', 'Bash')])
+  await $.turn.complete({ turnId: 'turn-1', answer: '', reason: 'answer', isAborted: false, durationMs: 80_000 })
+  await $.turn.start({ text: 'thanks', turnId: 'turn-2' })
+  await reply($, 'r2', [textOf('You are welcome.')])
+  await $.turn.complete({ turnId: 'turn-2', answer: 'You are welcome.', reason: 'answer', isAborted: false, durationMs: 3_000 })
+
+  const first = await drawTurnLine($, 80_000)
+  expect(await first.find({ type: 'Text', text: '── 1m 20s · 1 tool · ctx 62% · $0.31 ──' })).toBeDefined()
+  await first.unmount()
+  const second = await drawTurnLine($, 3_000)
+  expect(await second.find({ type: 'Text', text: '── 3s · ctx 62% · $0.31 ──' })).toBeDefined()
+  await second.unmount()
+})
+
+test("keeps Claude Code's own line for a turn the mod did not see end", async ($, on) => {
+  claudeCode(on)
+  const line = await drawTurnLine($, 5_000)
+  expect(await line.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  await line.unmount()
 })
