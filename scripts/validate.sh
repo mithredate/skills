@@ -59,7 +59,7 @@ node --test */hooks/*.test.mjs || failed=1
 # such as npm's latest in CI, have no `claude plugin test` yet.
 echo
 echo "→ mod tests"
-if ! claude plugin test --help >/dev/null 2>&1; then
+if ! claude plugin --help 2>&1 | grep -E '^ +test\b' >/dev/null; then
   echo "⚠ this claude has no \`plugin test\`; skipped mod tests. Run them locally."
 else for hooks_json in */hooks/hooks.json; do
   if jq -e '.modules' "$hooks_json" >/dev/null; then
