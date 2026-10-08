@@ -1,5 +1,5 @@
 import type { Register, EngineInterface } from 'claude-code'
-import { isMainCheckout, parseWorktreeAdd, worktreeAdvice } from './rules.ts'
+import { isMainCheckout, parseWorktreeAdd, worktreeAdvice } from './rules.js'
 
 // The orchestrator tracker is edited on the main checkout by design.
 const ALWAYS_ALLOWED = /(^|\/)\.wayfinder\//
@@ -26,7 +26,8 @@ async function nearestDir($: EngineInterface, path: string) {
 
 // The repo that holds `dir`, when it has an origin. Cached per directory for the session.
 async function guardedCheckout($: EngineInterface, dir: string) {
-  if (checkouts.has(dir)) return checkouts.get(dir)!
+  const cached = checkouts.get(dir)
+  if (cached !== undefined) return cached
   let found: Checkout | null = null
   const rev = await git($, ['-C', dir, 'rev-parse', '--path-format=absolute', '--show-toplevel', '--git-dir', '--git-common-dir'])
   const [top = '', gitDir = '', commonDir = ''] = rev.stdout.trim().split('\n')

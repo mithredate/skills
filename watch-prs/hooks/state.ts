@@ -5,12 +5,32 @@ export const MAX_TURNS_PER_PR = 5
 
 export type Checks = 'none' | 'pending' | 'pass' | 'fail'
 
-export type Snapshot = {
+// An empty string means no review is required.
+export type ReviewDecision = 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | ''
+export type ReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED' | 'DISMISSED' | 'PENDING'
+
+export type Review = { id: string; author?: { login?: string }; state: ReviewState }
+type Comment = { id: string; author?: { login?: string } }
+type Check = { status?: string; conclusion?: string; state?: string }
+
+// What `gh pr view --json` prints for PR_FIELDS.
+export type PrJson = {
   url: string
   number: number
   title: string
   state: 'OPEN' | 'MERGED' | 'CLOSED'
-  reviewDecision: string
+  reviewDecision?: ReviewDecision | null
+  reviews?: Review[]
+  comments?: Comment[]
+  statusCheckRollup?: Check[]
+}
+
+export type Snapshot = {
+  url: string
+  number: number
+  title: string
+  state: PrJson['state']
+  reviewDecision: ReviewDecision
   checks: Checks
   reviewIds: string[]
   commentIds: string[]
@@ -19,14 +39,10 @@ export type Snapshot = {
 
 export type Change =
   | { kind: 'merged' | 'closed' }
-  | { kind: 'decision'; from: string; to: string }
-  | { kind: 'review'; author: string; state: string; isCopilot: boolean }
+  | { kind: 'decision'; from: ReviewDecision; to: ReviewDecision }
+  | { kind: 'review'; author: string; state: ReviewState; isCopilot: boolean }
   | { kind: 'comment'; author: string }
   | { kind: 'checks'; to: 'pass' | 'fail' }
-
-type Review = { id: string; author?: { login?: string }; state: string }
-type Comment = { id: string; author?: { login?: string } }
-type Check = { status?: string; conclusion?: string; state?: string }
 
 const FAILED = new Set(['FAILURE', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR'])
 
@@ -43,8 +59,12 @@ export function summarizeChecks(rollup: Check[] = []): Checks {
   return 'pass'
 }
 
-export function toSnapshot(json: string, now: number): Snapshot {
-  const pr = JSON.parse(json)
+// gh prints exactly the PR_FIELDS it was asked for, so its output is trusted here, once.
+export function parsePr(json: string): PrJson {
+  return JSON.parse(json) as PrJson
+}
+
+export function toSnapshot(pr: PrJson, now: number): Snapshot {
   return {
     url: pr.url,
     number: pr.number,
@@ -52,23 +72,22 @@ export function toSnapshot(json: string, now: number): Snapshot {
     state: pr.state,
     reviewDecision: pr.reviewDecision ?? '',
     checks: summarizeChecks(pr.statusCheckRollup),
-    reviewIds: (pr.reviews as Review[] ?? []).map(r => r.id),
-    commentIds: (pr.comments as Comment[] ?? []).map(c => c.id),
+    reviewIds: (pr.reviews ?? []).map(r => r.id),
+    commentIds: (pr.comments ?? []).map(c => c.id),
     fetchedAt: now,
   }
 }
 
 // Reviews and comments the session has not seen, without the user's own: Claude replies through gh as the user.
 // While the user's login is unknown, only Copilot's activity counts, so Claude's replies cannot start a loop.
-export function newActivity(json: string, prev: Snapshot, self: string) {
-  const pr = JSON.parse(json)
+export function newActivity(pr: PrJson, prev: Snapshot, self: string) {
   const isNew = (seen: string[]) => (x: Comment) => {
     const login = x.author?.login ?? ''
     return !seen.includes(x.id) && (self ? login !== self : isCopilot(login))
   }
   return {
-    reviews: (pr.reviews as Review[] ?? []).filter(isNew(prev.reviewIds ?? [])),
-    comments: (pr.comments as Comment[] ?? []).filter(isNew(prev.commentIds ?? [])),
+    reviews: (pr.reviews ?? []).filter(isNew(prev.reviewIds ?? [])),
+    comments: (pr.comments ?? []).filter(isNew(prev.commentIds ?? [])),
   }
 }
 
