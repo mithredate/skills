@@ -81,6 +81,8 @@ for hooks_json in */hooks/hooks.json; do
   claude -p --plugin-dir "$plugin_dir" "" >/dev/null 2>&1 || true
   if [ ! -f "$plugin_dir/.claude-plugin/types/tsconfig.json" ]; then
     echo "⚠ this claude wrote no mod types; skipped the type check of $plugin_dir. Run it locally."
+    # In a folder with no mod, `claude plugin test` prints why mods cannot load.
+    (cd "$(mktemp -d)" && claude plugin test 2>&1 | head -2 | sed 's/^/    /') || true
     continue
   fi
   echo "  $plugin_dir"
