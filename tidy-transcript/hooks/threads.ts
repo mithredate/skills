@@ -29,11 +29,16 @@ export function endThread(threads: Threads, now: number) {
   return true
 }
 
-export function threadLine(thread: Thread) {
+export type ThreadState = 'open' | 'failed' | 'done'
+
+// An open thread has no `seconds` yet.
+export type ThreadLine = { state: ThreadState; tools: string; failed: number; seconds?: number }
+
+export function threadLine(thread: Thread): ThreadLine {
   const counts = new Map<string, number>()
   for (const tool of thread.tools) counts.set(tool, (counts.get(tool) ?? 0) + 1)
   const tools = [...counts].map(([tool, n]) => (n > 1 ? `${tool} ×${n}` : tool)).join(' · ')
-  const failed = thread.failed ? ` · ${thread.failed} failed` : ''
-  if (thread.endedAt === undefined) return `▾ ${tools}${failed}`
-  return `▸ ${tools}${failed}  ${Math.round((thread.endedAt - thread.startedAt) / 1000)}s`
+  if (thread.endedAt === undefined) return { state: 'open', tools, failed: thread.failed }
+  const seconds = Math.round((thread.endedAt - thread.startedAt) / 1000)
+  return { state: thread.failed ? 'failed' : 'done', tools, failed: thread.failed, seconds }
 }
