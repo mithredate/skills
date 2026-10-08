@@ -28,7 +28,7 @@ async function reply($: Engine, uuid: string, content: Block[], agentId?: string
   })
 }
 
-async function prompt($: Engine, uuid: string, origin: { kind: 'composer' } | { kind: 'plugin'; name: string }) {
+async function prompt($: Engine, uuid: string, origin: { kind: 'composer' } | { kind: 'peer' } | { kind: 'plugin'; name: string }) {
   await $.session.append({ message: { type: 'user', role: 'user', content: [{ type: 'text', text: 'go on' }] }, door: 'prompt', origin, uuid })
 }
 
@@ -75,7 +75,7 @@ function drawGroup($: Engine, ids: string[], isExpanded: boolean) {
 }
 
 test('names each tool once with its count, the failures, and the time a finished thread took', async () => {
-  const threads: Threads = { byId: new Map(), done: new Set() }
+  const threads: Threads = { byId: new Map() }
   addToolUse(threads, 't1', 'Bash', 1_000)
   addToolUse(threads, 't2', 'Read', 2_000)
   addToolUse(threads, 't3', 'Bash', 3_000)
@@ -118,17 +118,17 @@ test('redraws a row that drew while its thread was open, once the thread ends', 
   await row.unmount()
 })
 
-test("keeps Claude Code's own row, with its live output, for each call that runs", async ($, on) => {
+test("draws a running call as its thread's line only, so no row shows and then folds", async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
 
   const first = await drawToolRow($, 't1', 'Bash', true)
   expect(await first.find({ type: 'Text', text: '▾ Bash ×2' })).toBeDefined()
-  expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await first.unmount()
 
   const second = await drawToolRow($, 't2', 'Bash', true)
-  expect(await second.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect(await second.find({ type: 'Text' })).toBeUndefined()
   await second.unmount()
 })
 
@@ -192,20 +192,6 @@ test("leaves a subagent's tool rows alone", async ($, on) => {
   await row.unmount()
 })
 
-test("folds a call whose result arrived, even while Claude Code still reports it running", async ($, on) => {
-  claudeCode(on)
-  await reply($, 'r1', [useOf('t1', 'Bash')])
-  await toolResult($, 'u1', [{ type: 'tool_result', tool_use_id: 't1', content: 'ok' }])
-
-  const row = await drawToolRow($, 't1', 'Bash', true)
-  expect(await row.find({ type: 'Text', text: '▾ Bash' })).toBeDefined()
-  expect(await row.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
-  await reply($, 'r2', [textOf('Done.')])
-  expect(await row.find({ type: 'Text', text: '▸ Bash  0s' })).toBeDefined()
-  expect(await row.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
-  await row.unmount()
-})
-
 test("draws a mod's prompt as one line with the mod's name, and in full when expanded", async ($, on) => {
   claudeCode(on)
   const text = 'The watch-prs plugin sent a message:\nPR #79 was merged.\n\nContinue with the steps that come after the merge.'
@@ -260,18 +246,7 @@ test('closes a code fence that the first lines of a folded reply open', async ($
   await row.unmount()
 })
 
-test('folds a call with no result once its thread ends, even while Claude Code still reports it running', async ($, on) => {
-  claudeCode(on)
-  await reply($, 'r1', [useOf('t1', 'Bash')])
-  await $.turn.complete({ turnId: 'turn-1', answer: '', reason: 'aborted', isAborted: true, durationMs: 1 })
-
-  const row = await drawToolRow($, 't1', 'Bash', true)
-  expect(await row.find({ type: 'Text', text: '▸ Bash  0s' })).toBeDefined()
-  expect(await row.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
-  await row.unmount()
-})
-
-test("keeps a group's live row while a later call in it runs, after its first call finished", async ($, on) => {
+test("draws a running group as its thread's line only", async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('g1', 'Read'), useOf('g2', 'Read')])
   await toolResult($, 'u1', [{ type: 'tool_result', tool_use_id: 'g1', content: 'ok' }])
@@ -282,7 +257,7 @@ test("keeps a group's live row while a later call in it runs, after its first ca
   ]
   const group = await $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'ToolGroup', requestId: 'g1', props: { calls, isActive: true, isExpanded: false } })
   expect(await group.find({ type: 'Text', text: '▾ Read ×2' })).toBeDefined()
-  expect(await group.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect(await group.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await group.unmount()
 })
 
@@ -329,6 +304,32 @@ test('draws a note dim as soon as a tool call in the same row follows it', async
   await reply($, 'r1', [textOf('Running the build.'), useOf('t1', 'Bash')])
 
   const note = await drawReply($, 'r1', 'Running the build.')
+  expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ dimColor: true })
+  await note.unmount()
+})
+
+test("keeps a turn's last reply bright when the next turn, such as an agent's report, opens with a tool call", async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf('I claimed the ticket.')])
+  await $.turn.complete({ turnId: 'turn-1', answer: 'I claimed the ticket.', reason: 'answer', isAborted: false, durationMs: 1 })
+  await prompt($, 'u2', { kind: 'peer' })
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const row = await drawReply($, 'r1', 'I claimed the ticket.')
+  expect(await row.find({ type: 'Markdown' })).toBeUndefined()
+  expect(await row.find({ type: 'Text', text: 'I claimed the ticket.' })).toBeDefined()
+  await row.unmount()
+})
+
+test("still draws a note dim when a subagent's turn ends between the note and its tool call", async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf('Checking the tests.')])
+  await $.turn.complete({ turnId: 'sub-turn', agentId: 'agent-1', answer: 'Slack is quiet.', reason: 'answer', isAborted: false, durationMs: 1 })
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const note = await drawReply($, 'r1', 'Checking the tests.')
   expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ dimColor: true })
   await note.unmount()
 })

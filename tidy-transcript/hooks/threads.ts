@@ -1,12 +1,8 @@
-// A thread is a run of tool calls between two pieces of reply text. Once it ends, it draws as one line.
+// A thread is a run of tool calls between two pieces of reply text. It draws as one line, while it runs and after it ends.
 export type Thread = { firstId: string; tools: string[]; failed: number; startedAt: number; endedAt?: number }
 
-// ponytail: byId and done keep every call of the session, so an old row still folds when it redraws. A few bytes per call.
-// `done` holds the calls whose result has arrived.
-export type Threads = { byId: Map<string, Thread>; done: Set<string>; open?: Thread }
-
-// What a tool row draws: Claude Code's own row, the thread's line, the line above the own row, or nothing.
-export type RowView = 'own' | 'line' | 'line-and-own' | 'nothing'
+// ponytail: byId keeps every call of the session, so an old row still folds when it redraws. A few bytes per call.
+export type Threads = { byId: Map<string, Thread>; open?: Thread }
 
 // These rows hold the user's answers or a plan to approve, so they never fold. Each one ends the open thread.
 const SHOWN_TOOLS = new Set(['AskUserQuestion', 'ExitPlanMode'])
@@ -21,7 +17,6 @@ export function addToolUse(threads: Threads, id: string, tool: string, now: numb
 }
 
 export function addResult(threads: Threads, id: string, isError: boolean) {
-  threads.done.add(id)
   const thread = threads.byId.get(id)
   if (thread && isError) thread.failed += 1
   return thread !== undefined
@@ -32,20 +27,6 @@ export function endThread(threads: Threads, now: number) {
   threads.open.endedAt = now
   threads.open = undefined
   return true
-}
-
-// Claude Code can still report a call as running after its result arrived or its thread ended, so those settle it.
-export function isLive(threads: Threads, id: string | undefined, isRunning: boolean) {
-  const thread = id === undefined ? undefined : threads.byId.get(id)
-  return isRunning && id !== undefined && !threads.done.has(id) && thread?.endedAt === undefined
-}
-
-// The first row of a thread draws its line. A live row keeps Claude Code's own row, with its live output.
-export function rowView(threads: Threads, id: string | undefined, isLive: boolean): RowView {
-  const thread = id === undefined ? undefined : threads.byId.get(id)
-  if (!thread) return 'own'
-  if (thread.firstId === id) return isLive ? 'line-and-own' : 'line'
-  return isLive ? 'own' : 'nothing'
 }
 
 export function threadLine(thread: Thread) {
