@@ -1,0 +1,9 @@
+{
+  "name": "guard-infra",
+  "version": "0.1.0",
+  "description": "Asks the user to Run or Cancel each aws, aws-vault, kubectl, helm, or terraform apply/destroy call that is not a read, before it runs.",
+  "author": {
+    "name": "Mehrdad Hedayati",
+    "email": "mehrdad.hedayati@gmail.com"
+  }
+}
