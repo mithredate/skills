@@ -36,6 +36,8 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - hook `guard-privileged-commands` — PreToolUse on Bash: blocks `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy` except reads that return no secret, and hands the command to the human
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
+- **guard-worktree** — mod (JS hooks that run inside Claude Code): refuses an edit in a repo's main checkout and names the `git worktree add` command; fetches before `git worktree add` and refuses a new branch not based on `origin/<default>`. Skips `.wayfinder/`, ignored files, and repos with no `origin`
+- **watch-prs** — mod: watches the PRs a session opens or reads with `gh`, shows its state under the prompt, adds live state to each prompt, and starts a turn when Copilot reviews, a person reviews or comments (not the user's own, since Claude replies as the user), checks fail, or the PR merges. At most five such turns per PR, a merge excepted. Watches only PRs whose URL a `gh` command names or `gh pr create` prints, so `gh pr view 74` does not add one. `/watch-prs`, `/unwatch-prs`
 - **deprecated** — skills phased out, kept installable during transitions
   - `wayfinder` — merged into `orchestrate`, which is the only place it ran
 

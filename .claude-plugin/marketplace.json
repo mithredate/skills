@@ -50,6 +50,16 @@
       ]
     },
     {
+      "name": "guard-worktree",
+      "source": "./guard-worktree",
+      "description": "Mod: refuses edits in a repo's main checkout until the work moves to a worktree off a freshly fetched origin default branch."
+    },
+    {
+      "name": "watch-prs",
+      "source": "./watch-prs",
+      "description": "Mod: watches the PRs a session touches, adds their live state to each prompt, and starts a turn on Copilot reviews, failed checks, and merges."
+    },
+    {
       "name": "personal",
       "source": "./personal",
       "description": "Mehrdad's personal working defaults (work-like-mehrdad).",

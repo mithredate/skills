@@ -4,7 +4,7 @@ A Claude Code marketplace repo: opinionated forks of upstream skills (mattpocock
 
 ## Layout
 
-Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. Each skill is a dir with `SKILL.md` plus optional `references/` and `scripts/`. Slash commands (`commands/*.md`) are the legacy Claude Code mechanism and intentionally not used here — skills replace them.
+Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod plugin (`guard-worktree`, `watch-prs`) has `hooks/hooks.json` with `modules` and a TypeScript hooks module instead; `hooks.json` loads one module, so each mod is its own plugin. Each skill is a dir with `SKILL.md` plus optional `references/` and `scripts/`. Slash commands (`commands/*.md`) are the legacy Claude Code mechanism and intentionally not used here — skills replace them.
 
 ## Conventions
 
