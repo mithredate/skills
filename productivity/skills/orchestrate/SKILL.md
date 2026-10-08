@@ -69,7 +69,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 
 ## cook
 
-A session that names no map works the `active` row. Work one ticket in each session. Research tickets are the exception.
+A session that names no map works the `active` row. Work one ticket in each session. Research tickets are an exception. A second exception: when the user names several frontier `grilling` tickets of one map, one session takes them all. Grilling asks their questions in shared rounds, and each ticket closes on its own.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Take the first frontier ticket that is not a `gate`, or the ticket that the user names. Claim it before any other work. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
