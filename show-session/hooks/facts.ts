@@ -15,6 +15,7 @@ const str = (value: unknown) => (typeof value === 'string' ? value : '')
 export function shortPath(path: string, root: string, home: string | undefined) {
   if (path === root) return '.'
   if (path.startsWith(`${root}/`)) return path.slice(root.length + 1)
+  if (home && path === home) return '~'
   if (home && path.startsWith(`${home}/`)) return `~/${path.slice(home.length + 1)}`
   return path
 }

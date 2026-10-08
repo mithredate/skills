@@ -1,6 +1,7 @@
 import type { AgentInfo, CommandSpec, On, SessionMessage } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
+import { shortPath } from './facts.js'
 
 const PANE = 'show-session'
 
@@ -114,4 +115,13 @@ test('registers /show-session to run at once, so the pane opens while a turn run
   })
   await $.session.start({ cwd: '/repo', surface: 'terminal', isInteractive: true })
   expect(registered).toMatchObject([{ name: 'show-session', immediate: true }])
+})
+
+test('shows a folder relative to the project root, as ~ for the home folder and under it, and in full elsewhere', async () => {
+  expect(shortPath('/repo', '/repo', '/Users/me')).toBe('.')
+  expect(shortPath('/repo/src', '/repo', '/Users/me')).toBe('src')
+  expect(shortPath('/repo-other/src', '/repo', '/Users/me')).toBe('/repo-other/src')
+  expect(shortPath('/Users/me', '/repo', '/Users/me')).toBe('~')
+  expect(shortPath('/Users/me/notes', '/repo', '/Users/me')).toBe('~/notes')
+  expect(shortPath('/etc', '/repo', '/Users/me')).toBe('/etc')
 })
