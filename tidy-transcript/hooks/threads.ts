@@ -2,7 +2,8 @@
 export type Thread = { firstId: string; tools: string[]; failed: number; startedAt: number; endedAt?: number }
 
 // ponytail: byId keeps every call of the session, so an old row still folds when it redraws. A few bytes per call.
-export type Threads = { byId: Map<string, Thread>; open?: Thread }
+// `done` holds the calls whose result has arrived.
+export type Threads = { byId: Map<string, Thread>; done: Set<string>; open?: Thread }
 
 // What a tool row draws: Claude Code's own row, the thread's line, the line above the own row, or nothing.
 export type RowView = 'own' | 'line' | 'line-and-own' | 'nothing'
@@ -19,9 +20,10 @@ export function addToolUse(threads: Threads, id: string, tool: string, now: numb
   return true
 }
 
-export function addFailure(threads: Threads, id: string) {
+export function addResult(threads: Threads, id: string, isError: boolean) {
+  threads.done.add(id)
   const thread = threads.byId.get(id)
-  if (thread) thread.failed += 1
+  if (thread && isError) thread.failed += 1
   return thread !== undefined
 }
 
@@ -35,9 +37,11 @@ export function endThread(threads: Threads, now: number) {
 // The first row of a thread draws its line. A running row keeps Claude Code's own row, with its live output.
 export function rowView(threads: Threads, id: string | undefined, isRunning: boolean): RowView {
   const thread = id === undefined ? undefined : threads.byId.get(id)
-  if (!thread) return 'own'
-  if (thread.firstId === id) return isRunning ? 'line-and-own' : 'line'
-  return isRunning ? 'own' : 'nothing'
+  if (!thread || id === undefined) return 'own'
+  // Claude Code can still report a call as running after its result arrived, so the result or the thread's end settles it.
+  const running = isRunning && !threads.done.has(id) && thread.endedAt === undefined
+  if (thread.firstId === id) return running ? 'line-and-own' : 'line'
+  return running ? 'own' : 'nothing'
 }
 
 export function threadLine(thread: Thread) {

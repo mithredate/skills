@@ -1,0 +1,9 @@
+{
+  "name": "tidy-transcript",
+  "version": "0.1.1",
+  "description": "Folds tool calls, mod prompts, and older long replies, so the transcript shows the replies the user reads.",
+  "author": {
+    "name": "Mehrdad Hedayati",
+    "email": "mehrdad.hedayati@gmail.com"
+  }
+}

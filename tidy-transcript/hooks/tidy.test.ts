@@ -1,19 +1,19 @@
 import type { On } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import { addFailure, addToolUse, endThread, threadLine } from './threads.js'
+import { addResult, addToolUse, endThread, threadLine } from './threads.js'
 import type { Threads } from './threads.js'
 
 const OWN_ROW = 'drawn by Claude Code'
 
 type Block = { type: string; [field: string]: unknown }
 
-// Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text.
+// Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text. A reply draws its text.
 function claudeCode(on: On) {
   const clock = mock.clock(on)
   on('session.append', async (_$, e, next) => next(e))
   on('turn.complete', async () => ({ text: '' }))
-  on('ui.render', async () => ({ type: 'Text', props: {}, children: [OWN_ROW] }))
+  on('ui.render', async (_$, e) => ({ type: 'Text', props: {}, children: [e.component === 'AssistantMessage' ? e.props.text : OWN_ROW] }))
   return clock
 }
 
@@ -27,6 +27,20 @@ async function reply($: Engine, uuid: string, content: Block[], agentId?: string
   })
 }
 
+async function prompt($: Engine, uuid: string, origin: { kind: 'composer' } | { kind: 'plugin'; name: string }) {
+  await $.session.append({ message: { type: 'user', role: 'user', content: [{ type: 'text', text: 'go on' }] }, door: 'prompt', origin, uuid })
+}
+
+function drawReply($: Engine, uuid: string, text: string) {
+  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'AssistantMessage', requestId: uuid, props: { text, isFirstOfReply: true } })
+}
+
+function drawPrompt($: Engine, text: string, origin: { kind: 'composer' } | { kind: 'plugin'; name: string }, isExpanded: boolean) {
+  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'UserMessage', requestId: 'p1', props: { text, origin, isExpanded } })
+}
+
+const EIGHT_LINES = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'].join('\n')
+
 async function toolResult($: Engine, uuid: string, content: Block[]) {
   await $.session.append({ message: { type: 'user', role: 'user', content }, door: 'tool-result', origin: { kind: 'tool', tool: 'Bash' }, uuid })
 }
@@ -36,7 +50,7 @@ const textOf = (text: string): Block => ({ type: 'text', text })
 
 function drawToolRow($: Engine, id: string, tool: string, isRunning: boolean) {
   return $.ui.mount({
-    plugin: 'fold-tools',
+    plugin: 'tidy-transcript',
     surface: 'terminal',
     component: 'ToolUse',
     requestId: id,
@@ -46,7 +60,7 @@ function drawToolRow($: Engine, id: string, tool: string, isRunning: boolean) {
 
 function drawToolResult($: Engine, id: string) {
   return $.ui.mount({
-    plugin: 'fold-tools',
+    plugin: 'tidy-transcript',
     surface: 'terminal',
     component: 'ToolResult',
     requestId: id,
@@ -56,15 +70,15 @@ function drawToolResult($: Engine, id: string) {
 
 function drawGroup($: Engine, ids: string[], isExpanded: boolean) {
   const calls = ids.map(id => ({ tool_use_id: id, tool: 'Read', input: {}, isRunning: false, isErrored: false, isInterrupted: false }))
-  return $.ui.mount({ plugin: 'fold-tools', surface: 'terminal', component: 'ToolGroup', requestId: ids[0] ?? 'group', props: { calls, isActive: false, isExpanded } })
+  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'ToolGroup', requestId: ids[0] ?? 'group', props: { calls, isActive: false, isExpanded } })
 }
 
 test('names each tool once with its count, the failures, and the time a finished thread took', async () => {
-  const threads: Threads = { byId: new Map() }
+  const threads: Threads = { byId: new Map(), done: new Set() }
   addToolUse(threads, 't1', 'Bash', 1_000)
   addToolUse(threads, 't2', 'Read', 2_000)
   addToolUse(threads, 't3', 'Bash', 3_000)
-  addFailure(threads, 't3')
+  addResult(threads, 't3', true)
   const thread = threads.byId.get('t1')
   expect(thread && threadLine(thread)).toBe('▾ Bash ×2 · Read · 1 failed')
   endThread(threads, 42_000)
@@ -174,5 +188,73 @@ test("leaves a subagent's tool rows alone", async ($, on) => {
 
   const row = await drawToolRow($, 'sub-1', 'Bash', false)
   expect(await row.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  await row.unmount()
+})
+
+test("folds a call whose result arrived, even while Claude Code still reports it running", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash')])
+  await toolResult($, 'u1', [{ type: 'tool_result', tool_use_id: 't1', content: 'ok' }])
+
+  const row = await drawToolRow($, 't1', 'Bash', true)
+  expect(await row.find({ type: 'Text', text: '▾ Bash' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  await reply($, 'r2', [textOf('Done.')])
+  expect(await row.find({ type: 'Text', text: '▸ Bash  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  await row.unmount()
+})
+
+test("draws a mod's prompt as one line with the mod's name, and in full when expanded", async ($, on) => {
+  claudeCode(on)
+  const text = 'The watch-prs plugin sent a message:\nPR #79 was merged.\n\nContinue with the steps that come after the merge.'
+  const origin = { kind: 'plugin', name: 'watch-prs' } as const
+
+  const folded = await drawPrompt($, text, origin, false)
+  expect(await folded.find({ type: 'Text', text: '› watch-prs: PR #79 was merged.' })).toBeDefined()
+  await folded.unmount()
+
+  const expanded = await drawPrompt($, text, origin, true)
+  expect(await expanded.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  await expanded.unmount()
+
+  const typed = await drawPrompt($, 'run the tests', { kind: 'composer' }, false)
+  expect(await typed.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  await typed.unmount()
+})
+
+test('folds a long reply to its first lines once the user types the next prompt, and keeps the newest in full', async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(EIGHT_LINES)])
+
+  const newest = await drawReply($, 'r1', EIGHT_LINES)
+  expect(await newest.find({ type: 'Text', text: EIGHT_LINES })).toBeDefined()
+
+  await prompt($, 'u2', { kind: 'composer' })
+  expect(await newest.find({ type: 'Text', text: 'one\ntwo\nthree\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
+  await newest.unmount()
+})
+
+test("keeps a reply in full when a mod's prompt, not the user's, comes after it", async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(EIGHT_LINES)])
+  await prompt($, 'p1', { kind: 'plugin', name: 'watch-prs' })
+
+  const row = await drawReply($, 'r1', EIGHT_LINES)
+  expect(await row.find({ type: 'Text', text: EIGHT_LINES })).toBeDefined()
+  await row.unmount()
+})
+
+test('closes a code fence that the first lines of a folded reply open', async ($, on) => {
+  claudeCode(on)
+  const code = ['Run this:', '```bash', 'ls', 'pwd', 'whoami', 'date', 'uptime', '```'].join('\n')
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(code)])
+  await prompt($, 'u2', { kind: 'composer' })
+
+  const row = await drawReply($, 'r1', code)
+  expect(await row.find({ type: 'Text', text: 'Run this:\n```bash\nls\n```\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
   await row.unmount()
 })

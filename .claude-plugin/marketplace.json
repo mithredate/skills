@@ -60,9 +60,9 @@
       "description": "Mod: watches the PRs a session touches, adds their live state to each prompt, and starts a turn on Copilot reviews, failed checks, and merges."
     },
     {
-      "name": "fold-tools",
-      "source": "./fold-tools",
-      "description": "Mod: folds each run of tool calls between two pieces of reply text into one line, and keeps a running call's live row under it."
+      "name": "tidy-transcript",
+      "source": "./tidy-transcript",
+      "description": "Mod: folds each run of tool calls into one line, a mod's prompt into one line, and older long replies to their first lines."
     },
     {
       "name": "personal",
