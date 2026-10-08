@@ -5,7 +5,8 @@ import { shortPath } from './facts.js'
 
 const PANE = 'show-session'
 
-// A session in /repo: a slash command, a skill, two shell commands, an edit in the repo, and a read under the home folder.
+// A session in /repo: a slash command, a skill, three shell commands, an edit in the repo, and a read under the home folder.
+// The last shell command still runs.
 const MESSAGES: SessionMessage[] = [
   { role: 'user', text: '<command-name>/review-pr</command-name>', toolUses: [] },
   {
@@ -17,6 +18,7 @@ const MESSAGES: SessionMessage[] = [
       { tool_use_id: 't3', tool: 'Edit', input: { file_path: '/repo/src/a.ts' }, text: 'ok' },
       { tool_use_id: 't4', tool: 'Read', input: { file_path: '/Users/me/notes/todo.md' }, text: 'ok' },
       { tool_use_id: 't5', tool: 'Bash', input: { command: 'false' }, text: 'exit 1', isError: true },
+      { tool_use_id: 't6', tool: 'Bash', input: { command: 'npm test', description: 'Run the tests' } },
     ],
   },
 ]
@@ -67,9 +69,10 @@ test('draws the session as stacked sections: a header, the skills, the folders, 
     'Dirs 2',
     '· ~/notes  1 read',
     '✎ src  1 edit',
-    'Bash 2',
+    'Bash 3',
     '✓ Show status',
     '✗ false',
+    '● Run the tests',
     'Agents 2',
     '✓ Research CLI design',
     'general-purpose · 3 tools',
@@ -78,6 +81,9 @@ test('draws the session as stacked sections: a header, the skills, the folders, 
   ]) {
     expect({ line, found: (await pane.find({ type: 'Text', text: line })) !== undefined }).toEqual({ line, found: true })
   }
+  const dirs = await pane.findAll({ type: 'Text', text: /^[·✎] .*  1 (read|edit)$/ })
+  expect(dirs.map(dir => dir.text)).toEqual(['· ~/notes  1 read', '✎ src  1 edit'])
+  expect((await pane.find({ type: 'Text', text: '● Run the tests' }))?.children[0]).toMatchObject({ props: { color: 'claude' } })
   expect((await pane.find({ type: 'Text', text: /^ctx 42%$/ }))?.props).toMatchObject({ color: 'success' })
   expect((await pane.find({ type: 'Text', text: /^Agents$/ }))?.props).toMatchObject({ color: 'claude', bold: true })
   await pane.unmount()
