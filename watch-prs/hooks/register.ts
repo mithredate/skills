@@ -1,6 +1,6 @@
 import type { Register, EngineInterface } from 'claude-code'
-import { PR_FIELDS, PR_URL, changes, contextBlock, instructions, line, newActivity, toSnapshot } from './state.ts'
-import type { Change, Snapshot } from './state.ts'
+import { PR_FIELDS, PR_URL, changes, contextBlock, instructions, line, newActivity, parsePr, toSnapshot } from './state.js'
+import type { Change, Snapshot } from './state.js'
 
 const POLL_MS = 60_000
 const MAX_WATCHED = 20
@@ -41,7 +41,7 @@ async function save($: EngineInterface) {
 async function fetchPr($: EngineInterface, url: string) {
   try {
     const ran = await $.process.run(['gh', 'pr', 'view', url, '--json', PR_FIELDS], { timeoutMs: 20_000 })
-    return ran.exitCode === 0 ? ran.stdout : undefined
+    return ran.exitCode === 0 ? parsePr(ran.stdout) : undefined
   } catch {
     return undefined
   }
@@ -55,10 +55,10 @@ async function refresh($: EngineInterface) {
     Object.values(watch.prs)
       .filter(prev => prev.state === 'OPEN')
       .map(async prev => {
-        const json = await fetchPr($, prev.url)
-        if (!json) return
-        const snap = toSnapshot(json, await $.clock.now())
-        const found = changes(prev, snap, newActivity(json, prev, self))
+        const pr = await fetchPr($, prev.url)
+        if (!pr) return
+        const snap = toSnapshot(pr, await $.clock.now())
+        const found = changes(prev, snap, newActivity(pr, prev, self))
         watch.prs[prev.url] = snap
         if (found.length) report.push({ snap, found })
       }),
@@ -69,9 +69,9 @@ async function refresh($: EngineInterface) {
 
 async function add($: EngineInterface, url: string) {
   if (watch.prs[url] || watch.unwatched.includes(url) || Object.keys(watch.prs).length >= MAX_WATCHED) return
-  const json = await fetchPr($, url)
-  if (!json) return
-  watch.prs[url] = toSnapshot(json, await $.clock.now())
+  const pr = await fetchPr($, url)
+  if (!pr) return
+  watch.prs[url] = toSnapshot(pr, await $.clock.now())
   await save($)
 }
 

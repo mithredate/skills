@@ -16,6 +16,7 @@ done
 
 failed=0
 manifest=.claude-plugin/marketplace.json
+TYPESCRIPT_VERSION=7.0.2
 
 # The repo root is a marketplace, not a plugin. A root plugin.json makes
 # installers treat the root as one empty plugin named "skills" and ignore
@@ -68,6 +69,27 @@ else for hooks_json in */hooks/hooks.json; do
     claude plugin test "$plugin_dir" || failed=1
   fi
 done; fi
+
+# A mod's types come from the claude build. A `--plugin-dir` load writes them
+# to .claude-plugin/types/, and the empty prompt then makes claude exit. A
+# build or an environment where mods are off writes none. The old types go
+# first, so a failed load cannot pass against them.
+echo
+echo "→ mod types"
+for hooks_json in */hooks/hooks.json; do
+  jq -e '.modules' "$hooks_json" >/dev/null || continue
+  plugin_dir=$(dirname "$(dirname "$hooks_json")")
+  rm -rf "$plugin_dir/.claude-plugin/types"
+  claude -p --plugin-dir "$plugin_dir" "" </dev/null >/dev/null 2>&1 || true
+  if [ ! -f "$plugin_dir/.claude-plugin/types/tsconfig.json" ]; then
+    echo "⚠ this claude wrote no mod types; skipped the type check of $plugin_dir. Run it locally."
+    # In a folder with no mod, `claude plugin test` prints why mods cannot load.
+    (cd "$(mktemp -d)" && claude plugin test 2>&1 | head -2 | sed 's/^/    /') || true
+    continue
+  fi
+  echo "  $plugin_dir"
+  npx --yes -p "typescript@$TYPESCRIPT_VERSION" tsc -p "$plugin_dir" || failed=1
+done
 
 echo
 if [ "$failed" -ne 0 ]; then
