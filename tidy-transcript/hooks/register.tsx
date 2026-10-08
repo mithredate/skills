@@ -1,5 +1,5 @@
 import type { Color, EngineInterface, Register, RenderElement, RenderInput } from 'claude-code'
-import { firstPromptLine, foldReply } from './fold.js'
+import { firstPromptLine } from './fold.js'
 import { addResult, addToolUse, endThread, threadLine, toggleFold } from './threads.js'
 import type { Thread, ThreadState, Threads } from './threads.js'
 
@@ -14,10 +14,8 @@ type Block = { type: string; [field: string]: unknown }
 
 const threads: Threads = { byId: new Map() }
 
-// Each prompt the user sends, typed or by Remote Control, starts a turn. A reply from an earlier turn folds, so only the newest stays in full.
-// A mod's prompt starts no turn here: the user may not have read the reply before it yet.
 // A text block that a tool call follows is a note on the way, so it draws dim. `lastText` is the newest text block.
-const replies = { turn: 0, turnOf: new Map<string, number>(), notes: new Set<string>(), lastText: undefined as string | undefined }
+const replies = { notes: new Set<string>(), lastText: undefined as string | undefined }
 
 // The tools and failures of the turn that runs now. When a turn ends, its footer keeps them with the context and the cost.
 const turnNow = { tools: 0, failed: 0 }
@@ -105,13 +103,8 @@ export const register: Register = on => {
     const now = await $.clock.now()
     const isReply = e.message.type === 'assistant'
     let changed = false
-    if (e.door === 'prompt' && (e.origin.kind === 'composer' || e.origin.kind === 'bridge')) {
-      replies.turn += 1
-      changed = true
-    }
     for (const block of e.message.content) {
       if (isReply && isReplyText(block)) {
-        replies.turnOf.set(e.uuid, replies.turn)
         replies.lastText = e.uuid
         changed = endThread(threads, now) || changed
       }
@@ -179,15 +172,13 @@ export const register: Register = on => {
 
   // A note draws dim, so the last reply of a turn is the one bright text. The bullet stays, dim too.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    const turn = replies.turnOf.get(e.requestId)
-    const folded = turn !== undefined && turn < replies.turn ? foldReply(e.props.text) : undefined
-    if (!replies.notes.has(e.requestId)) return next(folded === undefined ? e : { ...e, props: { ...e.props, text: folded } })
+    if (!replies.notes.has(e.requestId)) return next(e)
     const { Box, Text, Markdown } = $.ui.resolve(e)
     return (
       <Box flexDirection="row">
         <Text dimColor>{e.props.isFirstOfReply ? '● ' : '  '}</Text>
         <Box flexGrow={1}>
-          <Markdown text={folded ?? e.props.text} dimColor />
+          <Markdown text={e.props.text} dimColor />
         </Box>
       </Box>
     )

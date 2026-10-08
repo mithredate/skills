@@ -67,7 +67,7 @@
     {
       "name": "tidy-transcript",
       "source": "./tidy-transcript",
-      "description": "Mod: folds each run of tool calls into one line, a mod's prompt into one line, and older long replies to their first lines."
+      "description": "Mod: folds each run of tool calls into one line, and a mod's prompt into one line."
     },
     {
       "name": "show-session",
