@@ -1,11 +1,11 @@
 import type { EngineInterface, Register, RenderElement, RenderInput } from 'claude-code'
 import { foldReply, promptLine } from './fold.js'
-import { addResult, addToolUse, endThread, isLive, rowView, threadLine } from './threads.js'
+import { addResult, addToolUse, endThread, rowView, threadLine } from './threads.js'
 import type { Threads } from './threads.js'
 
 type Block = { type: string; [field: string]: unknown }
 
-const threads: Threads = { byId: new Map(), done: new Set() }
+const threads: Threads = { byId: new Map() }
 
 // Each prompt the user sends, typed or by Remote Control, starts a turn. A reply from an earlier turn folds, so only the newest stays in full.
 // A mod's prompt starts no turn here: the user may not have read the reply before it yet.
@@ -27,25 +27,14 @@ function resultOf(block: Block) {
 }
 
 // The row of a thread's first call draws the thread's line. The rows of its other calls draw nothing.
-// A running call keeps Claude Code's own row, with its live output.
-async function drawRow(
-  $: EngineInterface,
-  e: RenderInput<'ToolUse' | 'ToolGroup'>,
-  id: string | undefined,
-  live: boolean,
-  own: () => Promise<RenderElement>,
-) {
+// A running call draws no own row too: a row that shows for a second and then folds is a flicker.
+async function drawRow($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, id: string | undefined, own: () => Promise<RenderElement>) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
-  const view = rowView(threads, id, live)
+  const view = rowView(threads, id)
   if (!thread || view === 'own') return own()
   const { Box, Text } = $.ui.resolve(e)
   if (view === 'nothing') return <Box />
-  return (
-    <Box flexDirection="column">
-      <Text dimColor>{threadLine(thread)}</Text>
-      {view === 'line-and-own' ? await own() : undefined}
-    </Box>
-  )
+  return <Text dimColor>{threadLine(thread)}</Text>
 }
 
 export const register: Register = on => {
@@ -79,13 +68,14 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // A turn's last reply is final. A tool call in a later turn, such as one an agent's report starts, makes it no note.
   on('turn.complete', async ($, e, next) => {
+    if (e.agentId === undefined) replies.lastText = undefined
     if (endThread(threads, await $.clock.now())) $.ui.invalidate('ui.render')
     return next(e)
   })
 
-  on('ui.render', { component: 'ToolUse' }, async ($, e, next) =>
-    drawRow($, e, e.props.tool_use_id, isLive(threads, e.props.tool_use_id, e.props.isRunning), () => next(e)))
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => drawRow($, e, e.props.tool_use_id, () => next(e)))
 
   // A note draws dim, so the last reply of a turn is the one bright text. The bullet stays, dim too.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
@@ -117,7 +107,7 @@ export const register: Register = on => {
 
   // A result draws under its row, so it shows only where the row is Claude Code's own.
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
-    if (rowView(threads, e.props.tool_use_id, false) === 'own') return next(e)
+    if (rowView(threads, e.props.tool_use_id) === 'own') return next(e)
     const { Box } = $.ui.resolve(e)
     return <Box />
   })
@@ -126,7 +116,6 @@ export const register: Register = on => {
   // An expanded group, as under --verbose or in the ctrl+o transcript, keeps Claude Code's rows.
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
     if (e.props.isExpanded) return next(e)
-    const anyLive = e.props.calls.some(call => isLive(threads, call.tool_use_id, call.isRunning))
-    return drawRow($, e, e.props.calls[0]?.tool_use_id, anyLive, () => next(e))
+    return drawRow($, e, e.props.calls[0]?.tool_use_id, () => next(e))
   })
 }
