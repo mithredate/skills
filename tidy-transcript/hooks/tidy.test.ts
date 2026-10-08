@@ -276,39 +276,14 @@ test("draws a mod's prompt as one line, the mod's name as a label, and in full w
   await typed.unmount()
 })
 
-test('folds a long reply to its first lines once the user types the next prompt, and keeps the newest in full', async ($, on) => {
+test('keeps an older long reply in full after the user types the next prompt', async ($, on) => {
   claudeCode(on)
   await prompt($, 'u1', { kind: 'composer' })
   await reply($, 'r1', [textOf(EIGHT_LINES)])
-
-  const newest = await drawReply($, 'r1', EIGHT_LINES)
-  expect(await newest.find({ type: 'Text', text: EIGHT_LINES })).toBeDefined()
-
   await prompt($, 'u2', { kind: 'composer' })
-  expect(await newest.find({ type: 'Text', text: 'one\ntwo\nthree\n\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
-  await newest.unmount()
-})
-
-test("keeps a reply in full when a mod's prompt, not the user's, comes after it", async ($, on) => {
-  claudeCode(on)
-  await prompt($, 'u1', { kind: 'composer' })
-  await reply($, 'r1', [textOf(EIGHT_LINES)])
-  await prompt($, 'p1', { kind: 'plugin', name: 'watch-prs' })
 
   const row = await drawReply($, 'r1', EIGHT_LINES)
   expect(await row.find({ type: 'Text', text: EIGHT_LINES })).toBeDefined()
-  await row.unmount()
-})
-
-test('closes a code fence that the first lines of a folded reply open', async ($, on) => {
-  claudeCode(on)
-  const code = ['Run this:', '```bash', 'ls', 'pwd', 'whoami', 'date', 'uptime', '```'].join('\n')
-  await prompt($, 'u1', { kind: 'composer' })
-  await reply($, 'r1', [textOf(code)])
-  await prompt($, 'u2', { kind: 'composer' })
-
-  const row = await drawReply($, 'r1', code)
-  expect(await row.find({ type: 'Text', text: 'Run this:\n```bash\nls\n```\n\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
   await row.unmount()
 })
 
@@ -325,18 +300,6 @@ test("draws a running group as its thread's line only", async ($, on) => {
   expect(await group.find({ type: 'Box', text: '● Read ×2 ▸' })).toBeDefined()
   expect(await group.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
   await group.unmount()
-})
-
-test('keeps a short reply in full after the next prompt', async ($, on) => {
-  claudeCode(on)
-  const six = ['one', 'two', 'three', 'four', 'five', 'six'].join('\n')
-  await prompt($, 'u1', { kind: 'composer' })
-  await reply($, 'r1', [textOf(six)])
-  await prompt($, 'u2', { kind: 'composer' })
-
-  const row = await drawReply($, 'r1', six)
-  expect(await row.find({ type: 'Text', text: six })).toBeDefined()
-  await row.unmount()
 })
 
 test("takes the first line of a mod's text, with or without Claude Code's framing line", async () => {
