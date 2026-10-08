@@ -6,15 +6,21 @@ import { addResult, addToolUse, endThread, threadLine } from './threads.js'
 import type { Threads } from './threads.js'
 
 const OWN_ROW = 'drawn by Claude Code'
+const GROUP_COUNT_LINE = 'Read 2 files'
 
 type Block = { type: string; [field: string]: unknown }
 
 // Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text. A reply draws its text.
+// A group that is not expanded draws as its count line.
 function claudeCode(on: On) {
   const clock = mock.clock(on)
   on('session.append', async (_$, e, next) => next(e))
   on('turn.complete', async () => ({ text: '' }))
-  on('ui.render', async (_$, e) => ({ type: 'Text', props: {}, children: [e.component === 'AssistantMessage' ? e.props.text : OWN_ROW] }))
+  on('ui.render', async (_$, e) => {
+    if (e.component === 'AssistantMessage') return { type: 'Text', props: {}, children: [e.props.text] }
+    if (e.component === 'ToolGroup' && !e.props.isExpanded) return { type: 'Text', props: {}, children: [GROUP_COUNT_LINE] }
+    return { type: 'Text', props: {}, children: [OWN_ROW] }
+  })
   return clock
 }
 
@@ -204,6 +210,28 @@ test("draws a group of reads as its thread's line, and keeps an expanded group a
   const expanded = await drawGroup($, ['g1', 'g2'], true)
   expect(await expanded.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
   await expanded.unmount()
+})
+
+test("opens a group of reads into each call on a click on its line, and folds it again on a second click", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('g1', 'Read'), useOf('g2', 'Read')])
+  await reply($, 'r2', [textOf('Read both.')])
+
+  const group = await drawGroup($, ['g1', 'g2'], false)
+  await group.press({ key: 'fold-g1' })
+  expect(await group.find({ type: 'Text', text: GROUP_COUNT_LINE })).toBeUndefined()
+  expect(await group.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+
+  const first = await drawToolRow($, 'g1', 'Read', false)
+  const second = await drawToolRow($, 'g2', 'Read', false)
+  expect(await first.find({ type: 'Box', text: '✓ Read ×2  0s ▾' })).toBeDefined()
+  expect(await first.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect(await second.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+
+  await first.press({ key: 'fold-g1' })
+  expect(await group.find({ type: 'Box', text: '✓ Read ×2  0s ▸' })).toBeDefined()
+  expect(await group.find({ type: 'Text', text: GROUP_COUNT_LINE })).toBeUndefined()
+  for (const row of [group, first, second]) await row.unmount()
 })
 
 test('ends the open thread when the turn ends', async ($, on) => {
