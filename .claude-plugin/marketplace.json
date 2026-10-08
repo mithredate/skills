@@ -70,6 +70,11 @@
       "description": "Mod: folds each run of tool calls into one line, a mod's prompt into one line, and older long replies to their first lines."
     },
     {
+      "name": "show-session",
+      "source": "./show-session",
+      "description": "Mod: /show-session opens a pane with the session's skills, folders, shell commands, and agents."
+    },
+    {
       "name": "personal",
       "source": "./personal",
       "description": "Mehrdad's personal working defaults (work-like-mehrdad).",
