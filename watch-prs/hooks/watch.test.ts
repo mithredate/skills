@@ -74,3 +74,34 @@ test('watches a PR that gh opens, and starts a turn when Copilot reviews it', as
   expect(context).toContain('review decision is now APPROVED')
   expect(submitted.length).toBe(2)
 })
+
+test('skips polls during a turn, so a failure fixed in that turn is never reported', async ($, on) => {
+  const clock = mock.clock(on)
+  mock.store(on)
+  let current = pr()
+  const submitted: string[] = []
+  const world = on as any
+  world('session.id', async () => ({ value: 's2' }))
+  world('process.run', async () => ({ value: { exitCode: 0, stdout: current, stderr: '' } }))
+  world('prompt.submit', async (_$: unknown, e: { text: string }) => {
+    submitted.push(e.text)
+    return { text: e.text }
+  })
+  world('tool.call', async () => ({ result: 'ok', text: URL + '\n' }))
+  world('session.start', async (_$: unknown, e: { cwd: string }) => ({ cwd: e.cwd }))
+  world('turn.start', async (_$: unknown, e: { turnId: string }) => ({ turnId: e.turnId }))
+  world('turn.complete', async () => ({ text: '' }))
+  world('command.register', async () => ({ value: undefined }))
+  world('ui.status', async () => ({ value: undefined }))
+  world('ui.toast', async () => ({ value: undefined }))
+  await $.session.start({ cwd: '/repo', surface: 'terminal', isInteractive: true })
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' } as any)
+
+  await $.turn.start({ text: 'fix CI', turnId: 't1' })
+  current = pr({ statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })
+  await clock.advance(60_000)
+  current = pr({ statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'SUCCESS' }] })
+  await $.turn.complete({ turnId: 't1', answer: 'fixed', reason: 'answer', isAborted: false, durationMs: 1 } as any)
+  await clock.advance(60_000)
+  expect(submitted).toEqual([])
+})

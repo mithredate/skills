@@ -10,6 +10,11 @@ type Watch = { prs: Record<string, Snapshot>; copilotRounds: Record<string, numb
 
 let watch: Watch = { prs: {}, copilotRounds: {} }
 let storeKey = ''
+// A plugin's prompt waits until Claude is idle, so news found mid-turn can be stale by then.
+// Polls skip while a turn runs; the first poll after it compares against the last snapshot.
+const runningTurns = new Set<string>()
+// What each queued prompt reports, so a prompt that went stale while it waited can be dropped.
+const queued = new Map<string, { url: string; found: Change[] }>()
 
 // Loads this session's watch from the store once, whichever hook runs first.
 async function load($: EngineInterface) {
@@ -91,15 +96,29 @@ export const register: Register = on => {
     await save($)
 
     $.clock.every(POLL_MS, async () => {
+      if (runningTurns.size) return
       for (const { snap, found } of await refresh($)) {
         const { what, steps } = instructions(snap, found, watch.copilotRounds[snap.url] ?? 0)
         $.ui.toast(`#${snap.number} ${what}`)
-        if (steps.length) void $.prompt.submit({ text: `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}` })
+        if (!steps.length) continue
+        const text = `PR ${snap.url} ${what}.\n\n${steps.join('\n\n')}`
+        queued.set(text, { url: snap.url, found })
+        void $.prompt.submit({ text })
       }
     })
 
     await $.command.register({ name: 'watch-prs', description: 'List watched PRs, or watch the PR URLs given', argumentHint: '[pr-url...]', immediate: true })
     await $.command.register({ name: 'unwatch-prs', description: 'Stop watching a PR, or all of them', argumentHint: '<pr-url|all>', immediate: true })
+    return next(e)
+  })
+
+  on('turn.start', async ($, e, next) => {
+    runningTurns.add(e.turnId)
+    return next(e)
+  })
+
+  on('turn.complete', async ($, e, next) => {
+    runningTurns.delete(e.turnId)
     return next(e)
   })
 
@@ -116,6 +135,16 @@ export const register: Register = on => {
   // The user's prompt carries state fetched now, not at the start of the session.
   on('prompt.submit', async ($, e, next) => {
     await load($)
+    if (e.origin.kind === 'plugin' && e.origin.name === $.plugin.name) {
+      // A prompt waits until Claude is idle; a failure fixed in the meantime is no news.
+      const report = queued.get(e.text)
+      queued.delete(e.text)
+      if (report && report.found.every(c => c.kind === 'checks' && c.to === 'fail')) {
+        const json = await fetchPr($, report.url)
+        if (json && toSnapshot(json, 0).checks !== 'fail') return { drop: 'the checks pass again' }
+      }
+      return next(e)
+    }
     if (e.origin.kind === 'plugin' || Object.keys(watch.prs).length === 0) return next(e)
     const report = await refresh($)
     const now = await $.clock.now()
