@@ -1,7 +1,7 @@
 // A thread is a run of tool calls between two pieces of reply text. Once it ends, it draws as one line.
 export type Thread = { firstId: string; tools: string[]; failed: number; startedAt: number; endedAt?: number }
 
-// ponytail: byId keeps every call of the session, so an old row still folds when it redraws. A few bytes per call.
+// ponytail: byId and done keep every call of the session, so an old row still folds when it redraws. A few bytes per call.
 // `done` holds the calls whose result has arrived.
 export type Threads = { byId: Map<string, Thread>; done: Set<string>; open?: Thread }
 
@@ -34,14 +34,18 @@ export function endThread(threads: Threads, now: number) {
   return true
 }
 
-// The first row of a thread draws its line. A running row keeps Claude Code's own row, with its live output.
-export function rowView(threads: Threads, id: string | undefined, isRunning: boolean): RowView {
+// Claude Code can still report a call as running after its result arrived or its thread ended, so those settle it.
+export function isLive(threads: Threads, id: string | undefined, isRunning: boolean) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
-  if (!thread || id === undefined) return 'own'
-  // Claude Code can still report a call as running after its result arrived, so the result or the thread's end settles it.
-  const running = isRunning && !threads.done.has(id) && thread.endedAt === undefined
-  if (thread.firstId === id) return running ? 'line-and-own' : 'line'
-  return running ? 'own' : 'nothing'
+  return isRunning && id !== undefined && !threads.done.has(id) && thread?.endedAt === undefined
+}
+
+// The first row of a thread draws its line. A live row keeps Claude Code's own row, with its live output.
+export function rowView(threads: Threads, id: string | undefined, isLive: boolean): RowView {
+  const thread = id === undefined ? undefined : threads.byId.get(id)
+  if (!thread) return 'own'
+  if (thread.firstId === id) return isLive ? 'line-and-own' : 'line'
+  return isLive ? 'own' : 'nothing'
 }
 
 export function threadLine(thread: Thread) {

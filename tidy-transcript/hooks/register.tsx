@@ -1,13 +1,13 @@
 import type { EngineInterface, Register, RenderElement, RenderInput } from 'claude-code'
 import { foldReply, promptLine } from './fold.js'
-import { addResult, addToolUse, endThread, rowView, threadLine } from './threads.js'
+import { addResult, addToolUse, endThread, isLive, rowView, threadLine } from './threads.js'
 import type { Threads } from './threads.js'
 
 type Block = { type: string; [field: string]: unknown }
 
 const threads: Threads = { byId: new Map(), done: new Set() }
 
-// Each prompt the user types starts a turn. A reply from an earlier turn folds, so only the newest stays in full.
+// Each prompt the user sends, typed or by Remote Control, starts a turn. A reply from an earlier turn folds, so only the newest stays in full.
 // A mod's prompt starts no turn here: the user may not have read the reply before it yet.
 const replies = { turn: 0, turnOf: new Map<string, number>() }
 
@@ -31,11 +31,11 @@ async function drawRow(
   $: EngineInterface,
   e: RenderInput<'ToolUse' | 'ToolGroup'>,
   id: string | undefined,
-  isRunning: boolean,
+  live: boolean,
   own: () => Promise<RenderElement>,
 ) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
-  const view = rowView(threads, id, isRunning)
+  const view = rowView(threads, id, live)
   if (!thread || view === 'own') return own()
   const { Box, Text } = $.ui.resolve(e)
   if (view === 'nothing') return <Box />
@@ -54,7 +54,7 @@ export const register: Register = on => {
     const now = await $.clock.now()
     const isReply = e.message.type === 'assistant'
     let changed = false
-    if (e.door === 'prompt' && e.origin.kind === 'composer') {
+    if (e.door === 'prompt' && (e.origin.kind === 'composer' || e.origin.kind === 'bridge')) {
       replies.turn += 1
       changed = true
     }
@@ -78,7 +78,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'ToolUse' }, async ($, e, next) =>
-    drawRow($, e, e.props.tool_use_id, e.props.isRunning, () => next(e)))
+    drawRow($, e, e.props.tool_use_id, isLive(threads, e.props.tool_use_id, e.props.isRunning), () => next(e)))
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const turn = replies.turnOf.get(e.requestId)
@@ -109,7 +109,7 @@ export const register: Register = on => {
   // An expanded group, as under --verbose or in the ctrl+o transcript, keeps Claude Code's rows.
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
     if (e.props.isExpanded) return next(e)
-    const isRunning = e.props.calls.some(call => call.isRunning)
-    return drawRow($, e, e.props.calls[0]?.tool_use_id, isRunning, () => next(e))
+    const anyLive = e.props.calls.some(call => isLive(threads, call.tool_use_id, call.isRunning))
+    return drawRow($, e, e.props.calls[0]?.tool_use_id, anyLive, () => next(e))
   })
 }

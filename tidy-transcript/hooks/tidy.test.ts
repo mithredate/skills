@@ -1,6 +1,7 @@
 import type { On } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
+import { promptLine } from './fold.js'
 import { addResult, addToolUse, endThread, threadLine } from './threads.js'
 import type { Threads } from './threads.js'
 
@@ -232,7 +233,7 @@ test('folds a long reply to its first lines once the user types the next prompt,
   expect(await newest.find({ type: 'Text', text: EIGHT_LINES })).toBeDefined()
 
   await prompt($, 'u2', { kind: 'composer' })
-  expect(await newest.find({ type: 'Text', text: 'one\ntwo\nthree\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
+  expect(await newest.find({ type: 'Text', text: 'one\ntwo\nthree\n\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
   await newest.unmount()
 })
 
@@ -255,6 +256,50 @@ test('closes a code fence that the first lines of a folded reply open', async ($
   await prompt($, 'u2', { kind: 'composer' })
 
   const row = await drawReply($, 'r1', code)
-  expect(await row.find({ type: 'Text', text: 'Run this:\n```bash\nls\n```\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: 'Run this:\n```bash\nls\n```\n\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
   await row.unmount()
+})
+
+test('folds a call with no result once its thread ends, even while Claude Code still reports it running', async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash')])
+  await $.turn.complete({ turnId: 'turn-1', answer: '', reason: 'aborted', isAborted: true, durationMs: 1 })
+
+  const row = await drawToolRow($, 't1', 'Bash', true)
+  expect(await row.find({ type: 'Text', text: '▸ Bash  0s' })).toBeDefined()
+  expect(await row.find({ type: 'Text', text: OWN_ROW })).toBeUndefined()
+  await row.unmount()
+})
+
+test("keeps a group's live row while a later call in it runs, after its first call finished", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('g1', 'Read'), useOf('g2', 'Read')])
+  await toolResult($, 'u1', [{ type: 'tool_result', tool_use_id: 'g1', content: 'ok' }])
+
+  const calls = [
+    { tool_use_id: 'g1', tool: 'Read', input: {}, isRunning: true, isErrored: false, isInterrupted: false },
+    { tool_use_id: 'g2', tool: 'Read', input: {}, isRunning: true, isErrored: false, isInterrupted: false },
+  ]
+  const group = await $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'ToolGroup', requestId: 'g1', props: { calls, isActive: true, isExpanded: false } })
+  expect(await group.find({ type: 'Text', text: '▾ Read ×2' })).toBeDefined()
+  expect(await group.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  await group.unmount()
+})
+
+test('keeps a short reply in full after the next prompt', async ($, on) => {
+  claudeCode(on)
+  const six = ['one', 'two', 'three', 'four', 'five', 'six'].join('\n')
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(six)])
+  await prompt($, 'u2', { kind: 'composer' })
+
+  const row = await drawReply($, 'r1', six)
+  expect(await row.find({ type: 'Text', text: six })).toBeDefined()
+  await row.unmount()
+})
+
+test("names the mod and the first line of its text, with or without Claude Code's framing line", async () => {
+  expect(promptLine('watch-prs', 'The watch-prs plugin sent a message:\nPR #79 was merged.')).toBe('› watch-prs: PR #79 was merged.')
+  expect(promptLine('watch-prs', 'The watch-prs plugin sent a message: PR #79 was merged.')).toBe('› watch-prs: PR #79 was merged.')
+  expect(promptLine('watch-prs', '  PR #79 was merged.\r\nMore.')).toBe('› watch-prs: PR #79 was merged.')
 })

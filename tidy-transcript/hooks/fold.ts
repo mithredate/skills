@@ -1,6 +1,7 @@
-// An older reply shows this many lines. A reply only folds when it hides at least as many.
+// An older reply shows this many lines. It folds only when it has more than twice as many.
 const SHOWN_LINES = 3
-const FENCE = /^\s*```/
+// A line that only opens or closes a code fence, such as ```bash or ~~~.
+const FENCE = /^\s*(`{3,}|~{3,})[^`~]*$/
 
 // The first lines of a reply and a count of the rest, or undefined when the reply is short.
 export function foldReply(text: string) {
@@ -8,13 +9,17 @@ export function foldReply(text: string) {
   if (lines.length <= SHOWN_LINES * 2) return undefined
   const head = lines.slice(0, SHOWN_LINES)
   // A code fence opened in the head must close, or the count line draws as code.
-  if (head.filter(line => FENCE.test(line)).length % 2 === 1) head.push('```')
-  return [...head, `_… ${lines.length - SHOWN_LINES} more lines (ctrl+o)_`].join('\n')
+  const fences = head.filter(line => FENCE.test(line))
+  if (fences.length % 2 === 1) head.push(fences[0]?.trim().match(FENCE)?.[1] ?? '```')
+  // The blank line keeps a list or a quote in the head from taking in the count line.
+  return [...head, '', `_… ${lines.length - SHOWN_LINES} more lines (ctrl+o)_`].join('\n')
 }
 
 // A mod's prompt starts with Claude Code's framing line, then the mod's own text.
+const FRAMING = /^The .+ plugin sent a message:\s*/
+
 export function promptLine(name: string, text: string) {
-  const lines = text.split('\n').filter(line => line.trim() !== '')
-  const body = lines[0] === `The ${name} plugin sent a message:` ? lines.slice(1) : lines
-  return `› ${name}: ${body[0] ?? ''}`
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '')
+  const first = (lines[0] ?? '').replace(FRAMING, '')
+  return `› ${name}: ${first || lines[1] || ''}`
 }
