@@ -28,7 +28,7 @@ The sections below list defaults, not fixed steps. A more specific skill or a pr
 - **One ticket, or one section of a ticket, per agent.** Use a fresh agent for each task. Quality drops as an agent's session grows.
 - **Every spawn carries** a file list, the ponytail rules, "no extra abstractions", and a turn cap.
 - **Due diligence stays here.** Review every agent result for correctness, overengineering, and fit with the functional and non-functional requirements before you commit.
-- **Privileged commands are Mehrdad's to run**: `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy`. Run a read yourself, for example `get`, `describe`, `list`, or `logs`, when it returns no secret. For any other call, hand him the exact command in a code block and explain only the current step. Claude Code enforces this rule with this plugin's hook. The rule holds for any agent.
+- **Privileged commands run only when Mehrdad agrees**: `aws`, `aws-vault`, `kubectl`, `helm`, `terraform apply|destroy`. Run a read yourself, for example `get`, `describe`, `list`, or `logs`, when it returns no secret. Before any other call, explain only the current step. The `guard-infra` mod then asks him to Run or Cancel the call. If he cancels it or types an answer, do not run the call again. If the mod refuses because no one answered, hand him the exact command in a code block. The rule holds for any agent.
 
 ## Spending quota
 

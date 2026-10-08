@@ -55,6 +55,11 @@
       "description": "Mod: refuses edits in a repo's main checkout until the work moves to a worktree off a freshly fetched origin default branch."
     },
     {
+      "name": "guard-infra",
+      "source": "./guard-infra",
+      "description": "Mod: asks the user to Run or Cancel each aws, aws-vault, kubectl, helm, or terraform apply/destroy call that is not a read."
+    },
+    {
       "name": "watch-prs",
       "source": "./watch-prs",
       "description": "Mod: watches the PRs a session touches, adds their live state to each prompt, and starts a turn on Copilot reviews, failed checks, and merges."
