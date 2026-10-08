@@ -1,6 +1,6 @@
 import type { EngineInterface, Register, RenderElement, RenderInput } from 'claude-code'
 import { foldReply, promptLine } from './fold.js'
-import { addResult, addToolUse, endThread, rowView, threadLine } from './threads.js'
+import { addResult, addToolUse, endThread, threadLine } from './threads.js'
 import type { Threads } from './threads.js'
 
 type Block = { type: string; [field: string]: unknown }
@@ -27,13 +27,12 @@ function resultOf(block: Block) {
 }
 
 // The row of a thread's first call draws the thread's line. The rows of its other calls draw nothing.
-// A running call draws no own row too: a row that shows for a second and then folds is a flicker.
+// This holds while a call runs, because a row that shows for a second and then folds is a flicker.
 async function drawRow($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, id: string | undefined, own: () => Promise<RenderElement>) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
-  const view = rowView(threads, id)
-  if (!thread || view === 'own') return own()
+  if (!thread) return own()
   const { Box, Text } = $.ui.resolve(e)
-  if (view === 'nothing') return <Box />
+  if (thread.firstId !== id) return <Box />
   return <Text dimColor>{threadLine(thread)}</Text>
 }
 
@@ -46,7 +45,6 @@ export const register: Register = on => {
     let changed = false
     if (e.door === 'prompt' && (e.origin.kind === 'composer' || e.origin.kind === 'bridge')) {
       replies.turn += 1
-      replies.lastText = undefined
       changed = true
     }
     for (const block of e.message.content) {
@@ -69,6 +67,7 @@ export const register: Register = on => {
   })
 
   // A turn's last reply is final. A tool call in a later turn, such as one an agent's report starts, makes it no note.
+  // A subagent's turn can end between a note and its tool call, so only the main turn's end clears it.
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined) replies.lastText = undefined
     if (endThread(threads, await $.clock.now())) $.ui.invalidate('ui.render')
@@ -107,7 +106,7 @@ export const register: Register = on => {
 
   // A result draws under its row, so it shows only where the row is Claude Code's own.
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
-    if (rowView(threads, e.props.tool_use_id) === 'own') return next(e)
+    if (!threads.byId.has(e.props.tool_use_id)) return next(e)
     const { Box } = $.ui.resolve(e)
     return <Box />
   })

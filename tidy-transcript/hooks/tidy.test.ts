@@ -192,7 +192,6 @@ test("leaves a subagent's tool rows alone", async ($, on) => {
   await row.unmount()
 })
 
-
 test("draws a mod's prompt as one line with the mod's name, and in full when expanded", async ($, on) => {
   claudeCode(on)
   const text = 'The watch-prs plugin sent a message:\nPR #79 was merged.\n\nContinue with the steps that come after the merge.'
@@ -246,7 +245,6 @@ test('closes a code fence that the first lines of a folded reply open', async ($
   expect(await row.find({ type: 'Text', text: 'Run this:\n```bash\nls\n```\n\n_… 5 more lines (ctrl+o)_' })).toBeDefined()
   await row.unmount()
 })
-
 
 test("draws a running group as its thread's line only", async ($, on) => {
   claudeCode(on)
