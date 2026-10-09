@@ -14,12 +14,14 @@ const directPush = new Map<string, Promise<boolean>>()
 
 // True only when GitHub says the default branch is unprotected. No `gh`, no network, or another host keeps the guard on.
 async function takesDirectPush($: EngineInterface, originUrl: string, base: string | undefined) {
-  const repo = originUrl.match(/github\.com[:/](.+?)(?:\.git)?\/?$/)?.[1]
+  const repo = originUrl.match(/^(?:[a-z+]+:\/\/)?(?:[^@/]+@)?github\.com[:/](.+?)(?:\.git)?\/?$/)?.[1]
   if (!repo || !base) return false
   const path = `repos/${repo}/branches/${base.replace(/^origin\//, '')}`
-  if (!directPush.has(path))
-    directPush.set(path, $.process.run(['gh', 'api', path, '--jq', '.protected'], { timeoutMs: 10_000 }).then(r => r.exitCode === 0 && r.stdout.trim() === 'false', () => false))
-  return directPush.get(path)
+  const cached = directPush.get(path)
+  if (cached) return cached
+  const answer = $.process.run(['gh', 'api', path, '--jq', '.protected'], { timeoutMs: 10_000 }).then(r => r.exitCode === 0 && r.stdout.trim() === 'false', () => false)
+  directPush.set(path, answer)
+  return answer
 }
 
 async function git($: EngineInterface, args: string[]): Promise<ProcessRunResult> {
@@ -36,7 +38,7 @@ async function nearestDir($: EngineInterface, path: string) {
   return dir
 }
 
-// The repo that holds `dir`, when it has an origin and a default branch that takes no direct pushes. Cached per directory for the session.
+// The repo that holds `dir`, when it has a PR workflow to guard. Cached per directory for the session.
 async function guardedCheckout($: EngineInterface, dir: string) {
   const cached = checkouts.get(dir)
   if (cached !== undefined) return cached
