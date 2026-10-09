@@ -6,7 +6,8 @@ const REPO = '/repo'
 const NO_ORIGIN = '/home'
 
 // A fake git: /repo has an origin and worktrees under /repo/.worktrees/wt; /home has no origin.
-function fakeGit(on: On, { calls = [] as string[][], originHead = 'origin/main\n', cwd = REPO } = {}) {
+// A fake gh answers whether /repo's default branch is protected. '' makes gh exit 1, and ghThrows makes the run itself fail.
+function fakeGit(on: On, { calls = [] as string[][], originUrl = 'git@github.com:acme/api.git\n', originHead = 'origin/main\n', branchProtected = 'true\n', ghThrows = false, cwd = REPO } = {}) {
   on('fs.exists', async () => ({ value: true }))
   on('session.cwd', async () => ({ value: cwd }))
   on('process.run', async (_$, e) => {
@@ -15,12 +16,16 @@ function fakeGit(on: On, { calls = [] as string[][], originHead = 'origin/main\n
     const dir = argv[2] ?? ''
     const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const fail = { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    if (argv[0] === 'gh') {
+      if (ghThrows) throw new Error('gh: command not found')
+      return branchProtected ? ok(branchProtected) : fail
+    }
     if (argv.includes('rev-parse')) {
       if (dir.startsWith(NO_ORIGIN)) return ok(`${NO_ORIGIN}\n${NO_ORIGIN}/.git\n${NO_ORIGIN}/.git\n`)
       if (dir.startsWith(REPO + '/.worktrees/wt')) return ok(`${REPO}/.worktrees/wt\n${REPO}/.git/worktrees/wt\n${REPO}/.git\n`)
       return ok(`${REPO}\n${REPO}/.git\n${REPO}/.git\n`)
     }
-    if (argv.includes('get-url')) return dir === NO_ORIGIN ? fail : ok('git@github.com:acme/api.git\n')
+    if (argv.includes('get-url')) return dir === NO_ORIGIN ? fail : ok(originUrl)
     if (argv.includes('symbolic-ref')) return originHead ? ok(originHead) : fail
     if (argv.includes('check-ignore')) return (argv.at(-1) ?? '').includes('/dist/') ? ok('') : fail
     return ok('')
@@ -68,6 +73,44 @@ test('allows an edit in a repo with no origin', async ($, on) => {
   expect(refusal(ran)).toBeUndefined()
 })
 
+test('allows an edit in the main checkout when GitHub says the default branch takes direct pushes', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls, branchProtected: 'false\n' })
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/notes/a.md', content: 'x' })
+  expect(refusal(ran)).toBeUndefined()
+  expect(calls.some(c => c.join(' ') === 'gh api repos/acme/api/branches/main --jq .protected')).toBe(true)
+})
+
+test('refuses an edit in the main checkout when gh cannot tell if the default branch is protected', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls, branchProtected: '' })
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
+  expect(refusal(ran)).toContain('main checkout')
+  expect(calls.some(c => c[0] === 'gh')).toBe(true)
+})
+
+test('refuses an edit in the main checkout when gh fails to run', async ($, on) => {
+  fakeGit(on, { branchProtected: 'false\n', ghThrows: true })
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
+  expect(refusal(ran)).toContain('main checkout')
+})
+
+test('refuses an edit in the main checkout of a repo that is not on GitHub, and asks gh nothing', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls, originUrl: 'git@notgithub.com:acme/api.git\n', branchProtected: 'false\n' })
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
+  expect(refusal(ran)).toContain('main checkout')
+  expect(calls.some(c => c[0] === 'gh')).toBe(false)
+})
+
+test('refuses an edit in the main checkout when origin/HEAD is unset, and asks gh nothing', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls, originHead: '', branchProtected: 'false\n' })
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
+  expect(refusal(ran)).toContain('main checkout')
+  expect(calls.some(c => c[0] === 'gh')).toBe(false)
+})
+
 test('fetches, then refuses a new worktree branch from a local base', async ($, on) => {
   const calls: string[][] = []
   fakeGit(on, { calls })
@@ -86,6 +129,14 @@ test('leaves worktree commands alone in a repo with no origin', async ($, on) =>
   const calls: string[][] = []
   fakeGit(on, { calls, cwd: NO_ORIGIN })
   const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add ../y -b y main' })
+  expect(refusal(ran)).toBeUndefined()
+  expect(calls.some(c => c.includes('fetch'))).toBe(false)
+})
+
+test('leaves worktree commands alone when the default branch takes direct pushes', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls, branchProtected: 'false\n' })
+  const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add .worktrees/x -b x main' })
   expect(refusal(ran)).toBeUndefined()
   expect(calls.some(c => c.includes('fetch'))).toBe(false)
 })

@@ -1,7 +1,7 @@
 {
   "name": "guard-worktree",
-  "version": "0.1.1",
-  "description": "Refuses file edits in a repo's main checkout until the work moves to a worktree off a freshly fetched origin default branch.",
+  "version": "0.1.2",
+  "description": "Refuses file edits in a repo's main checkout until the work moves to a worktree off a freshly fetched origin default branch. Skips a GitHub repo whose default branch is unprotected.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"

@@ -52,7 +52,7 @@
     {
       "name": "guard-worktree",
       "source": "./guard-worktree",
-      "description": "Mod: refuses edits in a repo's main checkout until the work moves to a worktree off a freshly fetched origin default branch."
+      "description": "Mod: refuses edits in a repo's main checkout until the work moves to a worktree off a freshly fetched origin default branch. Skips a GitHub repo whose default branch is unprotected."
     },
     {
       "name": "guard-infra",
