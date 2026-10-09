@@ -5,10 +5,22 @@ import { isMainCheckout, parseWorktreeAdd, worktreeAdvice } from './rules.js'
 const ALWAYS_ALLOWED = /(^|\/)\.wayfinder\//
 
 // A repo with no origin, such as a stray `git init` in a home directory, has no PR workflow to guard.
+// Nor has a GitHub repo whose default branch takes direct pushes, such as a private repo on a free plan.
 // `base` is `origin/<default>` when origin/HEAD is set, and undefined when it is not.
 type Checkout = { top: string; isMain: boolean; base?: string }
 
 const checkouts = new Map<string, Checkout | null>()
+const directPush = new Map<string, Promise<boolean>>()
+
+// True only when GitHub says the default branch is unprotected. No `gh`, no network, or another host keeps the guard on.
+async function takesDirectPush($: EngineInterface, originUrl: string, base: string | undefined) {
+  const repo = originUrl.match(/github\.com[:/](.+?)(?:\.git)?\/?$/)?.[1]
+  if (!repo || !base) return false
+  const path = `repos/${repo}/branches/${base.replace(/^origin\//, '')}`
+  if (!directPush.has(path))
+    directPush.set(path, $.process.run(['gh', 'api', path, '--jq', '.protected'], { timeoutMs: 10_000 }).then(r => r.exitCode === 0 && r.stdout.trim() === 'false', () => false))
+  return directPush.get(path)
+}
 
 async function git($: EngineInterface, args: string[]): Promise<ProcessRunResult> {
   try {
@@ -24,16 +36,18 @@ async function nearestDir($: EngineInterface, path: string) {
   return dir
 }
 
-// The repo that holds `dir`, when it has an origin. Cached per directory for the session.
+// The repo that holds `dir`, when it has an origin and a default branch that takes no direct pushes. Cached per directory for the session.
 async function guardedCheckout($: EngineInterface, dir: string) {
   const cached = checkouts.get(dir)
   if (cached !== undefined) return cached
   let found: Checkout | null = null
   const rev = await git($, ['-C', dir, 'rev-parse', '--path-format=absolute', '--show-toplevel', '--git-dir', '--git-common-dir'])
   const [top = '', gitDir = '', commonDir = ''] = rev.stdout.trim().split('\n')
-  if (rev.exitCode === 0 && (await git($, ['-C', top, 'remote', 'get-url', 'origin'])).exitCode === 0) {
+  const origin = rev.exitCode === 0 ? await git($, ['-C', top, 'remote', 'get-url', 'origin']) : undefined
+  if (origin?.exitCode === 0) {
     const head = await git($, ['-C', top, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD'])
-    found = { top, isMain: isMainCheckout(gitDir, commonDir), base: head.exitCode === 0 ? head.stdout.trim() : undefined }
+    const base = head.exitCode === 0 ? head.stdout.trim() : undefined
+    if (!(await takesDirectPush($, origin.stdout.trim(), base))) found = { top, isMain: isMainCheckout(gitDir, commonDir), base }
   }
   checkouts.set(dir, found)
   return found
