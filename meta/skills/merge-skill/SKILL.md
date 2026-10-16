@@ -7,6 +7,8 @@ description: Use when two versions of one skill must become one, from `import-sk
 
 This skill is the shared core that reconciles skill versions. `import-skill` delegates to this skill on a naming conflict. `refresh-vendored` delegates to this skill for every refresh. You can also run this skill on its own.
 
+First actions: call the Skill tool with `productivity:settle-decisions`.
+
 ## Inputs
 
 - **current** — the path to your local skill directory. You edit this directory. This skill writes every accepted change into it.
@@ -46,7 +48,9 @@ Pick one option for each item. Sort each pick with `productivity:settle-decision
 - **skip** — do not change `current`. This is a deliberate divergence.
 - **adapt** — write a custom fix, and apply it to `current`.
 
-Adopt or adapt an `upstream-new` item when it fits the local skill. Skip it when it repeats or contradicts a local rule. Keep the local side of a `conflict` item and a `stale-divergence` item. To find the reason for a local line, read its `git log` and the PR that added it. Record each pick with its reason. Write a brief summary of each item, with its location, for example `SKILL.md § "Process"`. Do not show raw diffs.
+Adopt or adapt an `upstream-new` item when it fits the local skill. Skip it when it repeats or contradicts a local rule. Keep the local side of a `conflict` item and a `stale-divergence` item. To find the reason for a local line, read its `git log` and the PR that added it.
+
+Record each pick with its reason. Write a brief summary of each item, with its location, for example `SKILL.md § "Process"`. Do not show raw diffs.
 
 ### 4. Hold the reversals
 

@@ -11,7 +11,7 @@ This skill runs in a **dedicated git worktree per session**. It never runs direc
 
 Footer format reference: [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md). The SHA in the footer is a **last-reviewed checkpoint**, not the original fork commit. It moves forward after every successful refresh, whether `merge-skill` adopts or skips the changes.
 
-Sort each decision in this skill with `productivity:settle-decisions`. Record each decision you make in the PR body.
+First actions: call the Skill tool with `productivity:settle-decisions`. Record each decision you make in the PR body.
 
 ## Prerequisites
 
@@ -67,7 +67,7 @@ git -C "$tmp/<repo>" log --follow --diff-filter=R --oneline -- <upstream_path>/S
 ```
 
 - **Rename candidates found**: use the most likely match as the new path for the rest of the refresh. Record the new path and its commit in the PR body. Update the footer URL when `merge-skill` rewrites it.
-- **No candidates found (likely deleted upstream)**: keep the local skill as fully forked. Recompute the drift band. Soften the verb, probably to `Originally seeded from`. Keep the link to the upstream's last commit. A delete of the local skill reverses a decision of the human. If you recommend it, list it under Open questions in the PR body.
+- **No candidates found (likely deleted upstream)**: keep the local skill as fully forked. Recompute the drift band. Soften the verb, probably to `Originally seeded from`. Keep the link to the upstream's last commit. If you delete the local skill, you reverse a decision of the human. If you recommend it, list it under Open questions in the PR body.
 
 ### 4. Delegate reconciliation to merge-skill
 
@@ -101,7 +101,7 @@ Print:
   - productivity/tdd: 1 item adopted; verb re-banded to "Inspired by" (52% drift)
   ```
 
-Run `./scripts/validate.sh`. If it passes, commit with this message. Push the branch, and open the PR as the Worktree workflow in AGENTS.md says. Put the report and every Open question in the PR body.
+Bump the patch version in the `plugin.json` of each plugin that changed. Run `./scripts/validate.sh`. If it passes, commit with this message. Push the branch, and open the PR as the Worktree workflow in AGENTS.md says. Put the report and every Open question in the PR body.
 
 ## Output discipline
 
