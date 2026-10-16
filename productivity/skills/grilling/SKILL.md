@@ -24,9 +24,7 @@ A decision is **critical** when a wrong choice does one of these:
 - It changes access, secrets, personal data, or cost.
 - It changes the agreed destination, scope, or priority.
 
-If one revert undoes the choice and all its effects, the choice is not critical.
-
-Finding facts is your job, never the human's. When a decision needs a fact from the environment, start a subagent to find it. Do not ask the human for a fact you can look up. Do not block on the subagent. Only the decisions that depend on its fact wait.
+Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
 ## Record
 
