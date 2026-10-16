@@ -18,7 +18,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 ## Workflows
 
 - **Validate before committing** — `./scripts/validate.sh`. CI runs the same script and gates PRs / pushes to main.
-- **Vendor a new skill from an upstream repo** — invoke `/import-skill`. Defined in `meta/skills/import-skill/SKILL.md`. Interactive: gathers upstream coords, picks target plugin, runs the import script, validates.
+- **Vendor a new skill from an upstream repo** — invoke `/import-skill`. Defined in `meta/skills/import-skill/SKILL.md`. Gathers upstream coords, picks target plugin, runs the import script, validates.
 - **Refresh vendored skills against upstream** — invoke `/refresh-vendored`. Defined in `meta/skills/refresh-vendored/SKILL.md`. Delegates each per-skill reconciliation to `merge-skill`.
 - **Reconcile two skill versions** — invoke `/merge-skill`. Defined in `meta/skills/merge-skill/SKILL.md`. Used by both above; can also be invoked standalone.
 - **Author from scratch** — a new `SKILL.md` goes into the plugin it belongs to. `in-progress/` is for a vendored skill that is still being drifted toward the local opinion. Lifecycle is one-way; no demotion.

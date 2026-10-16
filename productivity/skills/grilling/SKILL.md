@@ -1,53 +1,67 @@
 ---
 name: grilling
-description: Use when the user wants a plan, a decision, or an idea stress-tested, or says "grill".
+description: Use before you make or ask about a decision, even when the user does not ask, or when the user says "grill".
 ---
 
-Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
+Settle every decision of a plan. Make most decisions yourself. Put to the human only the decisions that need the human, in short rounds.
 
-Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Put at most four frontier questions in one round, and put first the questions that block the most decisions. Number each question and give your recommended answer. Then wait for the user's answers before the next round.
+Map the decisions as a **design tree**. In the tree, each decision branches into the decisions that depend on it. The **frontier** is every decision whose prerequisites are settled.
 
-## Who answers
+## Who decides
 
-Sort each frontier decision with this tree before you put it to the user:
+Sort each frontier decision before you act on it:
 
-```
-Can evidence answer it? Evidence is the code, the docs, a prototype, or a measurement.
-├─ yes → find the answer, decide, and record the decision.
-└─ no  → Is it a domain, product, or value judgment, or is it hard to reverse?
-         ├─ yes → put it to the user.
-         └─ no  → decide, and record the decision.
-```
+1. If the decision is not critical, make it. Use evidence when evidence settles it. Evidence is the code, the docs, a prototype, or a measurement. If evidence does not settle it, pick the option you can defend, and write a hypothesis.
+2. If the decision is critical and evidence settles it, show the evidence and your decision in one line. Act when the human agrees.
+3. If the decision is critical and evidence does not settle it, put it to the human in a round.
 
-A domain fact, such as what the code does today, is evidence. Find it yourself. Record each decision you make with its reason and a `Revisit if:` line. Show these decisions at the top of the next round, so that the user can overrule one.
+A decision is **critical** when a wrong choice does one of these:
+
+- It loses data that git or a backup cannot restore.
+- It breaks a contract that other people or teams use, or it sends something to people.
+- It adds, removes, or replaces a service, a datastore, a framework, or a boundary between systems. In one codebase, it adds a layer, a cross-cutting mechanism, or a new category of dependency.
+- It reverses a decision that an ADR or the human made.
+- It changes access, secrets, personal data, or cost.
+- It changes the agreed destination, scope, or priority.
+
+If one revert undoes the choice and all its effects, the choice is not critical.
+
+Finding facts is your job, never the human's. When a decision needs a fact from the environment, start a subagent to find it. Do not ask the human for a fact you can look up. Do not block on the subagent. Only the decisions that depend on its fact wait.
+
+## Record
+
+Record each decision in the ticket or the PR body, one line each. Show the new records at the top of your next message, so that the human can overrule one.
+
+- `Decided: <choice>. Because: <the evidence with a link, or the answer of the human>. Revisit if: <condition>.`
+- `Decided: <choice>. Hypothesis: <what is true after the deploy if the choice is right>. Check: <the signal, and when to read it>.`
+
+After the deploy, read the signal. If the hypothesis is false, the fix is a new decision. Sort it again.
 
 ## The round
+
+Put at most four questions in one round. Put first the questions that block the most decisions. A question that depends on another open question waits for a later round. Then wait for the answers. Each answer settles part of the tree. Recompute the frontier, settle what you can, and ask the next round.
 
 Format a round like so:
 
 ```
-**Briefing**: <the problem in plain words and the facts that the questions rest on. Assume that the reader knows nothing about the topic.>
-
-**Decided by me**: <each decision you made since the last round, with its reason and a `Revisit if:` line>
+**Decided by me**: <one record for each decision since the last round>
 
 ---
 
-❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+❓ **Q1 - <the decision, in one line>**
+Critical because: <the matching item of the critical list>
+Facts: <at most three bullets. Assume that the reader knows nothing about the topic>
+- **A**: <option>. Gain: <one line>. Cost: <one line>
+- **B**: <option>. Gain: <one line>. Cost: <one line>
 
-➡️ <your recommended answer>
+➡️ <your recommendation, and the reason>
 
 ---
 
-❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
-
-➡️ <your recommended answer>
+❓ **Q2 - <a decision that evidence settles>**: <the evidence, with a link>. Confirm?
 ```
 
-Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
-
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. A decision that the tree gives to the user is the user's: put it to them and wait.
-
-The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
+The session is done when the frontier is empty. Every decision has a record, and nothing is assumed silently.
 
 ---
-_Inspired by [mattpocock/skills/skills/productivity/grilling](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/productivity/grilling) — MIT © 2026 Matt Pocock._
+_Originally seeded from [mattpocock/skills/skills/productivity/grilling](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/productivity/grilling) — MIT © 2026 Matt Pocock._
