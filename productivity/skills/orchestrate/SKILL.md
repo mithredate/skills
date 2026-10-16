@@ -5,7 +5,7 @@ description: Use in a repo with `.wayfinder/`, to set one up, for work too big f
 
 # Orchestrate
 
-First actions: call the Skill tool with `personal:work-like-mehrdad`, `productivity:sweep`, `productivity:grilling`, and `productivity:domain-modeling`.
+First actions: call the Skill tool with `personal:work-like-mehrdad`, `productivity:sweep`, `productivity:settle-decisions`, and `productivity:domain-modeling`.
 
 An **orchestrator repo** plans the work. The sibling repos and systems it plans for hold the implementation.
 
@@ -47,7 +47,7 @@ The destination fixes the scope. When a ticket turns out to be past the destinat
 
 ## Ticket types
 
-A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `grilling` or `prototype` ticket is HITL when `productivity:grilling` gives its decision to the human. The agent never takes the human's side of a HITL ticket.
+A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `grilling` or `prototype` ticket is HITL when `productivity:settle-decisions` gives its decision to the human. The agent never takes the human's side of a HITL ticket.
 
 - **grilling**: a decision. The default type.
 - **prototype**: make a cheap, rough artifact with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question. The artifact is evidence for the decision.
@@ -73,8 +73,8 @@ A session that names no map works the `active` row. One session takes every fron
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Claim them before any other work. If no such ticket is on the frontier, claim the first ticket with a brief. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
-3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:grilling`. Make your own decisions first, then put the human's decisions in one round. When you claim a ticket with a `## Brief`, a hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
-4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:grilling` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
+3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round. When you claim a ticket with a `## Brief`, a hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
+4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2. A session that claimed a ticket with a brief does not go back.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.

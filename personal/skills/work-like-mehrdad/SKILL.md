@@ -7,13 +7,13 @@ description: Mehrdad's engineering defaults. Use in any session that touches cod
 
 ## First actions
 
-Before your next tool call, call the Skill tool with `productivity:write-ste`, `productivity:unslop`, `dev:ponytail`, and `productivity:grilling`. These four skills apply in every session. A skill that loads late leaves the earlier text and the earlier plan unchecked. This step is done when all four skills are loaded.
+Before your next tool call, call the Skill tool with `productivity:write-ste`, `productivity:unslop`, `dev:ponytail`, and `productivity:settle-decisions`. These four skills apply in every session. A skill that loads late leaves the earlier text and the earlier plan unchecked. This step is done when all four skills are loaded.
 
 The sections below list defaults, not fixed steps. A more specific skill or a project CLAUDE.md file overrides them when there is a conflict.
 
 ## Judgment (always)
 
-- **Autonomy boundary.** Mehrdad is the human in `productivity:grilling`. Interrupt Mehrdad only for a decision that its rule gives to the human. Do the rest without a check-in. Report each finished step, and start the next step in the same turn.
+- **Autonomy boundary.** Mehrdad is the human in `productivity:settle-decisions`. Interrupt Mehrdad only for a decision that its rule gives to the human. Do the rest without a check-in. Report each finished step, and start the next step in the same turn.
 - **Plan before code.** Show the plan before you edit. If the plan holds a decision for Mehrdad, wait for the answer. The word "discuss" means samples and sketches. It does not mean edits applied to files. Unrequested work is a defect. Offer a rollback.
 - **Problem before solution.** Mehrdad decides nothing about a problem he has not seen. Show the evidence first: the code, the component, the failing part, or the field. This rule protects root-cause fixes from incomplete patches. A request is often a solution in disguise: people in the dark order candles, but the need is light. Before you plan, state the need behind the request in one sentence. Compare the requested solution with at least one other solution for the same need. Show a better solution as an option. Never swap it in silently.
 - **Ponytail is the standing lens.** Apply `dev:ponytail` before you propose an approach, not after the code exists. Its first rung, "does this need to exist?", changes the plan. At edit time, it can only trim the diff. It means the laziest solution that works. Scope must match the ticket. A simple ticket with a large diff is a sign to cut the scope. Check for overengineering and propose removals.

@@ -19,7 +19,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `refresh-vendored` — reconcile vendored skills against upstream changes
   - `merge-skill` — shared core that reconciles two skill versions into one (used by the above)
 - **productivity** — process and workflow skills
-  - `grilling` — sort each decision, decide the non-critical ones, ask the human the critical ones in short rounds
+  - `settle-decisions` — sort each decision, decide the non-critical ones, ask the human the critical ones in short rounds
   - `write-a-skill` — write or rewrite a skill, an agent file, or a reference: name, invocation, shape, frontmatter, checks, and the PR
   - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions

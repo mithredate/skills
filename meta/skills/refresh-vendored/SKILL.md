@@ -11,7 +11,7 @@ This skill runs in a **dedicated git worktree per session**. It never runs direc
 
 Footer format reference: [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md). The SHA in the footer is a **last-reviewed checkpoint**, not the original fork commit. It moves forward after every successful refresh, whether `merge-skill` adopts or skips the changes.
 
-Sort each decision in this skill with `productivity:grilling`. Record each decision you make in the PR body.
+Sort each decision in this skill with `productivity:settle-decisions`. Record each decision you make in the PR body.
 
 ## Prerequisites
 
@@ -97,7 +97,7 @@ Print:
   ```
   refresh: pull updates from mattpocock-skills
 
-  - productivity/grill-me: 2 items adopted, SHA bump
+  - productivity/prototype: 2 items adopted, SHA bump
   - productivity/tdd: 1 item adopted; verb re-banded to "Inspired by" (52% drift)
   ```
 

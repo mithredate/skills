@@ -40,7 +40,7 @@ Annotate each item with one of three flags:
 
 ### 3. Decide each item
 
-Pick one option for each item. Sort each pick with `productivity:grilling`.
+Pick one option for each item. Sort each pick with `productivity:settle-decisions`.
 
 - **adopt** — put the item into `current`.
 - **skip** — do not change `current`. This is a deliberate divergence.
@@ -50,7 +50,7 @@ Adopt or adapt an `upstream-new` item when it fits the local skill. Skip it when
 
 ### 4. Hold the reversals
 
-Some picks reverse a decision of the human: the incoming side of a `conflict`, or a drop of a `stale-divergence` item. If you recommend such a pick, do not apply it. List it in the report under Open questions, as a question of `productivity:grilling` with the evidence and your recommendation.
+Some picks reverse a decision of the human: the incoming side of a `conflict`, or a drop of a `stale-divergence` item. If you recommend such a pick, do not apply it. List it in the report under Open questions, as a question of `productivity:settle-decisions` with the evidence and your recommendation.
 
 ### 5. Apply decisions
 
