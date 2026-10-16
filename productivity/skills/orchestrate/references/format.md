@@ -72,7 +72,7 @@ blocked-by: [<id>, ...]
 
 ## Resolution
 
-<appended on close: the answer, its reasoning, and a `Revisit if:` line>
+<appended on close: one decision record of `productivity:grilling` for each decision>
 ```
 
 A ticket is on the frontier when `status: open`, `assignee` is empty, and every `blocked-by` id is closed. Assets are files under `assets/`, linked from the ticket.
@@ -87,7 +87,7 @@ A build `task` ticket holds this section as its body.
 - Why: <the problem, and who has it. One or two sentences>
 - Goal: <what is true when the session hands back>
 - Targets: <each git repo with its base branch, or each other system, for example an n8n instance>
-- Decisions: <each decision that a human made, one line each, with a link to its ticket or ADR. Optional>
+- Decisions: <each closed decision that the build must follow, one line each, with a link to its ticket or ADR. Optional>
 - FR: <behavior that a caller, a user, or a test can see, one sub-bullet for each requirement>
 - NFR: <limits, one sub-bullet for each limit: security, performance, allowed new dependencies, what stays unbuilt>
 - Verification: <how the session proves it, with real commands and data, and the checks that pass before the hand-back. For a bugfix, the failing test first>

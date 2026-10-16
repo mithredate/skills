@@ -47,10 +47,10 @@ The destination fixes the scope. When a ticket turns out to be past the destinat
 
 ## Ticket types
 
-A **HITL** ticket resolves only in a live exchange with the user. The agent never takes the user's side of a HITL ticket. It answers only the questions that `grilling` sorts to the agent.
+A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `grilling` or `prototype` ticket is HITL when `productivity:grilling` gives its decision to the human. The agent never takes the human's side of a HITL ticket.
 
-- **grilling** (HITL): the default type.
-- **prototype** (HITL): make a cheap, rough artifact for the user to react to, with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question.
+- **grilling**: a decision. The default type.
+- **prototype**: make a cheap, rough artifact with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question. The artifact is evidence for the decision.
 - **research** (agent alone): find a fact outside the working directory that a decision waits on. A subagent calls the Skill tool with `productivity:research`.
 - **task** (agent alone): work that the agent does alone. A task before a decision makes a fact visible, for example data moved so that its shape shows. A build task holds a `## Brief`. The resolution records what was done and the facts that later tickets need.
 - **gate** (HITL): one human step, for example a setup that the agent cannot do, a review, a deploy, or a check that only a human can make. The agent never claims it.
@@ -60,7 +60,7 @@ A **HITL** ticket resolves only in a live exchange with the user. The agent neve
 The user gives a loose idea. Charting is one session's work. It resolves no ticket.
 
 1. Name the destination with the user. The destination fixes the scope, so settle it first. It ends with one sentence that starts with `Closes when`. The step is done when the user agrees to the destination.
-2. Map the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no map. Stop and ask the user how to continue.
+2. Map the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no map. Give the user the prompt for that session, and stop.
 3. Write `map.md` with the Destination and the Notes. Leave Decisions so far empty. List the unspecified questions under Not yet specified.
 4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges in a second pass.
 5. For each research ticket, start a subagent that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
@@ -69,16 +69,16 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 
 ## cook
 
-A session that names no map works the `active` row. Work one ticket in each session. Research tickets are an exception. A second exception: when the user names several frontier `grilling` tickets of one map, one session takes them all. Grilling asks their questions in shared rounds, and each ticket closes on its own.
+A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. A ticket with a `## Brief` takes a session of its own.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Take the first frontier ticket that is not a `gate`, or the ticket that the user names. Claim it before any other work. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
-3. Resolve the ticket. When you claim a ticket with a `## Brief`, a hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
-4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, record the resolution with its reasoning and a `Revisit if:` line. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
-5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket.
+2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Claim them before any other work. If no such ticket is on the frontier, claim the first ticket with a brief. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
+3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:grilling`. Make your own decisions first, then put the human's decisions in one round. When you claim a ticket with a `## Brief`, a hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
+4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:grilling` as the resolution. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
+5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket that step 2 claims, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
-8. Commit and push the ticket, the map, and the index. The task is done when the ticket is closed or blocked as in step 4, and the sweep table is in your final message.
+8. Commit and push the tickets, the map, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
 
 The user can run other sessions on other frontier tickets at the same time. Expect concurrent commits.
 
@@ -92,7 +92,7 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 
 1. Write `.wayfinder/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
    - the Destination
-   - one entry for each closed ticket, copied from the ticket, with its resolution, reasoning, and `Revisit if:` line
+   - one entry for each closed ticket, copied from the ticket, with its resolution
    - where the work landed, with links to the PRs, documents, or systems
    - what was ruled out of scope, and why
    - each open ticket, with the initiative it moves to, or the reason it is not done. Quote into the report any asset it needs. Keep the rest in git history.
@@ -106,9 +106,10 @@ When the decisions for a change are made, write the build as `task` tickets with
 - The **brief** is the whole input of one `dev:fire` session, with no transcript. Its targets can be git repos or other systems, for example an n8n instance.
 - A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed.
 - Split the build only at a gate. Write the fewest build tickets.
-- The brief gives the why and the what. The implementer picks the how and the order of work. A how goes in the brief only as a decision that a human made, in the Decisions line.
+- The brief gives the why and the what. The implementer picks the how and the order of work. A how goes in the brief only as a closed decision, in the Decisions line.
 - Before you write a brief, collect each fact that the session cannot get by itself. Examples are test data, reviewer names, access, and decisions. Do not collect code facts. The implementer reads the code.
-- If a question needs a human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
+- If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
+- For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add the `gate` of the deploy to its `blocked-by`. If the signal shows that the hypothesis is false, the session that reads it writes a new `grilling` ticket.
 - The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
 
