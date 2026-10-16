@@ -12,13 +12,13 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 - **Vendored skills carry a footer** at the bottom of `SKILL.md` linking to the upstream commit. Canonical format: `meta/skills/import-skill/references/footer-format.md`. The link is always preserved (MIT-compliance anchor) even when the skill has fully drifted.
 - **The SHA in the footer is a last-reviewed checkpoint**, not the original fork point. Advances every refresh.
 - **No parallel skills.** When concepts conflict, merge or abort — never run two forks of the same idea side by side.
-- **A Skill call that every run needs goes in a "First actions" line at the top of the body.** A Skill call that depends on a fact found later gets a hook on the event that reveals the fact. A Skill call inside a numbered step, or a skill list in a file the agent reads, is skipped about half the time (cakeclub discovery, 2026-10: 18 of 35 ticket sessions never loaded `grilling`).
+- **A Skill call that every run needs goes in a "First actions" line at the top of the body.** A Skill call that depends on a fact found later gets a hook on the event that reveals the fact. A Skill call inside a numbered step, or a skill list in a file the agent reads, is skipped about half the time (cakeclub discovery, 2026-10: 18 of 35 ticket sessions never loaded `grilling`, now `settle-decisions`).
 - **A change under a plugin directory ships with a patch bump of that plugin's `plugin.json` version.** An installer updates a plugin only when the version changes. A skill listed in `marketplace.json` but absent from the installed copy fails the whole plugin at load. The `import-skill` script bumps automatically. `write-a-skill`, `merge-skill`, and `refresh-vendored` bump by hand.
 
 ## Workflows
 
 - **Validate before committing** — `./scripts/validate.sh`. CI runs the same script and gates PRs / pushes to main.
-- **Vendor a new skill from an upstream repo** — invoke `/import-skill`. Defined in `meta/skills/import-skill/SKILL.md`. Interactive: gathers upstream coords, picks target plugin, runs the import script, validates.
+- **Vendor a new skill from an upstream repo** — invoke `/import-skill`. Defined in `meta/skills/import-skill/SKILL.md`. Gathers upstream coords, picks target plugin, runs the import script, validates.
 - **Refresh vendored skills against upstream** — invoke `/refresh-vendored`. Defined in `meta/skills/refresh-vendored/SKILL.md`. Delegates each per-skill reconciliation to `merge-skill`.
 - **Reconcile two skill versions** — invoke `/merge-skill`. Defined in `meta/skills/merge-skill/SKILL.md`. Used by both above; can also be invoked standalone.
 - **Author from scratch** — a new `SKILL.md` goes into the plugin it belongs to. `in-progress/` is for a vendored skill that is still being drifted toward the local opinion. Lifecycle is one-way; no demotion.
@@ -59,7 +59,7 @@ Footer verb depends on local drift since last review:
 | 30–80% | `Inspired by` |
 | > 80%  | `Originally seeded from` |
 
-`merge-skill` and `refresh-vendored` propose the new verb when the band shifts; user confirms.
+`merge-skill` rewrites the verb when the band shifts. Its report names the change.
 
 ## When in doubt
 

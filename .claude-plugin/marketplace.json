@@ -25,10 +25,9 @@
     {
       "name": "productivity",
       "source": "./productivity",
-      "description": "Process and workflow skills (planning, grilling, research, writing).",
+      "description": "Process and workflow skills (planning, decisions, research, writing).",
       "skills": [
-        "./skills/grill-me",
-        "./skills/grilling",
+        "./skills/settle-decisions",
         "./skills/write-a-skill",
         "./skills/teach",
         "./skills/domain-modeling",

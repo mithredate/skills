@@ -23,7 +23,7 @@ The instruction file is `AGENTS.md`. Put a Claude-only line in `.claude/rules/cl
 
 ## Housekeep
 
-An instruction file grows by addition. A rule stays because deleting it feels riskier than keeping it. On every sweep, in every improve pass, and when the user asks, check every line against the environment. Then propose a deletion table that lists the line, the criterion, and the evidence. See [references/deletion-criteria.md](references/deletion-criteria.md). Wait for the user to approve each row. Do not delete a line on suspicion alone.
+An instruction file grows by addition. A rule stays because deleting it feels riskier than keeping it. On every sweep, in every improve pass, and when the user asks, check every line against the environment. Then write a deletion table that lists the line, the criterion, and the evidence. See [references/deletion-criteria.md](references/deletion-criteria.md). Delete each line that has evidence, and put the table in the PR body. Do not delete a line on suspicion alone.
 
 ## Graduate corrections
 
@@ -33,6 +33,6 @@ Auto-memory holds new corrections. The instruction file and the skills are where
 2. **Sort each one** to a destination, as the one line it would become there. A repo convention goes to the instruction file, in the section that already holds that kind of rule, or to `.claude/rules/claude-code.md` when the line is Claude-only. Do not repeat what the environment already states. A rule about how the user works, on any repo, goes to their personal skill, `personal:work-like-mehrdad`. A rule teammates need goes to the team plugin. A rule about one skill's procedure goes to that skill. Delete a one-off, session-specific, or superseded line.
 3. **Graduate a correction when** the same correction appears twice, a code review or a `review-pr` finding shows a rule the file needs but does not have, or a teammate or another agent must follow it. Otherwise, keep it in memory.
 4. **Housekeep** the destination in the same pass.
-5. **Propose the table**, listing the memory, the destination, and the line. Wait. The user approves each row.
-6. **Apply** the approved rows. Edit the destination. A skill destination gets a PR in its repo. Delete each graduated memory file and its line in `MEMORY.md`, so the rule has one home.
+5. **Write the table**, listing the memory, the destination, and the line. Put it in the PR body.
+6. **Apply** the rows. Edit the destination. A skill destination gets a PR in its repo. Delete each graduated memory file and its line in `MEMORY.md`, so the rule has one home. Git cannot restore a memory file. Before you delete one, get the agreement of the human.
 7. **Report the metric**: the number of feedback memories created per week over the window. A new correction on a subject the destination already covers means the destination is not being read. Fix the pointer, not the memory.

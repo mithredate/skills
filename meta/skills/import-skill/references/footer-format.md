@@ -16,7 +16,7 @@ _<Verb> [<owner>/<repo>/<upstream-path>](https://github.com/<owner>/<repo>/tree/
   - `Inspired by`: local drift from 30% to 80%
   - `Originally seeded from`: local drift over 80%
 - **owner/repo/upstream-path**. This is the human-readable identifier of the source skill.
-- **URL**. It must include `/tree/<sha>/<path>`. The `<sha>` is the **fork commit**, the upstream SHA at which the agent last reviewed or refreshed the skill. `import-skill` sets it first, at vendor time. `refresh-vendored` updates it whenever the user adopts an upstream change.
+- **URL**. It must include `/tree/<sha>/<path>`. The `<sha>` is the **fork commit**, the upstream SHA at which the agent last reviewed or refreshed the skill. `import-skill` sets it first, at vendor time. `refresh-vendored` updates it after every review, whether the review adopts or skips the upstream changes.
 - **license**. This is the SPDX identifier, for example `MIT` or `Apache-2.0`.
 - **copyright**. This follows the form `© <year> <holder>`, for example `© 2026 Matt Pocock`.
 

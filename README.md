@@ -19,8 +19,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `refresh-vendored` — reconcile vendored skills against upstream changes
   - `merge-skill` — shared core that reconciles two skill versions into one (used by the above)
 - **productivity** — process and workflow skills
-  - `grill-me` — launcher that opens a `grilling` session (thin shim)
-  - `grilling` — stress-test a plan, decision, or idea by relentless one-question-at-a-time interrogation
+  - `settle-decisions` — sort each decision, decide the non-critical ones, ask the human the critical ones in short rounds
   - `write-a-skill` — write or rewrite a skill, an agent file, or a reference: name, invocation, shape, frontmatter, checks, and the PR
   - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
@@ -53,8 +52,8 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 
 Most skills here are forks of upstream open-source work. Lifecycle:
 
-- **Add a new vendored skill** — invoke `/import-skill`. Interactive: gathers upstream coords, clones, copies files into a target plugin, writes the canonical attribution footer with the fork-commit SHA, and updates `marketplace.json` and `NOTICES.md`.
-- **Refresh existing vendored skills** — invoke `/refresh-vendored`. Surfaces upstream changes since the fork commit, lets you adopt or skip each change, and adjusts the attribution verb if local drift has shifted bands (`Adapted from` → `Inspired by` → `Originally seeded from`).
+- **Add a new vendored skill** — invoke `/import-skill`. Gathers upstream coords, clones, copies files into a target plugin, writes the canonical attribution footer with the fork-commit SHA, and updates `marketplace.json` and `NOTICES.md`.
+- **Refresh existing vendored skills** — invoke `/refresh-vendored`. Surfaces upstream changes since the fork commit, and adopts or skips each change. Lists each reversal of a local rule as an open question. Adjusts the attribution verb if local drift has shifted bands (`Adapted from` → `Inspired by` → `Originally seeded from`).
 
 ## Attribution
 

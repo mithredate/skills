@@ -7,6 +7,8 @@ description: Use when two versions of one skill must become one, from `import-sk
 
 This skill is the shared core that reconciles skill versions. `import-skill` delegates to this skill on a naming conflict. `refresh-vendored` delegates to this skill for every refresh. You can also run this skill on its own.
 
+First actions: call the Skill tool with `productivity:settle-decisions`.
+
 ## Inputs
 
 - **current** — the path to your local skill directory. You edit this directory. This skill writes every accepted change into it.
@@ -35,28 +37,28 @@ Do not show a git diff. Read both versions. Make a list of items that shows the 
 Annotate each item with one of three flags:
 
 - **`upstream-new`** — the incoming version has this content, and the current version does not. There is no direct overlap. This item is a candidate for adoption.
-- **`conflict`** — incoming and current both change the same concept in different ways. The user's local drift contradicts incoming directly. This item needs the user's judgment.
-- **`stale-divergence`** — current has content that incoming does not have. This content can be an old artifact from an earlier fork that the user forgot. This skill flags the item so the user can check it.
+- **`conflict`** — incoming and current both change the same concept in different ways. The local drift contradicts incoming directly. The local side is a decision that the human made.
+- **`stale-divergence`** — current has content that incoming does not have. This content can be an old artifact from an earlier fork. It can also be a deliberate local rule.
 
-### 3. Present the comparison
+### 3. Decide each item
 
-Show all items in groups by flag. Write a brief summary for each item. Use 1 to 2 sentences. Do not show raw diffs. Give the location of each item, for example `SKILL.md § "Process"` or `references/foo.md`.
-
-### 4. Walk the user through decisions
-
-For each item, ask the user to pick one option:
+Pick one option for each item. Sort each pick with `productivity:settle-decisions`.
 
 - **adopt** — put the item into `current`.
 - **skip** — do not change `current`. This is a deliberate divergence.
-- **adapt** — the user describes a custom fix. Apply that fix to `current`.
+- **adapt** — write a custom fix, and apply it to `current`.
 
-Handle one item at a time.
+Adopt or adapt an `upstream-new` item when it fits the local skill. Skip it when it repeats or contradicts a local rule. Keep the local side of a `conflict` item and a `stale-divergence` item. To find the reason for a local line, read its `git log` and the PR that added it.
 
-For a `stale-divergence` item, ask a softer question: "this content is only in your local skill. Do you want to keep it, drop it, or adapt it?"
+Record each pick with its reason. Write a brief summary of each item, with its location, for example `SKILL.md § "Process"`. Do not show raw diffs.
+
+### 4. Hold the reversals
+
+Some picks reverse a decision of the human: the incoming side of a `conflict`, or a drop of a `stale-divergence` item. If you recommend such a pick, do not apply it. List it in the report under Open questions, as a question of `productivity:settle-decisions` with the evidence and your recommendation.
 
 ### 5. Apply decisions
 
-For each adopted or adapted item, edit the matching file in `current/`. Show the exact content of each edit to the user before you apply it. Never overwrite a file without the user's approval. If an edit fails, abort the run and report it.
+For each adopted or adapted item, edit the matching file in `current/`. If an edit fails, abort the run and report it.
 
 ### 6. Update footer (if applicable)
 
@@ -80,22 +82,23 @@ claude plugin validate <plugin-dir-containing-current>
 
 For example, if `current` is `productivity/skills/tdd/`, the plugin directory is `productivity`.
 
-On a validation error, surface the message. Abort the run. Do not say the merge worked. The user must fix the problem before the commit.
+On a validation error, surface the message. Abort the run. Do not say the merge worked.
 
 ### 8. Report
 
 Print:
-- the number of accepted, skipped, and adapted items, with a brief title for each
+- the number of accepted, skipped, and adapted items, with a brief title and the reason for each
+- the Open questions from step 4
 - the files this skill changed
 - the new footer line, if the footer changed
 - a suggested commit message
 
-Leave the `git add` and `git commit` commands to the user.
+The caller commits. When you run this skill on its own, ship the change as the Ship section of `productivity:write-a-skill` says. Put the report in the PR body.
 
 ## Edge cases
 
 - If `current` and `incoming` are identical, report "no changes" and exit.
 - If `incoming` has no `SKILL.md`, abort with a clear error. A merge needs a valid skill on both sides.
-- If an item is a conflict and the user's intent is unclear, ask follow-up questions before you classify it. Do not guess.
-- A single accepted edit can fail to apply cleanly. This can happen when the local file has drifted so far that the diff target text does not exist. If this happens, abort the run, surface the partial state, and let the user resolve it manually.
+- If the reason for a local line stays unclear after you read its history, keep the local line.
+- A single accepted edit can fail to apply cleanly. This can happen when the local file has drifted so far that the diff target text does not exist. If this happens, abort the run, and report the partial state.
 - If the agent reads both versions and finds nothing meaningfully different, there are no items to surface. Report this explicitly. Do not skip the report silently.

@@ -11,8 +11,8 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 
 1. If the skill exists, read every file in its directory. Grep the repo for the skill's name. The hits are its callers: other skills, agent files, the README, and the marketplace manifest. Every caller changes with the skill.
 2. Choose the invocation. Read [references/invocation.md](references/invocation.md). A skill that other skills call, or that the agent must reach on its own, is model-invoked. A skill that only the human types is user-invoked.
-3. Propose the name. A name is verb-first and hyphenated, and one word when one word says it. Offer two or three names, the recommended one first. A flow verb extends the kitchen frame: `cook` works a ticket, `fire` runs the brief.
-4. Propose the frontmatter and the headings. Wait for the user to agree. Write no body before that.
+3. Choose the name. A name is verb-first and hyphenated, and one word when one word says it. A flow verb extends the kitchen frame: `cook` works a ticket, `fire` runs the brief. Put the name and the runner-up in the PR body.
+4. Write the frontmatter and the headings first. Check them against the sections below before you write the body.
 
 ## Shape
 
