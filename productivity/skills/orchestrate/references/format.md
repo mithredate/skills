@@ -62,7 +62,7 @@ The text after the status is the one-line state of the initiative.
 ---
 id: <prefix>-<nn>
 title: <title>
-type: grilling | prototype | research | task | gate
+type: decision | prototype | research | task | gate
 status: open | closed
 assignee: <empty if unclaimed>
 blocked-by: [<id>, ...]

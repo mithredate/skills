@@ -41,7 +41,7 @@ test('names fire when the edit claims a ticket with a brief', () => {
 test('stays silent when the edit claims a ticket with no brief', () => {
     const path = writeTicket('.wayfinder/2026-10-01-braze/tickets/brz-03.md', [
         '---',
-        'type: grilling',
+        'type: decision',
         'status: open',
         'assignee: claude',
         '---',

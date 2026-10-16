@@ -47,9 +47,9 @@ The destination fixes the scope. When a ticket turns out to be past the destinat
 
 ## Ticket types
 
-A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `grilling` or `prototype` ticket is HITL when `productivity:settle-decisions` gives its decision to the human. The agent never takes the human's side of a HITL ticket.
+A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `decision` or `prototype` ticket is HITL when `productivity:settle-decisions` gives its decision to the human. The agent never takes the human's side of a HITL ticket.
 
-- **grilling**: a decision. The default type.
+- **decision**: a decision ticket. The default type.
 - **prototype**: make a cheap, rough artifact with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question. The artifact is evidence for the decision.
 - **research** (agent alone): find a fact outside the working directory that a decision waits on. A subagent calls the Skill tool with `productivity:research`.
 - **task** (agent alone): work that the agent does alone. A task before a decision makes a fact visible, for example data moved so that its shape shows. A build task holds a `## Brief`. The resolution records what was done and the facts that later tickets need.
@@ -109,7 +109,7 @@ When the decisions for a change are made, write the build as `task` tickets with
 - The brief gives the why and the what. The implementer picks the how and the order of work. A how goes in the brief only as a closed decision, in the Decisions line.
 - Before you write a brief, collect each fact that the session cannot get by itself. Examples are test data, reviewer names, access, and decisions. Do not collect code facts. The implementer reads the code.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
-- For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `grilling` ticket.
+- For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
 - The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
 
