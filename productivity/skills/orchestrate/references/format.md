@@ -72,7 +72,7 @@ blocked-by: [<id>, ...]
 
 ## Resolution
 
-<appended on close: one decision record of `productivity:settle-decisions` for each decision>
+<appended on close: for a decision ticket, one record of `productivity:settle-decisions` for each decision. For another ticket, what was done and the facts that later tickets need>
 ```
 
 A ticket is on the frontier when `status: open`, `assignee` is empty, and every `blocked-by` id is closed. Assets are files under `assets/`, linked from the ticket.

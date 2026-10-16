@@ -60,7 +60,7 @@ A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `decision` or 
 The user gives a loose idea. Charting is one session's work. It resolves no ticket.
 
 1. Name the destination with the user. The destination fixes the scope, so settle it first. It ends with one sentence that starts with `Closes when`. The step is done when the user agrees to the destination.
-2. Map the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no map. Give the user the prompt for that session, and stop.
+2. Map the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no map. Write the user a prompt that starts that session. Then stop.
 3. Write `map.md` with the Destination and the Notes. Leave Decisions so far empty. List the unspecified questions under Not yet specified.
 4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges in a second pass.
 5. For each research ticket, start a subagent that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
