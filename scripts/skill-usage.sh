@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Print, for every skill on the current branch, the sessions that invoked it
 # in the transcript window and the skills or agents that call it. Both numbers
-# decide a deprecation, see CLAUDE.md "Deprecation". Uses /usr/bin/grep: the
+# decide a deprecation, see AGENTS.md "Deprecation". Uses /usr/bin/grep: the
 # ugrep shim in a Claude Code shell skips long-line jsonl files.
 set -euo pipefail
 cd "$(dirname "$0")/.."

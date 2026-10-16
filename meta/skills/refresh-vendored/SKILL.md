@@ -7,7 +7,7 @@ description: Use when the user wants to check the vendored skills for upstream c
 
 This skill finds every vendored skill. It gets each upstream's current state. It sends the comparison to `merge-skill` for each skill. Run this skill on demand only. Do not run it on a schedule.
 
-This skill runs in a **dedicated git worktree per session**. It never runs directly on `main`. The worktree is created on a `refresh/<date>` branch at the start of the run. All later file edits happen in that worktree. On success, the skill commits and pushes the branch. On a validation failure, the worktree stays dirty for inspection. See CLAUDE.md § Worktree workflow for the mechanics.
+This skill runs in a **dedicated git worktree per session**. It never runs directly on `main`. The worktree is created on a `refresh/<date>` branch at the start of the run. All later file edits happen in that worktree. On success, the skill commits and pushes the branch. On a validation failure, the worktree stays dirty for inspection. See AGENTS.md § Worktree workflow for the mechanics.
 
 Footer format reference: [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md). The SHA in the footer is a **last-reviewed checkpoint**, not the original fork commit. It moves forward after every successful refresh, whether the user adopts or skips the changes.
 

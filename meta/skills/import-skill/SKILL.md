@@ -11,7 +11,7 @@ This skill vendors a skill from a GitHub upstream. It is interactive. It gathers
 
 This skill pairs with [`refresh-vendored`](../refresh-vendored/SKILL.md). All three skills share the canonical footer format in [`references/footer-format.md`](references/footer-format.md).
 
-This skill runs in a **dedicated git worktree per session**. It never runs directly on `main`. The worktree is created after Step 4, when the target name is resolved. All later file edits happen in the worktree. On success, the skill commits and pushes the branch. On a validation failure, the worktree stays dirty for inspection. See CLAUDE.md, section Worktree workflow, for the details.
+This skill runs in a **dedicated git worktree per session**. It never runs directly on `main`. The worktree is created after Step 4, when the target name is resolved. All later file edits happen in the worktree. On success, the skill commits and pushes the branch. On a validation failure, the worktree stays dirty for inspection. See AGENTS.md, section Worktree workflow, for the details.
 
 ## Process
 
