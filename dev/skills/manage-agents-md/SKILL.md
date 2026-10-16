@@ -15,11 +15,11 @@ The instruction file is `AGENTS.md`. Put a Claude-only line in `.claude/rules/cl
 
 ## Write or improve
 
-1. **The file.** Move each rule of an existing `CLAUDE.md` that `AGENTS.md` does not hold yet into `AGENTS.md`. Put a Claude-only rule in `.claude/rules/claude-code.md` instead. Then delete `CLAUDE.md`. An `@AGENTS.md` import and a symlink to `AGENTS.md` hold no rule to move. A `CLAUDE.local.md` also makes Claude Code skip `AGENTS.md`. Tell its owner to set `Project instructions` to `claude-md-and-agents-md` in `/config`.
+1. **The file.** If `AGENTS.md` is a symlink to `CLAUDE.md`, replace it with a copy of `CLAUDE.md` first. Move each line of an existing `CLAUDE.md` that `AGENTS.md` does not hold yet into `AGENTS.md`. Put a Claude-only line in `.claude/rules/claude-code.md` instead. Then delete `CLAUDE.md`. An `@AGENTS.md` import and a symlink to `AGENTS.md` hold no line to move. A `CLAUDE.local.md` also makes Claude Code skip `AGENTS.md`. Tell its owner to set `Project instructions` to `claude-md-and-agents-md` in `/config`.
 2. Read the existing file, the manifest, and the config. List the directory tree. The agent already knows everything these state.
 3. Collect what they cannot state, from the code and from the user: the convention no linter enforces, the reason behind a choice, the known problem, the how, and the rule that differs from the tool's default. The how means, for example, that a command runs in a container or needs a fixture first. Write each as one specific, checkable line in the section that holds its kind.
 4. Housekeep the file. See Housekeep below.
-5. Move a multi-step procedure to a skill. Move the rules for one directory to an `AGENTS.md` in that directory. Use `.claude/rules/` with `paths:` frontmatter only for a Claude-only rule. When the file is over 200 lines, cut these first.
+5. Move a multi-step procedure to a skill. Move the rules for one directory to an `AGENTS.md` in that directory. Put a Claude-only line for one part of the tree in its own file under `.claude/rules/`, with `paths:` frontmatter. When the file is over 200 lines, cut these first.
 
 ## Housekeep
 
