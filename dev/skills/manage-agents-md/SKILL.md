@@ -15,7 +15,7 @@ The instruction file is `AGENTS.md`. Put a Claude-only line in `.claude/rules/cl
 
 ## Write or improve
 
-1. **The file.** Move an existing `CLAUDE.md` into `AGENTS.md`, then delete it. A `CLAUDE.local.md` also makes Claude Code skip `AGENTS.md`. Tell its owner to set `Project instructions` to `claude-md-and-agents-md` in `/config`.
+1. **The file.** Move each rule of an existing `CLAUDE.md` that `AGENTS.md` does not hold yet into `AGENTS.md`. Put a Claude-only rule in `.claude/rules/claude-code.md` instead. Then delete `CLAUDE.md`. An `@AGENTS.md` import and a symlink to `AGENTS.md` hold no rule to move. A `CLAUDE.local.md` also makes Claude Code skip `AGENTS.md`. Tell its owner to set `Project instructions` to `claude-md-and-agents-md` in `/config`.
 2. Read the existing file, the manifest, and the config. List the directory tree. The agent already knows everything these state.
 3. Collect what they cannot state, from the code and from the user: the convention no linter enforces, the reason behind a choice, the known problem, the how, and the rule that differs from the tool's default. The how means, for example, that a command runs in a container or needs a fixture first. Write each as one specific, checkable line in the section that holds its kind.
 4. Housekeep the file. See Housekeep below.
