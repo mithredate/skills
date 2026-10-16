@@ -5,7 +5,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 ## Plugins
 
 - **dev** — general development tooling
-  - `manage-agents-md` — write, improve, and housekeep a repo's instruction file (`CLAUDE.md`, or `AGENTS.md` bridged into it); graduate corrections out of auto-memory into it
+  - `manage-agents-md` — write, improve, and housekeep a repo's instruction file, `AGENTS.md`, with Claude-only lines in `.claude/rules/claude-code.md`; graduate corrections out of auto-memory into it
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix
   - `fire` — build one build-ticket brief with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. Targets can be git repos or other systems such as n8n

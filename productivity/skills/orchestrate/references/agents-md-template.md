@@ -11,6 +11,7 @@ This repo is an orchestrator for <what it plans for>. It is planning only.
 Implementation lives in the repos below. Everything lives in `.wayfinder/`,
 one directory for each initiative. `.wayfinder/README.md` is the index.
 The index is read first in every session. Commit and push every change.
+At the start of every session, load the `productivity:orchestrate` skill.
 
 ## Repos
 
@@ -31,13 +32,8 @@ A reference repo is read here, not changed here. Example: `../<repo>`.
 <repo-specific rules only, for example a file that one owner edits>
 ```
 
-Claude Code reads `CLAUDE.md`, the bridge to `AGENTS.md`.
+`.claude/rules/claude-code.md`:
 
 ```markdown
-@AGENTS.md
-
-## Claude Code
-
-At the start of every session, call the Skill tool with `productivity:orchestrate`.
 <Claude-only gates, for example the permissions.ask rule in .claude/settings.json>
 ```
