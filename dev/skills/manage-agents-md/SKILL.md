@@ -19,7 +19,7 @@ The instruction file is `AGENTS.md`. Put a Claude-only line in `.claude/rules/cl
 2. Read the existing file, the manifest, and the config. List the directory tree. The agent already knows everything these state.
 3. Collect what they cannot state, from the code and from the user: the convention no linter enforces, the reason behind a choice, the known problem, the how, and the rule that differs from the tool's default. The how means, for example, that a command runs in a container or needs a fixture first. Write each as one specific, checkable line in the section that holds its kind.
 4. Housekeep the file. See Housekeep below.
-5. Move a multi-step procedure to a skill. Move material for one part of the tree to `.claude/rules/` with `paths:` frontmatter. When the file is over 200 lines, cut these first.
+5. Move a multi-step procedure to a skill. Move the rules for one directory to an `AGENTS.md` in that directory. Use `.claude/rules/` with `paths:` frontmatter only for a Claude-only rule. When the file is over 200 lines, cut these first.
 
 ## Housekeep
 
