@@ -101,7 +101,7 @@ Print:
   - productivity/tdd: 1 item adopted; verb re-banded to "Inspired by" (52% drift)
   ```
 
-Commit with this message. Push the branch, and open the PR as the Worktree workflow in AGENTS.md says. Put the report and every Open question in the PR body.
+Run `./scripts/validate.sh`. If it passes, commit with this message. Push the branch, and open the PR as the Worktree workflow in AGENTS.md says. Put the report and every Open question in the PR body.
 
 ## Output discipline
 
@@ -112,5 +112,5 @@ Commit with this message. Push the branch, and open the PR as the Worktree workf
 
 - **Footer missing or malformed**: flag it, skip it, and list it in the PR body.
 - **Last-reviewed SHA cannot be resolved even after deepening to depth 1000**: flag it. Use the upstream's earliest available commit as a fallback, and record it in the PR body. Later refresh comparisons can overreport changes once, then return to normal.
-- **`merge-skill` aborts mid-skill**, for example when a patch fails to apply cleanly. Restore that skill's files with `git checkout -- <skill dir>`. List the skill in the PR body as not refreshed. Continue with the next skill.
+- **`merge-skill` aborts mid-skill**, for example when a patch fails to apply cleanly. Restore that skill's files with `git checkout -- <skill dir>`. Delete the files that the attempt added with `git clean -fd -- <skill dir>`. List the skill in the PR body as not refreshed. Continue with the next skill.
 - **Multiple vendored skills from the same upstream**: clone the upstream once in step 2. Reuse that temporary directory for all of them.

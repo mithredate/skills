@@ -78,7 +78,7 @@ claude plugin validate <plugin-dir-containing-current>
 
 For example, if `current` is `productivity/skills/tdd/`, the plugin directory is `productivity`.
 
-On a validation error, surface the message. Abort the run. Do not say the merge worked. The user must fix the problem before the commit.
+On a validation error, surface the message. Abort the run. Do not say the merge worked.
 
 ### 8. Report
 
