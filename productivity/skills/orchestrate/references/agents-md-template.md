@@ -32,7 +32,7 @@ A reference repo is read here, not changed here. Example: `../<repo>`.
 <repo-specific rules only, for example a file that one owner edits>
 ```
 
-Do not add a `CLAUDE.md`. It stops Claude Code from reading `AGENTS.md`. If a gate is Claude-only, put it in `.claude/rules/claude-code.md`. Claude Code loads that file next to `AGENTS.md`.
+`.claude/rules/claude-code.md`:
 
 ```markdown
 <Claude-only gates, for example the permissions.ask rule in .claude/settings.json>
