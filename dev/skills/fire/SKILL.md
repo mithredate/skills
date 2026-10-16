@@ -1,19 +1,22 @@
 ---
 name: fire
-description: Use when a session claims an `orchestrate` ticket with a `## Brief`, or on `/fire`.
-argument-hint: "<ticket path>"
+description: Use when a session claims an `orchestrate` ticket with a `## Brief`, or on `/fire` with a ticket path or a change request.
+argument-hint: "<ticket path | change request | Jira key>"
 ---
 
 # Fire
 
-**Arguments:** $ARGUMENTS. The argument is the path of an `orchestrate` build ticket. If there is no argument, use the build ticket that this session claimed.
+First actions: if `personal:work-like-mehrdad` is not loaded in this session, call the Skill tool with it.
+
+**Arguments:** $ARGUMENTS. The argument is the path of an `orchestrate` build ticket, or a change request. A **change request** is a change in the user's words, or a Jira key. If there is no argument, use the build ticket that this session claimed.
 
 The session does not edit code or a target system. Agents build, review, and verify. The session routes their results and hands back.
 
-## Read the brief
+## Get the brief
 
-1. Read the ticket. If it has no `## Brief` section, stop and ask the user for one. If a ticket in its `blocked-by` is open, stop and name it.
-2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<ticket slug>` from the base branch that the brief names, or `fix/<ticket slug>` for a bugfix. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it.
+1. If the argument is a ticket, read it. If it has no `## Brief` section, stop and ask the user for one. If a ticket in its `blocked-by` is open, stop and name it.
+   If the argument is a change request, write the brief yourself. For a Jira key, read the issue with the Atlassian MCP. Read the code that the change touches. Write the brief with the lines Why, Goal, Targets, Decisions, FR, NFR, and Verification, as in the brief of `productivity:orchestrate`. Show the brief to the user. Wait for an answer only for a decision that `productivity:settle-decisions` gives to the human.
+2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<slug>` from the base branch that the brief names, or `fix/<slug>` for a bugfix. The slug is the ticket slug, or a short slug of the change request. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it.
 3. Set the kind to `bugfix` when the brief is a bugfix, or when its Verification line asks for the failing test first. Otherwise set it to `change`.
 
 The step is done when each git target has its branch checked out in a known directory.
@@ -25,7 +28,7 @@ The agents `dev:pr-reviewer` and `dev:verifier` belong to this plugin. If the Ag
 Start one agent with the Agent tool, on Opus. Give it:
 
 - the path of [references/implementer-brief.md](references/implementer-brief.md), as its contract
-- the ticket path and the Brief section, verbatim
+- the brief, verbatim, and the ticket path if there is a ticket
 - the kind
 - each target: the directory and the base commit of a git repo, or the name of a system
 - a diff file path in the scratchpad
@@ -37,7 +40,7 @@ The step is done when the agent returns its JSON. If the outcome is `plan_broken
 
 Start these agents in parallel, and wait for all of them:
 
-- `dev:pr-reviewer`, when a git target changed. Give it the diff file, the brief, the ticket path, and the root and the AGENTS.md or CLAUDE.md of each changed repo.
+- `dev:pr-reviewer`, when a git target changed. Give it the diff file, the brief, the ticket path if there is a ticket, and the root and the AGENTS.md or CLAUDE.md of each changed repo.
 - `dev:verifier`, once for each git target, with its directory and its AGENTS.md or CLAUDE.md.
 - `dev:verifier`, once, for the brief's Verification checks of the git targets that the declared commands do not cover. Tell it to run each check and report it as a command.
 - One `general-purpose` agent for the Verification checks of each target that is not a git repo. That agent has the tools of the system, which `dev:verifier` does not have. Tell it to change nothing, and to return the JSON of `dev:verifier`.
@@ -55,9 +58,9 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 
 ## Hand back
 
-1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. The body lists the verifier evidence.
+1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. If there is no ticket, the body holds the brief. The body lists the verifier evidence.
 2. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user.
 3. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
 4. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent.
 
-Merge nothing. The human review is a `gate` ticket in the map.
+Merge nothing. A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. For a ticket, the human review is a `gate` ticket in the map.
