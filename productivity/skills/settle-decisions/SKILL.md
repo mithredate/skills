@@ -60,3 +60,6 @@ Facts: <at most three bullets. Assume that the reader knows nothing about the to
 ```
 
 The session is done when the frontier is empty. Every decision has a record, and nothing is assumed silently.
+
+---
+_Originally seeded from [mattpocock/skills/skills/productivity/grilling](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/productivity/grilling) — MIT © 2026 Matt Pocock._
