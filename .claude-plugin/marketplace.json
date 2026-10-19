@@ -10,7 +10,7 @@
     {
       "name": "dev",
       "source": "./dev",
-      "description": "General development tooling skills, and the pr-reviewer and verifier agents.",
+      "description": "General development tooling skills, and the pr-reviewer, verifier, and merge-judge agents.",
       "skills": [
         "./skills/manage-agents-md",
         "./skills/tdd",
