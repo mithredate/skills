@@ -34,6 +34,7 @@
         "./skills/prototype",
         "./skills/research",
         "./skills/orchestrate",
+        "./skills/prep",
         "./skills/sup",
         "./skills/sweep",
         "./skills/write-ste",

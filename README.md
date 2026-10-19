@@ -8,7 +8,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `manage-agents-md` — write, improve, and housekeep a repo's instruction file, `AGENTS.md`, with Claude-only lines in `.claude/rules/claude-code.md`; graduate corrections out of auto-memory into it
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix
-  - `fire` — build one build-ticket brief with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. Targets can be git repos or other systems such as n8n
+  - `fire` — build one brief, from a build ticket or from `prep`, with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. Targets can be git repos or other systems such as n8n
   - `ponytail` — force the laziest solution that actually works — YAGNI, stdlib first, shortest diff
   - `verification-before-completion` — require fresh verification evidence before claiming work is done
   - `codebase-design` — shared vocabulary for designing deep modules and finding deepening opportunities
@@ -23,7 +23,8 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `write-a-skill` — write or rewrite a skill, an agent file, or a reference: name, invocation, shape, frontmatter, checks, and the PR
   - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
-  - `orchestrate` — run a planning-only orchestrator repo: one map of decision tickets per initiative under `.wayfinder/`, an index read first that orders them by priority, `chart`, `cook`, `init`, `close` (report replaces the map), the hand-off brief
+  - `orchestrate` — run a planning-only orchestrator repo: one map of decision tickets per initiative under `.wayfinder/`, an index read first that orders them by priority, `chart`, `cook`, `init`, `close` (report replaces the map), the hand-off to build and gate tickets
+  - `prep` — turn a requirement into the brief that `fire` builds: a request, a Jira or Linear key, a Slack or Teams thread, or an `orchestrate` hand-off. Settles the decisions in the session that holds the context, then starts `fire`
   - `sup` — one-screen, read-only report across the maps of an orchestrator repo, with a proposal for the next map, with the live state of linked PRs, issues, and threads
   - `sweep` — check the PRs, issues, pages, and threads linked from an orchestrator tracker, on the hosts listed in `.wayfinder/sources.md`, and give each session fact its place (used by `orchestrate` and `sup`)
   - `domain-modeling` — pin down a domain's terms and boundaries; record choices as ADRs

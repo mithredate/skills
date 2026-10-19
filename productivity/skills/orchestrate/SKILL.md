@@ -11,7 +11,7 @@ An **orchestrator repo** plans the work. The sibling repos and systems it plans 
 
 An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of tickets. Most tickets are **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. When nothing is left to decide, the map hands off the build as build tickets and gate tickets. If you feel the pull to do the work in this session, write a build ticket.
 
-The file shapes of the index, the map, the tickets, the brief, and the gate are in [references/format.md](references/format.md). Read it before you chart a map or work a ticket.
+The file shapes of the index, the map, the tickets, and the gate are in [references/format.md](references/format.md). Read it before you chart a map or work a ticket.
 
 ## The index
 
@@ -101,16 +101,12 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 
 ## Hand-off: build and gate tickets
 
-When the decisions for a change are made, write the build as `task` tickets with a brief, and each human step as a `gate` ticket. Connect them with `blocked-by` edges.
+When the decisions for a change are made, write the build as `task` tickets, and each human step as a `gate` ticket. Connect them with `blocked-by` edges. Write the brief of each build ticket with `productivity:prep` in this session, because this session holds the decisions that the brief must carry.
 
-- The **brief** is the whole input of one `dev:fire` session, with no transcript. Its targets can be git repos or other systems, for example an n8n instance.
-- A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed.
+- A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed. Its targets can be git repos or other systems, for example an n8n instance.
 - Split the build only at a gate. Write the fewest build tickets.
-- The brief gives the why and the what. The implementer picks the how and the order of work. A how goes in the brief only as a closed decision, in the Decisions line.
-- Before you write a brief, collect each fact that the session cannot get by itself. Examples are test data, reviewer names, access, and decisions. Do not collect code facts. The implementer reads the code.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
-- The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
 
 ---
