@@ -116,6 +116,15 @@ test('stays silent when an edit changes a brief file that fire already took', ()
     assert.equal(context, '');
 });
 
+test('stays silent for a brief file outside the scratchpad', () => {
+    const content = '## Brief\n\n- Goal: the booking page shows the return date';
+    const path = writeTicket('docs/brief.md', content);
+
+    const context = contextFor({ file_path: path, content });
+
+    assert.equal(context, '');
+});
+
 test('stays silent when a Write creates a brief file with no brief section', () => {
     const content = 'Notes for a brief';
     const path = writeTicket('scratchpad/brief.md', content);

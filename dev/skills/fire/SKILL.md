@@ -12,7 +12,7 @@ The session does not edit code or a target system. Agents build, review, and ver
 
 ## Read the brief
 
-1. Read the ticket or the brief file. If it has no `## Brief` section, stop, and tell the user to write one with `productivity:prep`. If a ticket in its `blocked-by` is open, stop and name it.
+1. Read the ticket or the brief file. If the input is not a file with a `## Brief` section, stop. For a ticket, tell the user that a `cook` session writes its brief. Otherwise, tell the user to write one with `productivity:prep`. If a ticket in its `blocked-by` is open, stop and name it.
 2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<slug>` from the base branch that the brief names, or `fix/<slug>` for a bugfix. The slug is the ticket slug, or a short slug of the Goal line. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it.
 3. Set the kind to `bugfix` when the brief is a bugfix, or when its Verification line asks for the failing test first. Otherwise set it to `change`.
 

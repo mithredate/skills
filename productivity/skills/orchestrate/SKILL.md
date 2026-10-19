@@ -5,7 +5,7 @@ description: Use in a repo with `.wayfinder/`, to set one up, for work too big f
 
 # Orchestrate
 
-First actions: call the Skill tool with `personal:work-like-mehrdad`, `productivity:sweep`, `productivity:settle-decisions`, and `productivity:domain-modeling`.
+First actions: call the Skill tool with `personal:work-like-mehrdad`, `productivity:sweep`, `productivity:settle-decisions`, `productivity:domain-modeling`, and `productivity:prep`.
 
 An **orchestrator repo** plans the work. The sibling repos and systems it plans for hold the implementation.
 

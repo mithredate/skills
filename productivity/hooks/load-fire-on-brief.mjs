@@ -9,7 +9,7 @@ const editedText = [input.new_string, input.content, ...(input.edits ?? []).map(
 const TRACKER_TICKET = /\/\.wayfinder\/[^/]+\/tickets\/[^/]+\.md$/;
 const CLAIM = /^assignee:[ \t]*\S/m;
 const BRIEF = /^## Brief$/m;
-const BRIEF_FILE = /\/brief\.md$/;
+const BRIEF_FILE = /\/scratchpad\/brief\.md$/;
 
 const claimsTicketWithBrief = TRACKER_TICKET.test(input.file_path ?? '') && CLAIM.test(editedText) && BRIEF.test(readFileSync(input.file_path, 'utf8'));
 const writesBriefFile = BRIEF_FILE.test(input.file_path ?? '') && BRIEF.test(input.content ?? '');
