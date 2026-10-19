@@ -94,3 +94,33 @@ test('names fire when a Write creates a claimed ticket with a brief', () => {
 
     assert.equal(context, LOAD_FIRE);
 });
+
+test('names fire when prep writes a brief file', () => {
+    const content = [
+        '## Brief',
+        '',
+        '- Goal: the booking page shows the return date',
+    ].join('\n');
+    const path = writeTicket('scratchpad/brief.md', content);
+
+    const context = contextFor({ file_path: path, content });
+
+    assert.equal(context, LOAD_FIRE);
+});
+
+test('stays silent when an edit changes a brief file that fire already took', () => {
+    const path = writeTicket('scratchpad/brief.md', '## Brief\n\n- Goal: the booking page shows the return date');
+
+    const context = contextFor({ file_path: path, old_string: 'return date', new_string: 'return date and time' });
+
+    assert.equal(context, '');
+});
+
+test('stays silent when a Write creates a brief file with no brief section', () => {
+    const content = 'Notes for a brief';
+    const path = writeTicket('scratchpad/brief.md', content);
+
+    const context = contextFor({ file_path: path, content });
+
+    assert.equal(context, '');
+});
