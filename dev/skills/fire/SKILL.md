@@ -56,9 +56,24 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 ## Hand back
 
 1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence.
-2. If the status is `pass`, and the AGENTS.md or CLAUDE.md of each changed repo has the line `**fire can auto-merge.**`, start `dev:merge-judge`. Give it the diff file, the brief, the verifier results and the open findings of the last round, and the AGENTS.md or CLAUDE.md of each changed repo. If the verdict is `auto`, run `gh pr ready` and then `gh pr merge --auto` for each PR. Use the merge method that the repo names, or `--squash`. If the verdict is `human`, put its reasons at the top of each PR body.
-3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If step 2 ran, give the verdict and its reasons.
+2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
+3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the Merge section ran, say that the PR merged, or give the reasons that it waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
 5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent.
 
-A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. Merge only in step 2. `gh pr merge --auto` waits for the checks and the reviews that the repo requires.
+A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. Merge only by the Merge section.
+
+## Merge
+
+Merge runs only when each condition below holds. Otherwise, skip it, and the PR stays a draft for the user.
+
+- The run opened exactly one PR, and every target of the brief is a git repo.
+- The AGENTS.md or CLAUDE.md of that repo at the base commit has the line `**fire can auto-merge.**`. Read the file with `git show <base>:<file>`. The branch can change the file, so its copy does not count.
+
+1. Start `dev:merge-judge`. Give it the diff file and the brief. Also give it the verifier results and the open findings of the last round, and the AGENTS.md or CLAUDE.md at the base commit. The step is done when it returns its JSON.
+2. Treat the verdict as `human` if it is not `auto`, if an item applies, or if there is no JSON. For `human`, put the reasons at the top of the PR body, and stop.
+3. Run `gh pr ready`, then `gh pr merge --auto --squash`. If a command fails, run `gh pr ready --undo`. Put the error at the top of the PR body, and stop.
+4. Run `gh pr checks --watch --required`. Then read the state with `gh pr view --json state`. The step is done when the state is `MERGED`.
+5. If the PR does not merge, run `gh pr merge --disable-auto` and `gh pr ready --undo`. Put the failed check or the open requirement at the top of the PR body.
+
+`gh pr merge --auto` waits for the checks and the reviews that the repo requires. In a repo with no required check, it merges at once.

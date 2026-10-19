@@ -8,7 +8,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `manage-agents-md` — write, improve, and housekeep a repo's instruction file, `AGENTS.md`, with Claude-only lines in `.claude/rules/claude-code.md`; graduate corrections out of auto-memory into it
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix
-  - `fire` — build one brief, from a build ticket or from `prep`, with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. In a repo whose AGENTS.md allows it, the `merge-judge` agent decides between auto-merge and human review. Targets can be git repos or other systems such as n8n
+  - `fire` — build one brief, from a build ticket or from `prep`, with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. For one PR in a repo whose AGENTS.md at the base commit has the line `**fire can auto-merge.**`, the `merge-judge` agent decides between auto-merge and human review. Opt in only a repo whose default branch requires a check. Targets can be git repos or other systems such as n8n
   - `ponytail` — force the laziest solution that actually works — YAGNI, stdlib first, shortest diff
   - `verification-before-completion` — require fresh verification evidence before claiming work is done
   - `codebase-design` — shared vocabulary for designing deep modules and finding deepening opportunities
