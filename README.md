@@ -8,12 +8,12 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `manage-agents-md` — write, improve, and housekeep a repo's instruction file, `AGENTS.md`, with Claude-only lines in `.claude/rules/claude-code.md`; graduate corrections out of auto-memory into it
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix
-  - `fire` — build one brief, from a build ticket or from `prep`, with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. Targets can be git repos or other systems such as n8n
+  - `fire` — build one brief, from a build ticket or from `prep`, with a fresh implementer agent, review it with `pr-reviewer` and `verifier`, at most three rounds, then open draft PRs. In a repo whose AGENTS.md allows it, the `merge-judge` agent decides between auto-merge and human review. Targets can be git repos or other systems such as n8n
   - `ponytail` — force the laziest solution that actually works — YAGNI, stdlib first, shortest diff
   - `verification-before-completion` — require fresh verification evidence before claiming work is done
   - `codebase-design` — shared vocabulary for designing deep modules and finding deepening opportunities
   - `review-pr` — review a PR within a token budget: the main session for others' PRs, one capped reviewer plus one verifier for PRs the user's agents wrote
-  - agents `pr-reviewer` (Sonnet, two lenses, structured findings) and `verifier` (Haiku, runs declared commands, reports evidence)
+  - agents `pr-reviewer` (Sonnet, two lenses, structured findings), `verifier` (Haiku, runs declared commands, reports evidence), and `merge-judge` (Sonnet, checks a passed change against the critical list of `settle-decisions`, returns `auto` or `human`)
 - **meta** — skills for maintaining this marketplace itself
   - `import-skill` — vendor a new skill from a GitHub upstream
   - `refresh-vendored` — reconcile vendored skills against upstream changes

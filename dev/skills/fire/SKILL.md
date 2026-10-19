@@ -18,7 +18,7 @@ The session does not edit code or a target system. Agents build, review, and ver
 
 The step is done when each git target has its branch checked out in a known directory.
 
-The agents `dev:pr-reviewer` and `dev:verifier` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
+The agents `dev:pr-reviewer`, `dev:verifier`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
 
 ## Build
 
@@ -56,8 +56,9 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 ## Hand back
 
 1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence.
-2. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user.
-3. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
-4. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent.
+2. If the status is `pass`, and the AGENTS.md or CLAUDE.md of each changed repo has the line `**fire can auto-merge.**`, start `dev:merge-judge`. Give it the diff file, the brief, the verifier results and the open findings of the last round, and the AGENTS.md or CLAUDE.md of each changed repo. If the verdict is `auto`, run `gh pr ready` and then `gh pr merge --auto` for each PR. Use the merge method that the repo names, or `--squash`. If the verdict is `human`, put its reasons at the top of each PR body.
+3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If step 2 ran, give the verdict and its reasons.
+4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
+5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent.
 
-Merge nothing. A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. For a ticket, the human review is a `gate` ticket in the map.
+A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. Merge only in step 2. `gh pr merge --auto` waits for the checks and the reviews that the repo requires.
