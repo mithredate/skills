@@ -5,13 +5,13 @@ description: Use in a repo with `.wayfinder/`, to set one up, for work too big f
 
 # Orchestrate
 
-First actions: call the Skill tool with `personal:work-like-mehrdad`, `productivity:sweep`, `productivity:settle-decisions`, and `productivity:domain-modeling`.
+First actions: call the Skill tool with `personal:work-like-mehrdad`, `productivity:sweep`, `productivity:settle-decisions`, `productivity:domain-modeling`, and `productivity:prep`.
 
 An **orchestrator repo** plans the work. The sibling repos and systems it plans for hold the implementation.
 
 An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of tickets. Most tickets are **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. When nothing is left to decide, the map hands off the build as build tickets and gate tickets. If you feel the pull to do the work in this session, write a build ticket.
 
-The file shapes of the index, the map, the tickets, the brief, and the gate are in [references/format.md](references/format.md). Read it before you chart a map or work a ticket.
+The file shapes of the index, the map, the tickets, and the gate are in [references/format.md](references/format.md). Read it before you chart a map or work a ticket.
 
 ## The index
 
@@ -75,6 +75,7 @@ A session that names no map works the `active` row. One session takes every fron
 2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Claim them before any other work. If no such ticket is on the frontier, claim the first ticket with a brief. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round. When you claim a ticket with a `## Brief`, a hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
+   - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2. A session that claimed a ticket with a brief does not go back.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
@@ -101,16 +102,12 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 
 ## Hand-off: build and gate tickets
 
-When the decisions for a change are made, write the build as `task` tickets with a brief, and each human step as a `gate` ticket. Connect them with `blocked-by` edges.
+When the decisions for a change are made, write the build as `task` tickets, and each human step as a `gate` ticket. Connect them with `blocked-by` edges. Write the brief of each build ticket with `productivity:prep` in this session, because this session holds the decisions that the brief must carry.
 
-- The **brief** is the whole input of one `dev:fire` session, with no transcript. Its targets can be git repos or other systems, for example an n8n instance.
-- A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed.
+- A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed. Its targets can be git repos or other systems, for example an n8n instance.
 - Split the build only at a gate. Write the fewest build tickets.
-- The brief gives the why and the what. The implementer picks the how and the order of work. A how goes in the brief only as a closed decision, in the Decisions line.
-- Before you write a brief, collect each fact that the session cannot get by itself. Examples are test data, reviewer names, access, and decisions. Do not collect code facts. The implementer reads the code.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
-- The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
 
 ---
