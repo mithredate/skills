@@ -53,7 +53,7 @@ A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `decision` or 
 - **prototype**: make a cheap, rough artifact with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question. The artifact is evidence for the decision.
 - **research** (agent alone): find a fact outside the working directory that a decision waits on. A subagent calls the Skill tool with `productivity:research`.
 - **task** (agent alone): work that the agent does alone. A task before a decision makes a fact visible, for example data moved so that its shape shows. A build task holds a `## Brief`. The resolution records what was done and the facts that later tickets need.
-- **gate** (HITL): one step that only a human can do, for example a setup, the human review of a PR, a deploy, or a check. The agent never claims it. The review of a choice by another person is a `decision` ticket.
+- **gate** (HITL): one human step, for example a setup that the agent cannot do, a deploy, or a check that only a human can make. The agent never claims it. The review of a choice that another person made or proposes is a `decision` ticket.
 
 ## chart
 
