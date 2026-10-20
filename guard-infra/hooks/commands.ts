@@ -4,7 +4,8 @@
 
 const TOOLS = new Set(['aws', 'aws-vault', 'kubectl', 'helm', 'terraform'])
 // A tool's name inside a word, in any case, because macOS finds `Kubectl` too. Not inside a longer name, such as `kubectl-prod` or `AWS_PROFILE`.
-const TOOL_NAME = new RegExp(`(^|[^A-Za-z0-9_-])(${[...TOOLS].join('|')})(?![A-Za-z_-])`, 'i')
+// Not before a `/` or a `.`, because a directory or a file such as `terraform/main.tf` runs nothing.
+const TOOL_NAME = new RegExp(`(^|[^A-Za-z0-9_-])(${[...TOOLS].join('|')})(?![A-Za-z_./-])`, 'i')
 const TERRAFORM_WRITES = new Set(['apply', 'destroy'])
 // These programs never run the words they are given or the text they read.
 const TEXT_ONLY = new Set(['echo', 'printf', 'grep', 'rg', 'cat', 'head', 'tail', 'wc', 'sort', 'uniq', 'cut', 'tr', 'jq', 'tee', 'less', 'which', 'type'])

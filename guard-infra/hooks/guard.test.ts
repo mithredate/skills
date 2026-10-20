@@ -70,7 +70,13 @@ const CASES: [command: string, calls: string[]][] = [
   // A loop's words can run as `$c`.
   ["for c in 'kubectl delete pod web-1'; do echo \"$c\"; done", ['kubectl delete pod web-1']],
   // A tool's name inside a word that is not a script asks, because the guard cannot tell what runs.
-  ['ls kubectl/', ['ls kubectl/']],
+  ['make deploy KUBECTL=kubectl', ['make deploy KUBECTL=kubectl']],
+  // A directory or a file named after a tool runs nothing.
+  ['sed -n 300,370p terraform/Deployment/helm_releases/main.tf', []],
+  ['ls kubectl/', []],
+  ['ls ~/.aws/', []],
+  ['vim terraform.tfvars', []],
+  ["python3 - <<'EOF'\nopen('terraform/Deployment/route53/main.tf')\nEOF", []],
   // A word that splits into itself is not split again.
   ['kubectl delete pod web-1', ['kubectl delete']],
   // Every place the shell runs a command.
