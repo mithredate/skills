@@ -154,6 +154,21 @@ test("shows an agent's transcript in the main view on a press on its row", async
   await pane.unmount()
 })
 
+test("shows why the main view did not show an agent's transcript", async ($, on) => {
+  claudeCode(on)
+  const toasts: string[] = []
+  on('ui.view', async () => ({ value: { deny: 'the tasks list shows no agent a2' } }))
+  on('ui.toast', async (_$, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
+  const pane = await drawPane($)
+
+  await pane.press({ key: 'agent-a2' })
+  expect(toasts).toEqual(['the tasks list shows no agent a2'])
+  await pane.unmount()
+})
+
 test('opens the pane on /show-session, to close on Escape, and closes it on the next /show-session', async ($, on) => {
   claudeCode(on)
   const panes: string[] = []

@@ -105,7 +105,11 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
     const mark = AGENT_MARK[agent.status]
     return (
       <Box flexDirection="column">
-        <Button key={`agent-${agent.id}`} plain onPress={() => $.ui.view({ agentId: agent.id })}>
+        <Button
+          key={`agent-${agent.id}`}
+          plain
+          onPress={() => $.ui.view({ agentId: agent.id }).then(shown => shown.deny && $.ui.toast(shown.deny))}
+        >
           <Text color={mark.color}>{`${mark.glyph} `}</Text>
           {agent.description}
         </Button>
