@@ -290,6 +290,23 @@ test("draws an unfolded group's line under its last call's row, as that row hold
   for (const row of [group, last]) await row.unmount()
 })
 
+// The fullscreen ctrl+o transcript draws no group: each call there is a row with its own result row.
+test("draws an unfolded group's line once where its last call draws as a row with its own result", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('g1', 'Read'), useOf('g2', 'Read')])
+  await reply($, 'r2', [textOf('Read both.')])
+  const group = await drawGroup($, ['g1', 'g2'], false)
+  await group.press({ key: 'fold-g1' })
+  await group.unmount()
+
+  const last = await drawToolRow($, 'g2', 'Read', false)
+  const lastResult = await drawToolResult($, 'g2')
+  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Read ×2  0s ▾`)
+  expect(await lastResult.find({ type: 'Box' })).toBeUndefined()
+  expect(await lastResult.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  for (const row of [last, lastResult]) await row.unmount()
+})
+
 test('ends the open thread when the turn ends', async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash')])

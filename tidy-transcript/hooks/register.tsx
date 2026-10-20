@@ -15,6 +15,7 @@ type Block = { type: string; [field: string]: unknown }
 const threads: Threads = { byId: new Map() }
 
 // The calls Claude Code drew in a group. An unfolded group draws each call's output in the call's row, and no ToolResult row follows.
+// The fullscreen ctrl+o transcript draws no group, so there such a call is a row with its own ToolResult.
 // ponytail: like byId, it keeps every grouped call of the session.
 const grouped = new Set<string>()
 
@@ -221,12 +222,13 @@ export const register: Register = on => {
 
   // A result draws under its row, so it shows only where Claude Code draws the row.
   // The last call's result is the last row of an unfolded thread, so the thread's line draws under it.
+  // A call once drawn in a group keeps the line in its own row, as its row draws before its result.
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
     const thread = threads.byId.get(e.props.tool_use_id)
     if (!thread) return next(e)
     const { Box } = $.ui.resolve(e)
     if (!thread.isUnfolded) return <Box />
-    if (thread.lastId !== e.props.tool_use_id) return next(e)
+    if (thread.lastId !== e.props.tool_use_id || grouped.has(e.props.tool_use_id)) return next(e)
     return (
       <Box flexDirection="column">
         {await next(e)}
