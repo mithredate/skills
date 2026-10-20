@@ -56,24 +56,27 @@ function resultOf(block: Block) {
 
 // The row of a thread's first call draws the thread's line. The rows of its other calls draw nothing until a click unfolds the thread.
 // This holds while a call runs, because a row that shows for a second and then folds is a flicker.
+// An unfolded thread draws its line under its last row too, so a call's output cannot push every fold line off screen.
 async function drawRow($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, id: string | undefined, own: () => Promise<RenderElement>) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
   if (!thread) return own()
   const isFirst = thread.firstId === id
-  if (thread.isUnfolded && !isFirst) return own()
+  const isLast = thread.lastId === id
+  if (thread.isUnfolded && !isFirst && !isLast) return own()
   const { Box } = $.ui.resolve(e)
-  if (!isFirst) return <Box />
-  if (!thread.isUnfolded) return drawThreadLine($, e, thread)
+  if (!thread.isUnfolded) return isFirst ? drawThreadLine($, e, thread, 'fold') : <Box />
   return (
     <Box flexDirection="column">
-      {drawThreadLine($, e, thread)}
+      {isFirst ? drawThreadLine($, e, thread, 'fold') : undefined}
       {await own()}
+      {isLast ? drawThreadLine($, e, thread, 'fold-end') : undefined}
     </Box>
   )
 }
 
 // The tool names are the button, so the pointer inverts the part a click acts on.
-function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, thread: Thread) {
+// A one-call thread draws both lines in one row, so each line keys its button apart.
+function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, thread: Thread, key: 'fold' | 'fold-end') {
   const { Box, Text, Button } = $.ui.resolve(e)
   const line = threadLine(thread)
   const mark = STATE_MARK[line.state]
@@ -82,7 +85,7 @@ function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGrou
     <Box flexDirection="row">
       <Text color={mark.color}>{`${mark.glyph} `}</Text>
       <Button
-        key={`fold-${thread.firstId}`}
+        key={`${key}-${thread.firstId}`}
         label={line.tools}
         plain
         onPress={() => {

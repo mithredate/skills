@@ -146,6 +146,23 @@ test("opens a finished thread's calls on a click on its line, and folds them aga
   for (const row of [first, second, firstResult, secondResult]) await row.unmount()
 })
 
+test("draws an unfolded thread's line again under its last row, and folds the thread on a click on that line", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
+  await reply($, 'r2', [textOf('Both done.')])
+
+  const first = await drawToolRow($, 't1', 'Bash', false)
+  const last = await drawToolRow($, 't2', 'Bash', false)
+  await first.press({ key: 'fold-t1' })
+  expect((await first.find({ type: 'Box' }))?.text).toBe(`✓ Bash ×2  0s ▾${OWN_ROW}`)
+  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Bash ×2  0s ▾`)
+
+  await last.press({ key: 'fold-end-t1' })
+  expect((await first.find({ type: 'Box' }))?.text).toBe('✓ Bash ×2  0s ▸')
+  expect(await last.find({ type: 'Text' })).toBeUndefined()
+  for (const row of [first, last]) await row.unmount()
+})
+
 test('redraws a row that drew while its thread was open, once the thread ends', async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash')])
