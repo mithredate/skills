@@ -49,6 +49,8 @@ The step is done when each live link is listed with the file that holds it, and 
 
 Check all live links in parallel, with one call for each link. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the date in the record.
 
+An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A **claim** is a statement in a link about something that the host does not own, such as the code, a count, or a plan.
+
 For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup`. The review state and the CI state are easy to miss.
 
 If the session has no tool for the host, or the call fails, mark the link "not checked" and give the reason. Do not guess the state.
@@ -68,7 +70,7 @@ Write one table. It has one row for each live link whose state is different from
 | [Subscription spec PR](https://github.com/org/repo/pull/12) | waiting Amin since 2026-10-03 | approved 2026-10-04 | index row, status `open` |
 | `acme.atlassian.net` | not in `sources.md` | Jira issues, Live `yes` | `sources.md` |
 
-For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked. Then list each link marked "not checked" or "check by hand".
+For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked. Then list each link marked "not checked" or "check by hand".
 
-- In write mode, write each row to its place. The step is done when each row is written.
-- In report mode, print the table and write nothing.
+- In write mode, write each row to its place. Give each claim and its link to the caller. The caller sorts each claim with `productivity:settle-decisions`. The step is done when each row is written and the caller has each claim.
+- In report mode, print the table and the number of claims for each map. Print no claim. Write nothing.
