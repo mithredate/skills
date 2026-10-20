@@ -26,6 +26,10 @@ A decision is **critical** when a wrong choice does one of these:
 
 Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
+The human does not read a PR and its comments, an issue, a ticket, or a thread. A claim from these sources is a fact only after you check it against the code, the data, or the docs.
+
+A choice or a proposal of another person is a decision. Sort it as your own. Give the human no claim, conflict, or risk to weigh. Settle each one, or put it in a round.
+
 ## Record
 
 Record each decision in the ticket or the PR body, one line each. Show the new records at the top of your next message, so that the human can overrule one.
@@ -39,6 +43,8 @@ After the deploy, read the signal. If the hypothesis is false, the fix is a new 
 
 Put at most four questions in one round. Put first the questions that block the most decisions. A question that depends on another open question waits for a later round. Then wait for the answers. Each answer settles part of the tree. Recompute the frontier, settle what you can, and ask the next round.
 
+Write the whole round, the question line included, for a reader who has not read the sources. Use no label that only a source defines, for example "option A" of a ticket. Say what each option does.
+
 Format a round like so:
 
 ```
@@ -48,7 +54,7 @@ Format a round like so:
 
 ❓ **Q1 - <the decision, in one line>**
 Critical because: <the matching item of the critical list>
-Facts: <at most three bullets. Assume that the reader knows nothing about the topic>
+Facts: <at most three bullets>
 - **A**: <option>. Gain: <one line>. Cost: <one line>
 - **B**: <option>. Gain: <one line>. Cost: <one line>
 
