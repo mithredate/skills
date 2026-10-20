@@ -1,6 +1,6 @@
 {
   "name": "tidy-transcript",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Folds tool calls and mod prompts, so the transcript shows the replies the user reads.",
   "author": {
     "name": "Mehrdad Hedayati",
