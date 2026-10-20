@@ -24,13 +24,11 @@ A decision is **critical** when a wrong choice does one of these:
 - It changes access, secrets, personal data, or cost.
 - It changes the agreed destination, scope, or priority.
 
-A **source** is a PR and its comments, an issue, a ticket, or a thread. The human does not read the sources. A claim from a source is a fact only after you check it in the code, the data, or the docs. Check each claim or conflict from a source before you report it.
-
-A choice that another person made or proposes is a decision. A conflict that the check does not settle is a decision too.
+A **source** is a text that a person other than the human wrote, such as a PR, an issue, a ticket, or a thread. Assume that the human has not read the sources. Before you report a claim from a source, check it in the code, the data, or the docs. A **conflict** is two claims that disagree. A claim or a conflict that the check does not settle is a decision. A choice that another person makes or proposes is a decision too.
 
 Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
-Write each record, round, and message for a reader who has not read the sources. Use no label that only a source defines, for example "option A" of a ticket. Say what the option does in place of its label. In a message, each claim, conflict, or risk from a source is a checked fact, a record, or a question in a round.
+Write each record, round, and message for a reader who has not read the sources. Use no name that only a source defines, for example "option A" or "milestone 2" of a ticket. Write what the name means in place of the name. Report a conflict only together with the checked fact or the decision that answers it.
 
 ## Record
 
