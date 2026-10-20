@@ -27,6 +27,11 @@ const CASES: [command: string, calls: string[]][] = [
   ['kubectl config view --raw', ['kubectl config view --raw']],
   ['helm list -A', []],
   ['helm upgrade api ./chart', ['helm upgrade api ./chart']],
+  // `helm template` renders on this machine, unless a flag makes it read the cluster or run a program.
+  ['helm template api ./chart', []],
+  ['helm template api ./chart --dry-run=server', ['helm template api ./chart --dry-run=server']],
+  ['helm template api ./chart --validate', ['helm template api ./chart --validate']],
+  ['helm template api ./chart --post-renderer ./kustomize.sh', ['helm template api ./chart --post-renderer ./kustomize.sh']],
   ['aws-vault exec prod -- aws iam list-roles', ['aws-vault exec prod -- aws iam list-roles']],
   ['terraform apply -auto-approve', ['terraform apply -auto-approve']],
   ['terraform plan', []],

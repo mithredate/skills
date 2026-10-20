@@ -16,7 +16,9 @@ const AWS_READ_OPERATION = /^(get|describe|list)-/
 const AWS_CREDENTIAL_OPERATION = /^get-(secret-value|login-password|session-token|federation-token|token|authorization-token|credentials|.*-credentials)$/
 const KUBECTL_READ_VERBS = new Set(['get', 'describe', 'logs', 'top', 'explain', 'api-resources', 'api-versions', 'version'])
 const KUBECTL_READ_CONFIG = new Set(['get-contexts', 'current-context'])
-const HELM_READ_VERBS = new Set(['list', 'ls', 'status', 'history'])
+const HELM_READ_VERBS = new Set(['list', 'ls', 'status', 'history', 'template'])
+// `helm template` renders on this machine. With these flags it reads the cluster, where a chart's `lookup` can read a Secret, or it runs a program.
+const HELM_NOT_LOCAL_FLAG = /^--(dry-run=server|validate|post-renderer)/
 
 // `command -v kubectl` names a command and runs nothing.
 const LOOKUP_FLAGS = new Set(['-v', '-V'])
@@ -311,7 +313,7 @@ function isReadOnly(tool: string, args: string[]) {
     if (first === 'config') return KUBECTL_READ_CONFIG.has(second ?? '')
     return KUBECTL_READ_VERBS.has(first ?? '') && !args.some(arg => /secret/.test(arg))
   }
-  if (tool === 'helm') return HELM_READ_VERBS.has(first ?? '')
+  if (tool === 'helm') return HELM_READ_VERBS.has(first ?? '') && !args.some(arg => HELM_NOT_LOCAL_FLAG.test(arg))
   if (tool === 'terraform') return !TERRAFORM_WRITES.has(first ?? '')
   return false
 }
