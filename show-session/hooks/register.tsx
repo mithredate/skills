@@ -4,13 +4,15 @@ import type { Dir } from './facts.js'
 
 const PANE = 'show-session'
 const TITLE = 'Session'
-// The rows a section shows at most. Its title counts them all.
-const MAX_ROWS = { dirs: 5, bash: 5, agents: 4 }
+// The rows a section shows at most. Its chip counts them all.
+const MAX_ROWS = { dirs: 5, bash: 8, agents: 4 }
+// An open shell command shows this many lines of its output, then a count of the rest.
+const OUTPUT_LINES = 20
 // The context share is green below the first limit, yellow below the second, and red from there.
 const CONTEXT_WARNING_PERCENT = 50
 const CONTEXT_DANGER_PERCENT = 80
 
-// A section draws its title in one color, so the eye finds it in a long pane.
+// A section draws its card and its chip in one color, so the eye finds it in a long pane.
 const SECTION_COLOR = { skills: 'suggestion', dirs: 'planMode', bash: 'bashBorder', agents: 'claude' } as const satisfies Record<string, Color>
 
 // The glyph pairs each color with a shape, so a state reads without color too.
@@ -25,6 +27,9 @@ const AGENT_MARK = {
 } as const satisfies Record<AgentStatus, { glyph: string; color: Color }>
 
 type Section = { name: string; color: Color; count: number; rows: RenderNode[] }
+
+// The shell commands the user opened. Module memory, so a mod reload closes them.
+const openCalls = new Set<string>()
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 const firstLine = (text: string) => text.split('\n')[0] ?? ''
@@ -43,7 +48,7 @@ async function toolCount($: EngineInterface, agent: AgentInfo) {
 }
 
 async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
-  const { Box, Text } = $.ui.resolve(e)
+  const { Box, Text, Button } = $.ui.resolve(e)
   const [messages, root, home, model, usage, agents, now] = await Promise.all([
     $.session.messages(),
     $.session.root(),
@@ -58,6 +63,8 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const toolCounts = await Promise.all(shownAgents.map(agent => toolCount($, agent)))
   const percent = usage.context.percent
   const empty = (what: string) => <Text dimColor>{`no ${what} yet`}</Text>
+  // The line between two rows spans the card inside its border and padding.
+  const rule = () => <Text dimColor>{'─'.repeat(Math.max(1, e.props.bodyColumns - 4))}</Text>
 
   const dirRow = (d: Dir) => (
     <Text wrap="truncate-start">
@@ -70,21 +77,42 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
     const mark = callMark(use)
     const description = typeof use.input.description === 'string' ? use.input.description : ''
     const command = typeof use.input.command === 'string' ? use.input.command : ''
+    const isOpen = openCalls.has(use.tool_use_id)
+    // A running call has no output yet.
+    const output = use.text?.split('\n') ?? []
     return (
-      <Text wrap="truncate-end">
-        <Text color={mark.color}>{`${mark.glyph} `}</Text>
-        {description || firstLine(command)}
-      </Text>
+      <Box flexDirection="column">
+        <Button
+          key={`bash-${use.tool_use_id}`}
+          plain
+          onPress={() => {
+            if (openCalls.has(use.tool_use_id)) openCalls.delete(use.tool_use_id)
+            else openCalls.add(use.tool_use_id)
+            $.ui.invalidate('ui.render')
+          }}
+        >
+          <Text color={mark.color}>{`${mark.glyph} `}</Text>
+          {description || firstLine(command)}
+          <Text dimColor>{isOpen ? ' ▾' : ' ▸'}</Text>
+        </Button>
+        {isOpen ? <Text>{command}</Text> : undefined}
+        {isOpen && output.length ? <Text dimColor>{output.slice(0, OUTPUT_LINES).join('\n')}</Text> : undefined}
+        {isOpen && output.length > OUTPUT_LINES ? <Text dimColor>{`… ${output.length - OUTPUT_LINES} more lines`}</Text> : undefined}
+      </Box>
     )
   }
   const agentRow = (agent: AgentInfo, i: number) => {
     const mark = AGENT_MARK[agent.status]
     return (
       <Box flexDirection="column">
-        <Text wrap="truncate-end">
+        <Button
+          key={`agent-${agent.id}`}
+          plain
+          onPress={() => $.ui.view({ agentId: agent.id }).then(shown => shown.deny && $.ui.toast(shown.deny))}
+        >
           <Text color={mark.color}>{`${mark.glyph} `}</Text>
           {agent.description}
-        </Text>
+        </Button>
         <Text dimColor wrap="truncate-end">{`  ${agent.type} · ${plural(toolCounts[i] ?? 0, 'tool')}`}</Text>
       </Box>
     )
@@ -108,32 +136,31 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
       ],
     },
     { name: 'Dirs', color: SECTION_COLOR.dirs, count: facts.dirs.length, rows: facts.dirs.slice(0, MAX_ROWS.dirs).map(dirRow) },
-    { name: 'Bash', color: SECTION_COLOR.bash, count: facts.bash.length, rows: facts.bash.slice(-MAX_ROWS.bash).map(bashRow) },
+    { name: 'Bash', color: SECTION_COLOR.bash, count: facts.bash.length, rows: facts.bash.slice(-MAX_ROWS.bash).reverse().map(bashRow) },
     { name: 'Agents', color: SECTION_COLOR.agents, count: agents.length, rows: shownAgents.map(agentRow) },
   ]
 
   return (
     <Box flexDirection="column">
-      <Text wrap="truncate-end">
-        <Text color="claude" bold>
-          {'◆ session  '}
+      <Box flexDirection="row" justifyContent="space-between">
+        <Text wrap="truncate-end">
+          <Text color="claude" bold>
+            {'◆ session  '}
+          </Text>
+          <Text dimColor>{model}</Text>
         </Text>
-        <Text dimColor>{model}</Text>
-      </Text>
+        {/* Claude Code draws its own close mark on a docked pane only, and the user did not find it there, so this one draws on every placement. */}
+        <Button key="close" label="✕" role="dismiss" plain onPress={() => $.ui.close({ id: PANE })} />
+      </Box>
       <Text wrap="truncate-end">
         {'  '}
         {percent === undefined ? undefined : <Text color={contextColor(percent)}>{`ctx ${Math.round(percent)}%`}</Text>}
         <Text dimColor>{` · $${(usage.cost?.usd ?? 0).toFixed(2)} · ${Math.round((now - usage.startedAt) / 60_000)}m`}</Text>
       </Text>
       {sections.map(section => (
-        <Box flexDirection="column" marginTop={1}>
-          <Text>
-            <Text color={section.color} bold>
-              {section.name}
-            </Text>
-            <Text dimColor>{` ${section.count}`}</Text>
-          </Text>
-          {section.count ? section.rows : empty(section.name.toLowerCase())}
+        <Box flexDirection="column" borderStyle="round" borderColor={section.color} paddingX={1}>
+          <Text backgroundColor={section.color} color="inverseText" bold>{` ${section.name} ${section.count} `}</Text>
+          {section.count ? section.rows.flatMap((row, i) => (i === 0 ? [row] : [rule(), row])) : empty(section.name.toLowerCase())}
         </Box>
       ))}
     </Box>
@@ -153,7 +180,7 @@ export const register: Register = on => {
   on('command.run', { command: 'show-session' }, async $ => {
     const panes = await $.ui.panes()
     if (panes.some(pane => pane.id === PANE)) await $.ui.close({ id: PANE })
-    else await $.ui.open({ id: PANE, title: TITLE })
+    else await $.ui.open({ id: PANE, title: TITLE, closeOnEscape: true })
     return {}
   })
 

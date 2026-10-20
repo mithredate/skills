@@ -14,8 +14,17 @@ type Block = { type: string; [field: string]: unknown }
 
 const threads: Threads = { byId: new Map() }
 
-// A text block that a tool call follows is a note on the way, so it draws dim. `lastText` is the newest text block.
-const replies = { notes: new Set<string>(), lastText: undefined as string | undefined }
+// The calls Claude Code drew in a group. An unfolded group draws each call's output in the call's row, and no ToolResult row follows.
+// The fullscreen ctrl+o transcript draws no group, so there such a call is a row with its own ToolResult.
+// ponytail: like byId, it keeps every grouped call of the session.
+const grouped = new Set<string>()
+
+// A text block that a tool call follows is a note on the way, so a short one draws dim. `lastText` is the newest text block.
+// Each note keeps its text, as Claude Code can draw a note as a one-line summary.
+const replies = { notes: new Map<string, string>(), lastText: undefined as { uuid: string; text: string } | undefined }
+
+// A longer note is an answer, a correction or a review verdict, not a status line, so it draws bright and in full.
+const LONG_NOTE_CHARS = 300
 
 // The tools and failures of the turn that runs now. When a turn ends, its footer keeps them with the context and the cost.
 const turnNow = { tools: 0, failed: 0 }
@@ -56,24 +65,35 @@ function resultOf(block: Block) {
 
 // The row of a thread's first call draws the thread's line. The rows of its other calls draw nothing until a click unfolds the thread.
 // This holds while a call runs, because a row that shows for a second and then folds is a flicker.
-async function drawRow($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, id: string | undefined, own: () => Promise<RenderElement>) {
+// An unfolded thread draws its line under its last row too, so a call's output cannot push every fold line off screen.
+// A finished standalone call draws its output as its own ToolResult row, so that row draws the line in its place.
+async function drawRow(
+  $: EngineInterface,
+  e: RenderInput<'ToolUse' | 'ToolGroup'>,
+  id: string | undefined,
+  own: () => Promise<RenderElement>,
+) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
   if (!thread) return own()
   const isFirst = thread.firstId === id
-  if (thread.isUnfolded && !isFirst) return own()
+  // A running call has no output yet, and a group's call draws its output in its own row.
+  const hasNoResultRow = e.component === 'ToolUse' && (e.props.isRunning || grouped.has(e.props.tool_use_id))
+  const isLast = thread.lastId === id && hasNoResultRow
+  if (thread.isUnfolded && !isFirst && !isLast) return own()
   const { Box } = $.ui.resolve(e)
-  if (!isFirst) return <Box />
-  if (!thread.isUnfolded) return drawThreadLine($, e, thread)
+  if (!thread.isUnfolded) return isFirst ? drawThreadLine($, e, thread, 'fold') : <Box />
   return (
     <Box flexDirection="column">
-      {drawThreadLine($, e, thread)}
+      {isFirst ? drawThreadLine($, e, thread, 'fold') : undefined}
       {await own()}
+      {isLast ? drawThreadLine($, e, thread, 'fold-end') : undefined}
     </Box>
   )
 }
 
 // The tool names are the button, so the pointer inverts the part a click acts on.
-function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup'>, thread: Thread) {
+// A one-call thread draws both lines in one row, so each line keys its button apart.
+function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGroup' | 'ToolResult'>, thread: Thread, key: 'fold' | 'fold-end') {
   const { Box, Text, Button } = $.ui.resolve(e)
   const line = threadLine(thread)
   const mark = STATE_MARK[line.state]
@@ -82,7 +102,7 @@ function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGrou
     <Box flexDirection="row">
       <Text color={mark.color}>{`${mark.glyph} `}</Text>
       <Button
-        key={`fold-${thread.firstId}`}
+        key={`${key}-${thread.firstId}`}
         label={line.tools}
         plain
         onPress={() => {
@@ -105,12 +125,12 @@ export const register: Register = on => {
     let changed = false
     for (const block of e.message.content) {
       if (isReply && isReplyText(block)) {
-        replies.lastText = e.uuid
+        replies.lastText = { uuid: e.uuid, text: block.text as string }
         changed = endThread(threads, now) || changed
       }
       const use = toolUseOf(block)
       if (use && replies.lastText !== undefined) {
-        replies.notes.add(replies.lastText)
+        replies.notes.set(replies.lastText.uuid, replies.lastText.text)
         replies.lastText = undefined
       }
       if (use) {
@@ -170,15 +190,19 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'ToolUse' }, async ($, e, next) => drawRow($, e, e.props.tool_use_id, () => next(e)))
 
-  // A note draws dim, so the last reply of a turn is the one bright text. The bullet stays, dim too.
+  // A short note draws dim, its bullet too, so the last reply of a turn and the long notes are the bright text.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    if (!replies.notes.has(e.requestId)) return next(e)
+    const note = replies.notes.get(e.requestId)
+    if (note === undefined) return next(e)
+    const isLong = note.length > LONG_NOTE_CHARS
+    // Claude Code marks a summary row's text as a summary, also a rewritten one, so the full note draws as this tree.
+    if (isLong && !e.props.isSummary) return next(e)
     const { Box, Text, Markdown } = $.ui.resolve(e)
     return (
       <Box flexDirection="row">
-        <Text dimColor>{e.props.isFirstOfReply ? '● ' : '  '}</Text>
+        <Text dimColor={!isLong}>{e.props.isFirstOfReply ? '● ' : '  '}</Text>
         <Box flexGrow={1}>
-          <Markdown text={e.props.text} dimColor />
+          <Markdown text={isLong ? note : e.props.text} dimColor={!isLong} />
         </Box>
       </Box>
     )
@@ -198,17 +222,27 @@ export const register: Register = on => {
   })
 
   // A result draws under its row, so it shows only where Claude Code draws the row.
+  // The last call's result is the last row of an unfolded thread, so the thread's line draws under it.
+  // A call once drawn in a group keeps the line in its own row, as its row draws before its result.
   on('ui.render', { component: 'ToolResult' }, async ($, e, next) => {
     const thread = threads.byId.get(e.props.tool_use_id)
-    if (!thread || thread.isUnfolded) return next(e)
+    if (!thread) return next(e)
     const { Box } = $.ui.resolve(e)
-    return <Box />
+    if (!thread.isUnfolded) return <Box />
+    if (thread.lastId !== e.props.tool_use_id || grouped.has(e.props.tool_use_id)) return next(e)
+    return (
+      <Box flexDirection="column">
+        {await next(e)}
+        {drawThreadLine($, e, thread, 'fold-end')}
+      </Box>
+    )
   })
 
   // Claude Code folds a run of reads and searches into one group row, and its first call stands for the group.
   // An expanded group, as under --verbose or in the ctrl+o transcript, keeps Claude Code's rows.
   // An unfolded thread expands its group, so each call draws as a ToolUse row and the first one draws the line.
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
+    for (const call of e.props.calls) if (call.tool_use_id !== undefined) grouped.add(call.tool_use_id)
     if (e.props.isExpanded) return next(e)
     const id = e.props.calls[0]?.tool_use_id
     if (id !== undefined && threads.byId.get(id)?.isUnfolded) return next({ ...e, props: { ...e.props, isExpanded: true } })

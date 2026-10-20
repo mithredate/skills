@@ -10,7 +10,7 @@ const GROUP_COUNT_LINE = 'Read 2 files'
 
 type Block = { type: string; [field: string]: unknown }
 
-// Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text. A reply draws its text.
+// Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text. A reply draws its text, and marks a summary.
 // A group that is not expanded draws as its count line.
 // The session has used 62% of its context and cost $0.31 so far.
 function claudeCode(on: On) {
@@ -20,7 +20,7 @@ function claudeCode(on: On) {
   on('turn.complete', async () => ({ text: '' }))
   on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000, percent: 62 }, rateLimits: [], cost: { usd: 0.31 } } }))
   on('ui.render', async (_$, e) => {
-    if (e.component === 'AssistantMessage') return { type: 'Text', props: {}, children: [e.props.text] }
+    if (e.component === 'AssistantMessage') return { type: 'Text', props: {}, children: [e.props.isSummary ? `${e.props.text} · summary` : e.props.text] }
     if (e.component === 'ToolGroup' && !e.props.isExpanded) return { type: 'Text', props: {}, children: [GROUP_COUNT_LINE] }
     return { type: 'Text', props: {}, children: [OWN_ROW] }
   })
@@ -41,8 +41,9 @@ async function prompt($: Engine, uuid: string, origin: { kind: 'composer' } | { 
   await $.session.append({ message: { type: 'user', role: 'user', content: [{ type: 'text', text: 'go on' }] }, door: 'prompt', origin, uuid })
 }
 
-function drawReply($: Engine, uuid: string, text: string) {
-  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'AssistantMessage', requestId: uuid, props: { text, isFirstOfReply: true } })
+// A summary row is Claude Code's one-line summary of the model's text, in place of the text.
+function drawReply($: Engine, uuid: string, text: string, isSummary?: true) {
+  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'AssistantMessage', requestId: uuid, props: { text, isFirstOfReply: true, isSummary } })
 }
 
 function drawPrompt($: Engine, text: string, origin: { kind: 'composer' } | { kind: 'plugin'; name: string }, isExpanded: boolean) {
@@ -146,6 +147,74 @@ test("opens a finished thread's calls on a click on its line, and folds them aga
   for (const row of [first, second, firstResult, secondResult]) await row.unmount()
 })
 
+test("draws an unfolded thread's line again under its last call's result, and folds the thread on a click on that line", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
+  await reply($, 'r2', [textOf('Both done.')])
+
+  const first = await drawToolRow($, 't1', 'Bash', false)
+  const last = await drawToolRow($, 't2', 'Bash', false)
+  const lastResult = await drawToolResult($, 't2')
+  await first.press({ key: 'fold-t1' })
+  expect((await first.find({ type: 'Box' }))?.text).toBe(`✓ Bash ×2  0s ▾${OWN_ROW}`)
+  expect(await last.find({ type: 'Box' })).toBeUndefined()
+  expect(await last.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect((await lastResult.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Bash ×2  0s ▾`)
+
+  await lastResult.press({ key: 'fold-end-t1' })
+  expect((await first.find({ type: 'Box' }))?.text).toBe('✓ Bash ×2  0s ▸')
+  expect(await last.find({ type: 'Text' })).toBeUndefined()
+  expect(await lastResult.find({ type: 'Text' })).toBeUndefined()
+  for (const row of [first, last, lastResult]) await row.unmount()
+})
+
+test("draws a finished one-call thread's line above its row and again under its result", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash')])
+  await reply($, 'r2', [textOf('Done.')])
+
+  const row = await drawToolRow($, 't1', 'Bash', false)
+  const result = await drawToolResult($, 't1')
+  await row.press({ key: 'fold-t1' })
+  expect((await row.find({ type: 'Box' }))?.text).toBe(`✓ Bash  0s ▾${OWN_ROW}`)
+  expect((await result.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Bash  0s ▾`)
+  for (const each of [row, result]) await each.unmount()
+})
+
+test("draws an unfolded thread's line under its last call's result when that call failed", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
+  await toolResult($, 'u1', [{ type: 'tool_result', tool_use_id: 't2', is_error: true, content: 'exit 1' }])
+  await reply($, 'r2', [textOf('The build failed.')])
+
+  const first = await drawToolRow($, 't1', 'Bash', false)
+  await first.press({ key: 'fold-t1' })
+  const lastResult = await $.ui.mount({
+    plugin: 'tidy-transcript',
+    surface: 'terminal',
+    component: 'ToolResult',
+    requestId: 't2',
+    props: { tool_use_id: 't2', tool: 'Bash', output: 'exit 1', isErrored: true },
+  })
+  expect((await lastResult.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✗ Bash ×2 · 1 failed  0s ▾`)
+  for (const row of [first, lastResult]) await row.unmount()
+})
+
+test("draws an unfolded thread's line under its last call's row while that call runs", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
+
+  const first = await drawToolRow($, 't1', 'Bash', false)
+  await first.press({ key: 'fold-t1' })
+  const last = await drawToolRow($, 't2', 'Bash', true)
+  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}● Bash ×2 ▾`)
+
+  await last.press({ key: 'fold-end-t1' })
+  expect((await first.find({ type: 'Box' }))?.text).toBe('● Bash ×2 ▸')
+  expect(await last.find({ type: 'Text' })).toBeUndefined()
+  for (const row of [first, last]) await row.unmount()
+})
+
 test('redraws a row that drew while its thread was open, once the thread ends', async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash')])
@@ -235,6 +304,39 @@ test("opens a group of reads into each call on a click on its line, and folds it
   expect(await group.find({ type: 'Box', text: '✓ Read ×2  0s ▸' })).toBeDefined()
   expect(await group.find({ type: 'Text', text: GROUP_COUNT_LINE })).toBeUndefined()
   for (const row of [group, first, second]) await row.unmount()
+})
+
+test("draws an unfolded group's line under its last call's row, as that row holds the call's output", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('g1', 'Read'), useOf('g2', 'Read')])
+  await reply($, 'r2', [textOf('Read both.')])
+
+  const group = await drawGroup($, ['g1', 'g2'], false)
+  await group.press({ key: 'fold-g1' })
+  const last = await drawToolRow($, 'g2', 'Read', false)
+  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Read ×2  0s ▾`)
+
+  await last.press({ key: 'fold-end-g1' })
+  expect(await group.find({ type: 'Box', text: '✓ Read ×2  0s ▸' })).toBeDefined()
+  expect(await last.find({ type: 'Text' })).toBeUndefined()
+  for (const row of [group, last]) await row.unmount()
+})
+
+// The fullscreen ctrl+o transcript draws no group: each call there is a row with its own result row.
+test("draws an unfolded group's line once where its last call draws as a row with its own result", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('g1', 'Read'), useOf('g2', 'Read')])
+  await reply($, 'r2', [textOf('Read both.')])
+  const group = await drawGroup($, ['g1', 'g2'], false)
+  await group.press({ key: 'fold-g1' })
+  await group.unmount()
+
+  const last = await drawToolRow($, 'g2', 'Read', false)
+  const lastResult = await drawToolResult($, 'g2')
+  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Read ×2  0s ▾`)
+  expect(await lastResult.find({ type: 'Box' })).toBeUndefined()
+  expect(await lastResult.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  for (const row of [last, lastResult]) await row.unmount()
 })
 
 test('ends the open thread when the turn ends', async ($, on) => {
@@ -361,6 +463,51 @@ test("still draws a note dim when a subagent's turn ends between the note and it
   const note = await drawReply($, 'r1', 'Checking the tests.')
   expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ dimColor: true })
   await note.unmount()
+})
+
+// A review verdict the user must read: 301 characters, one past the longest status note.
+const VERDICT = 'The reviewer returned NOT SAFE, so nothing is merged yet. Its blocking finding is correct. '.padEnd(301, 'The parser drops the last row of a page. ')
+
+test("draws a note longer than 300 characters bright, and in full in place of Claude Code's summary of it", async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(VERDICT)])
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const note = await drawReply($, 'r1', VERDICT)
+  expect(await note.find({ type: 'Markdown' })).toBeUndefined()
+  expect((await note.find({ type: 'Text' }))?.text).toBe(VERDICT)
+  await note.unmount()
+
+  const summary = await drawReply($, 'r1', 'The reviewer blocked the merge.', true)
+  expect(await summary.find({ type: 'Text', text: /summary/ })).toBeUndefined()
+  expect(await summary.find({ type: 'Text', text: '● ' })).toBeDefined()
+  const full = await summary.find({ type: 'Markdown' })
+  expect(full?.props.text).toBe(VERDICT)
+  expect(full?.props.dimColor).not.toBe(true)
+  await summary.unmount()
+})
+
+test('draws a note of 300 characters dim', async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(VERDICT.slice(0, 300))])
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const note = await drawReply($, 'r1', VERDICT.slice(0, 300))
+  expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ text: VERDICT.slice(0, 300), dimColor: true })
+  await note.unmount()
+})
+
+test("draws Claude Code's summary of a short note dim", async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf('Next is the parser rewrite.')])
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const summary = await drawReply($, 'r1', 'Next is the parser rewrite.', true)
+  expect((await summary.find({ type: 'Markdown' }))?.props).toMatchObject({ text: 'Next is the parser rewrite.', dimColor: true })
+  await summary.unmount()
 })
 
 function drawTurnLine($: Engine, durationMs: number) {
