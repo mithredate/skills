@@ -41,8 +41,9 @@ async function prompt($: Engine, uuid: string, origin: { kind: 'composer' } | { 
   await $.session.append({ message: { type: 'user', role: 'user', content: [{ type: 'text', text: 'go on' }] }, door: 'prompt', origin, uuid })
 }
 
-function drawReply($: Engine, uuid: string, text: string) {
-  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'AssistantMessage', requestId: uuid, props: { text, isFirstOfReply: true } })
+// A summary row is Claude Code's one-line summary of the model's text, in place of the text.
+function drawReply($: Engine, uuid: string, text: string, isSummary?: true) {
+  return $.ui.mount({ plugin: 'tidy-transcript', surface: 'terminal', component: 'AssistantMessage', requestId: uuid, props: { text, isFirstOfReply: true, isSummary } })
 }
 
 function drawPrompt($: Engine, text: string, origin: { kind: 'composer' } | { kind: 'plugin'; name: string }, isExpanded: boolean) {
@@ -377,6 +378,37 @@ test("still draws a note dim when a subagent's turn ends between the note and it
 
   const note = await drawReply($, 'r1', 'Checking the tests.')
   expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ dimColor: true })
+  await note.unmount()
+})
+
+// A review verdict the user must read: 301 characters, one past the longest status note.
+const VERDICT = 'The reviewer returned NOT SAFE, so nothing is merged yet. Its blocking finding is correct. '.padEnd(301, 'The parser drops the last row of a page. ')
+
+test("draws a note longer than 300 characters bright, and in full in place of Claude Code's summary of it", async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(VERDICT)])
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const note = await drawReply($, 'r1', VERDICT)
+  expect(await note.find({ type: 'Markdown' })).toBeUndefined()
+  expect((await note.find({ type: 'Text' }))?.text).toBe(VERDICT)
+  await note.unmount()
+
+  const summary = await drawReply($, 'r1', 'The reviewer blocked the merge.', true)
+  expect(await summary.find({ type: 'Markdown' })).toBeUndefined()
+  expect((await summary.find({ type: 'Text' }))?.text).toBe(VERDICT)
+  await summary.unmount()
+})
+
+test('draws a note of 300 characters dim', async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf(VERDICT.slice(0, 300))])
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const note = await drawReply($, 'r1', VERDICT.slice(0, 300))
+  expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ text: VERDICT.slice(0, 300), dimColor: true })
   await note.unmount()
 })
 

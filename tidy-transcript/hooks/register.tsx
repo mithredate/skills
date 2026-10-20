@@ -15,7 +15,11 @@ type Block = { type: string; [field: string]: unknown }
 const threads: Threads = { byId: new Map() }
 
 // A text block that a tool call follows is a note on the way, so it draws dim. `lastText` is the newest text block.
-const replies = { notes: new Set<string>(), lastText: undefined as string | undefined }
+// Each note keeps its text, as Claude Code can draw a note as a one-line summary.
+const replies = { notes: new Map<string, string>(), lastText: undefined as { uuid: string; text: string } | undefined }
+
+// A longer note is an answer, a correction or a review verdict, not a status line, so it draws bright and in full.
+const LONG_NOTE_CHARS = 300
 
 // The tools and failures of the turn that runs now. When a turn ends, its footer keeps them with the context and the cost.
 const turnNow = { tools: 0, failed: 0 }
@@ -108,12 +112,12 @@ export const register: Register = on => {
     let changed = false
     for (const block of e.message.content) {
       if (isReply && isReplyText(block)) {
-        replies.lastText = e.uuid
+        replies.lastText = { uuid: e.uuid, text: block.text as string }
         changed = endThread(threads, now) || changed
       }
       const use = toolUseOf(block)
       if (use && replies.lastText !== undefined) {
-        replies.notes.add(replies.lastText)
+        replies.notes.set(replies.lastText.uuid, replies.lastText.text)
         replies.lastText = undefined
       }
       if (use) {
@@ -175,7 +179,9 @@ export const register: Register = on => {
 
   // A note draws dim, so the last reply of a turn is the one bright text. The bullet stays, dim too.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    if (!replies.notes.has(e.requestId)) return next(e)
+    const note = replies.notes.get(e.requestId)
+    if (note === undefined) return next(e)
+    if (note.length > LONG_NOTE_CHARS) return next(e.props.isSummary ? { ...e, props: { ...e.props, text: note } } : e)
     const { Box, Text, Markdown } = $.ui.resolve(e)
     return (
       <Box flexDirection="row">
