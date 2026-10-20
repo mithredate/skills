@@ -32,6 +32,7 @@ A **live link** is a link to a host with `Live: yes`. Its target can change. A h
 
 1. For each map that the caller names, collect these files:
    - the row of the map in `.wayfinder/README.md`
+   - the Notes section of `map.md`
    - each ticket with `status: open`
    - each closed ticket with a `## Brief` section
 2. Get every link from these files.
@@ -47,13 +48,15 @@ The step is done when each live link is listed with the file that holds it, and 
 
 ## Check
 
-Check all live links in parallel, with one call for each link. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the date in the record.
+Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last time that the record gives for the link. A comment or an edit after that time is new. If the record gives only a date, a comment or an edit on that date is new too. Read the body of each new comment and each new edit.
 
-For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup`. The review state and the CI state are easy to miss.
+An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link.
+
+For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
 
 If the session has no tool for the host, or the call fails, mark the link "not checked" and give the reason. Do not guess the state.
 
-The step is done when each live link has a state or a "not checked" mark.
+The step is done when each live link has a state or a "not checked" mark, and you have listed each claim.
 
 ## Session items
 
@@ -68,7 +71,7 @@ Write one table. It has one row for each live link whose state is different from
 | [Subscription spec PR](https://github.com/org/repo/pull/12) | waiting Amin since 2026-10-03 | approved 2026-10-04 | index row, status `open` |
 | `acme.atlassian.net` | not in `sources.md` | Jira issues, Live `yes` | `sources.md` |
 
-For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked. Then list each link marked "not checked" or "check by hand".
+For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked and the number of claims for each map. Then list each link marked "not checked" or "check by hand".
 
-- In write mode, write each row to its place. The step is done when each row is written.
-- In report mode, print the table and write nothing.
+- In write mode, write each row to its place. Give each claim and its link to the caller. The step is done when each row is written.
+- In report mode, print the table and write nothing. Print no claim.

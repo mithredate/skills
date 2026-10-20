@@ -33,12 +33,15 @@ Write one line per row, in index order. A table is also correct. Each line holds
 - the frontier count
 - the days since the last commit
 - for a `waiting` row, who it waits on and since when
+- the number of claims from sweep
 
 Mark each map that has no `Closes when` sentence. Put no prose between the rows. After the rows, give the number of open tickets across all maps. If directories have no row, give their number and say that orchestrate repairs the index. Then print the sweep result table.
 
 ## Propose
 
 1. Propose the first row in index order that is `active` or `open` and has a frontier ticket. Give the reason in one sentence.
-2. If the sweep table shows that the dependency of a `waiting` row is resolved, propose that the user names that map in orchestrate.
+2. If a row is not `paused` and one of these holds, propose that the user names its map in orchestrate:
+   - The row is `waiting`, and the sweep table shows that its dependency is resolved.
+   - The map has claims.
 3. List as stale each row with no commit for 14 days or more. State the number of days.
 4. Stop. To work a map, the user names it in orchestrate. To reorder the maps, the user says "prioritize" there. Sup changes nothing.

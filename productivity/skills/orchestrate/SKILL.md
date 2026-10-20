@@ -20,6 +20,7 @@ The file shapes of the index, the map, the tickets, and the gate are in [referen
 - Every session reads the index before any other step. This rule applies also when the user names a map.
 - If the index is missing, build it. If a map directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
 - Then run sweep in write mode. Give it the map of this session and each `waiting` row. Sweep also adds each new host to `.wayfinder/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
+  - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the map.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - Exactly one row is `active`. When the user names a map, that row becomes `active` and the old `active` row becomes `open`. Commit the index with the ticket.
@@ -53,7 +54,7 @@ A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `decision` or 
 - **prototype**: make a cheap, rough artifact with `productivity:prototype`. Link the artifact as an asset. Use it when "how must it look" or "how must it behave" is the key question. The artifact is evidence for the decision.
 - **research** (agent alone): find a fact outside the working directory that a decision waits on. A subagent calls the Skill tool with `productivity:research`.
 - **task** (agent alone): work that the agent does alone. A task before a decision makes a fact visible, for example data moved so that its shape shows. A build task holds a `## Brief`. The resolution records what was done and the facts that later tickets need.
-- **gate** (HITL): one human step, for example a setup that the agent cannot do, a review, a deploy, or a check that only a human can make. The agent never claims it.
+- **gate** (HITL): one human step, for example a setup that the agent cannot do, a deploy, or a check that only a human can make. The agent never claims it. The review of a choice that another person makes or proposes is a `decision` ticket.
 
 ## chart
 
