@@ -20,7 +20,7 @@ The file shapes of the index, the map, the tickets, and the gate are in [referen
 - Every session reads the index before any other step. This rule applies also when the user names a map.
 - If the index is missing, build it. If a map directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
 - Then run sweep in write mode. Give it the map of this session and each `waiting` row. Sweep also adds each new host to `.wayfinder/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
-  - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result and the date of the check in the ticket that holds the link of the claim. If no ticket holds the link, record the result and the date in the map's Notes.
+  - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the map.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - Exactly one row is `active`. When the user names a map, that row becomes `active` and the old `active` row becomes `open`. Commit the index with the ticket.

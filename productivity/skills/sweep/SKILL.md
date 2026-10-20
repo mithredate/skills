@@ -32,6 +32,7 @@ A **live link** is a link to a host with `Live: yes`. Its target can change. A h
 
 1. For each map that the caller names, collect these files:
    - the row of the map in `.wayfinder/README.md`
+   - the Notes section of `map.md`
    - each ticket with `status: open`
    - each closed ticket with a `## Brief` section
 2. Get every link from these files.
@@ -47,7 +48,7 @@ The step is done when each live link is listed with the file that holds it, and 
 
 ## Check
 
-Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last date that the record gives for the link. A comment or an edit after that date is new. Read the body of each new comment and each new edit.
+Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last time that the record gives for the link. A comment or an edit after that time is new. If the record gives only a date, a comment or an edit on that date is new too. Read the body of each new comment and each new edit.
 
 An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link. The number of claims for a map is the number of listed claims from the links of that map.
 
