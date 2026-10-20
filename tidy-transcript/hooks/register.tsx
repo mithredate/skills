@@ -239,7 +239,7 @@ export const register: Register = on => {
   // An expanded group, as under --verbose or in the ctrl+o transcript, keeps Claude Code's rows.
   // An unfolded thread expands its group, so each call draws as a ToolUse row and the first one draws the line.
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
-    for (const call of e.props.calls) grouped.add(call.tool_use_id)
+    for (const call of e.props.calls) if (call.tool_use_id !== undefined) grouped.add(call.tool_use_id)
     if (e.props.isExpanded) return next(e)
     const id = e.props.calls[0]?.tool_use_id
     if (id !== undefined && threads.byId.get(id)?.isUnfolded) return next({ ...e, props: { ...e.props, isExpanded: true } })
