@@ -143,9 +143,10 @@ test('finds the privileged calls that are not reads, wherever the shell runs the
   for (const [command, calls] of CASES) expect({ command, calls: privilegedCalls(command) }).toEqual({ command, calls })
 })
 
-// Claude Code beneath the mod: the settings hold `sandbox`, the question dialog answers `answer`, or is dismissed for an Error, and any other tool runs.
-function claudeCode(on: On, answer: string | Error, questions: string[] = [], sandbox?: object) {
-  on('settings.read', async () => ({ value: sandbox ? { sandbox } : {} }))
+// Claude Code beneath the mod: the settings hold `sandbox`, or the read fails for an Error.
+// The question dialog answers `answer`, or is dismissed for an Error. Any other tool runs.
+function claudeCode(on: On, answer: string | Error, { questions = [], sandbox }: { questions?: string[]; sandbox?: object | Error } = {}) {
+  on('settings.read', async () => (sandbox instanceof Error ? { deny: sandbox.message } : { value: sandbox ? { sandbox } : {} }))
   on('tool.call', { tool: 'AskUserQuestion' }, async (_$, e) => {
     const asked = 'questions' in e ? e.questions : []
     const question = asked[0]?.question ?? ''
@@ -160,7 +161,7 @@ const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : u
 
 test('runs a privileged write after the user presses Run', async ($, on) => {
   const questions: string[] = []
-  claudeCode(on, 'Run', questions)
+  claudeCode(on, 'Run', { questions })
   const ran = await $.tool.call({ tool: 'Bash', command: 'kubectl delete pod web-1' })
   expect(refusal(ran)).toBeUndefined()
   expect(questions).toEqual(['Run this privileged command?\n\nkubectl delete pod web-1'])
@@ -192,38 +193,53 @@ test('refuses the call when the guard itself fails, so an error never lets a cal
 
 test('runs a read and a command with no privileged call without a question', async ($, on) => {
   const questions: string[] = []
-  claudeCode(on, 'Cancel', questions)
+  claudeCode(on, 'Cancel', { questions })
   for (const command of ['kubectl get pods -n web', 'grep -n kubectl README.md']) {
     expect(refusal(await $.tool.call({ tool: 'Bash', command }))).toBeUndefined()
   }
   expect(questions).toEqual([])
 })
 
+// The parts of `guard-infra/sandbox.json` that the guard reads.
 const SANDBOX = {
   enabled: true,
   failIfUnavailable: true,
   allowUnsandboxedCommands: false,
   excludedCommands: ['aws *', 'kubectl *', 'helm *', 'terraform *', 'grep *', 'head *', 'tail *', 'jq *'],
+  credentials: {
+    files: [
+      { path: '~/.aws', mode: 'deny' },
+      { path: '~/.kube', mode: 'deny' },
+    ],
+    envVars: [
+      { name: 'AWS_ACCESS_KEY_ID', mode: 'deny' },
+      { name: 'AWS_SECRET_ACCESS_KEY', mode: 'deny' },
+      { name: 'AWS_SESSION_TOKEN', mode: 'deny' },
+    ],
+  },
 }
+const SANDBOXED_WRITE = 'cd ~/infra && kubectl delete pod web-1'
 
 test('with the sandbox on, runs a privileged call that stays in the sandbox without a question', async ($, on) => {
   const questions: string[] = []
-  claudeCode(on, 'Cancel', questions, SANDBOX)
-  // The calls a user refused to read. In the sandbox they reach neither AWS nor EKS.
+  claudeCode(on, 'Cancel', { questions, sandbox: SANDBOX })
+  // The calls a user refused to read. In the sandbox they have no credentials.
   for (const command of [
-    'cd ~/infra && kubectl delete pod web-1',
+    SANDBOXED_WRITE,
     'ls -la ~/.local/bin/aws; file -h ~/.local/bin/aws',
     'mkdir -p $S/home/.aws $S/zdot',
     "for c in 'kubectl delete pod web-1'; do echo \"$c\"; done",
   ]) {
     expect(refusal(await $.tool.call({ tool: 'Bash', command }))).toBeUndefined()
   }
+  // With `allowUnsandboxedCommands: false`, Claude Code ignores the request to leave.
+  expect(refusal(await $.tool.call({ tool: 'Bash', command: SANDBOXED_WRITE, dangerouslyDisableSandbox: true }))).toBeUndefined()
   expect(questions).toEqual([])
 })
 
 test('with the sandbox on, asks before a privileged write that can leave the sandbox', async ($, on) => {
   const questions: string[] = []
-  claudeCode(on, 'Cancel', questions, SANDBOX)
+  claudeCode(on, 'Cancel', { questions, sandbox: SANDBOX })
   const commands = [
     'kubectl delete pod web-1',
     'aws s3 rm s3://bucket/key | head -1',
@@ -236,15 +252,32 @@ test('with the sandbox on, asks before a privileged write that can leave the san
   expect(questions).toEqual(commands.map(command => `Run this privileged command?\n\n${command}`))
 })
 
-test('asks before a sandboxed call when Claude Code runs calls unsandboxed if the sandbox cannot start', async ($, on) => {
-  claudeCode(on, 'Cancel', [], { ...SANDBOX, failIfUnavailable: false })
-  const ran = await $.tool.call({ tool: 'Bash', command: 'cd ~/infra && kubectl delete pod web-1' })
-  expect(refusal(ran)).toContain('the user cancelled')
+test('with a wildcard pattern, asks before each write that the pattern can take out of the sandbox', async ($, on) => {
+  const questions: string[] = []
+  claudeCode(on, 'Cancel', { questions, sandbox: { ...SANDBOX, excludedCommands: ['kubectl:*', 'aws*'] } })
+  const commands = ['kubectl delete pod web-1', 'awsume prod && aws s3 rm s3://bucket/key']
+  for (const command of commands) {
+    expect(refusal(await $.tool.call({ tool: 'Bash', command }))).toContain('the user cancelled')
+  }
+  expect(questions).toEqual(commands.map(command => `Run this privileged command?\n\n${command}`))
 })
 
-test('asks before a sandboxed call that asks to leave the sandbox, when the sandbox lets it', async ($, on) => {
-  claudeCode(on, 'Cancel', [], { ...SANDBOX, allowUnsandboxedCommands: true })
-  const command = 'cd ~/infra && kubectl delete pod web-1'
-  const ran = await $.tool.call({ tool: 'Bash', command, dangerouslyDisableSandbox: true })
-  expect(refusal(ran)).toContain('the user cancelled')
-})
+// Each case where a call in the sandbox can still change AWS or EKS. The sandboxed write asks in each one.
+const UNTRUSTED: [when: string, sandbox: object | Error, call?: { allowed_domains?: string[]; dangerouslyDisableSandbox?: boolean }][] = [
+  ['the sandbox is off', { ...SANDBOX, enabled: false }],
+  ['Claude Code runs calls unsandboxed if the sandbox cannot start', { ...SANDBOX, failIfUnavailable: false }],
+  ['a pattern starts with a wildcard', { ...SANDBOX, excludedCommands: ['*'] }],
+  ['the sandbox does not hide ~/.aws', { ...SANDBOX, credentials: { ...SANDBOX.credentials, files: [{ path: '~/.kube', mode: 'deny' }] } }],
+  ['the sandbox does not hide the AWS key variables', { ...SANDBOX, credentials: { ...SANDBOX.credentials, envVars: [] } }],
+  ['the settings read fails', new Error('no settings')],
+  ['the call asks for another host', SANDBOX, { allowed_domains: ['sts.amazonaws.com'] }],
+  ['the call asks to leave and allowUnsandboxedCommands is unset', { ...SANDBOX, allowUnsandboxedCommands: undefined }, { dangerouslyDisableSandbox: true }],
+]
+
+for (const [when, sandbox, call] of UNTRUSTED) {
+  test(`asks before a sandboxed write when ${when}`, async ($, on) => {
+    claudeCode(on, 'Cancel', { sandbox })
+    const ran = await $.tool.call({ tool: 'Bash', command: SANDBOXED_WRITE, ...call })
+    expect(refusal(ran)).toContain('the user cancelled')
+  })
+}

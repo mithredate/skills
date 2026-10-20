@@ -5,14 +5,33 @@ const HEADER = 'Privileged'
 const RUN = 'Run'
 const CANCEL = 'Cancel'
 
-type Sandbox = { enabled?: boolean; failIfUnavailable?: boolean; allowUnsandboxedCommands?: boolean; excludedCommands?: string[] }
+type Credential = { path?: string; name?: string; mode?: string }
+type Sandbox = {
+  enabled?: boolean
+  failIfUnavailable?: boolean
+  allowUnsandboxedCommands?: boolean
+  excludedCommands?: string[]
+  credentials?: { files?: Credential[]; envVars?: Credential[] }
+}
+type BashCall = { command: string; dangerouslyDisableSandbox?: boolean; allowed_domains?: string[] }
 
-// A sandboxed call reaches neither AWS nor EKS, so a question about it protects nothing.
+// The credentials that `guard-infra/sandbox.json` hides from a sandboxed call.
+const HIDDEN_FILES = ['~/.aws', '~/.kube']
+const HIDDEN_VARIABLES = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']
+
+const denies = (entries: Credential[] | undefined, key: 'path' | 'name', names: string[]) =>
+  names.every(name => entries?.some(entry => entry[key] === name && entry.mode === 'deny'))
+
+// A sandboxed call without the credentials cannot change AWS or EKS, so a question about it protects nothing.
 // Without `failIfUnavailable`, Claude Code runs every call unsandboxed when the sandbox cannot start.
-function staysInSandbox(sandbox: Sandbox | undefined, command: string, asksToLeave = false) {
+// A host in `allowed_domains` opens the network to a call that can find a key elsewhere, such as in a `.env` file.
+function staysInSandbox(sandbox: Sandbox | undefined, call: BashCall) {
   if (!sandbox?.enabled || !sandbox.failIfUnavailable) return false
-  if (asksToLeave && sandbox.allowUnsandboxedCommands !== false) return false
-  return !leavesSandbox(command, sandbox.excludedCommands ?? [])
+  if (!denies(sandbox.credentials?.files, 'path', HIDDEN_FILES)) return false
+  if (!denies(sandbox.credentials?.envVars, 'name', HIDDEN_VARIABLES)) return false
+  if (call.allowed_domains?.length) return false
+  if (call.dangerouslyDisableSandbox && sandbox.allowUnsandboxedCommands !== false) return false
+  return !leavesSandbox(call.command, sandbox.excludedCommands ?? [])
 }
 
 export const register: Register = on => {
@@ -20,8 +39,9 @@ export const register: Register = on => {
   // The question dialog always reaches the user. A permission `ask` would go to the mode's decider, which auto mode is.
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     if (privilegedCalls(e.command).length === 0) return next(e)
-    const sandbox = (await $.settings.read({ key: 'sandbox' })) as Sandbox | undefined
-    if (staysInSandbox(sandbox, e.command, e.dangerouslyDisableSandbox)) return next(e)
+    // A failed read asks, as with no sandbox, so the user can still run the call.
+    const sandbox = (await $.settings.read({ key: 'sandbox' }).catch(() => undefined)) as Sandbox | undefined
+    if (staysInSandbox(sandbox, e)) return next(e)
     let answer: string
     try {
       answer = await $.ui.ask(`Run this privileged command?\n\n${e.command}`, { header: HEADER, options: [RUN, CANCEL] })
