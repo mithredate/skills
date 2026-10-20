@@ -4,7 +4,8 @@
 
 const TOOLS = new Set(['aws', 'aws-vault', 'kubectl', 'helm', 'terraform'])
 // A tool's name inside a word, in any case, because macOS finds `Kubectl` too. Not inside a longer name, such as `kubectl-prod` or `AWS_PROFILE`.
-const TOOL_NAME = new RegExp(`(^|[^A-Za-z0-9_-])(${[...TOOLS].join('|')})(?![A-Za-z_-])`, 'i')
+// Not before a `/` or a `.`, because a directory or a file such as `terraform/main.tf` runs nothing.
+const TOOL_NAME = new RegExp(`(^|[^A-Za-z0-9_-])(${[...TOOLS].join('|')})(?![A-Za-z_./-])`, 'i')
 const TERRAFORM_WRITES = new Set(['apply', 'destroy'])
 // These programs never run the words they are given or the text they read.
 const TEXT_ONLY = new Set(['echo', 'printf', 'grep', 'rg', 'cat', 'head', 'tail', 'wc', 'sort', 'uniq', 'cut', 'tr', 'jq', 'tee', 'less', 'which', 'type'])
@@ -15,7 +16,9 @@ const AWS_READ_OPERATION = /^(get|describe|list)-/
 const AWS_CREDENTIAL_OPERATION = /^get-(secret-value|login-password|session-token|federation-token|token|authorization-token|credentials|.*-credentials)$/
 const KUBECTL_READ_VERBS = new Set(['get', 'describe', 'logs', 'top', 'explain', 'api-resources', 'api-versions', 'version'])
 const KUBECTL_READ_CONFIG = new Set(['get-contexts', 'current-context'])
-const HELM_READ_VERBS = new Set(['list', 'ls', 'status', 'history'])
+const HELM_READ_VERBS = new Set(['list', 'ls', 'status', 'history', 'template'])
+// `helm template` renders on this machine. With these flags it reads the cluster, where a chart's `lookup` can read a Secret, or it runs a program.
+const HELM_NOT_LOCAL_FLAG = /^--(dry-run=server|validate|post-renderer)/
 
 // `command -v kubectl` names a command and runs nothing.
 const LOOKUP_FLAGS = new Set(['-v', '-V'])
@@ -310,7 +313,7 @@ function isReadOnly(tool: string, args: string[]) {
     if (first === 'config') return KUBECTL_READ_CONFIG.has(second ?? '')
     return KUBECTL_READ_VERBS.has(first ?? '') && !args.some(arg => /secret/.test(arg))
   }
-  if (tool === 'helm') return HELM_READ_VERBS.has(first ?? '')
+  if (tool === 'helm') return HELM_READ_VERBS.has(first ?? '') && !args.some(arg => HELM_NOT_LOCAL_FLAG.test(arg))
   if (tool === 'terraform') return !TERRAFORM_WRITES.has(first ?? '')
   return false
 }
