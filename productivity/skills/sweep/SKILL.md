@@ -10,7 +10,7 @@ The tracker of an orchestrator repo is a record. It shows the world at the time 
 The caller names a mode:
 
 - **write** mode: the caller edits the tracker files, then commits. Orchestrate uses this mode.
-- **report** mode: the caller prints the result table and the number of claims for each map, and writes nothing. Sup uses this mode.
+- **report** mode: the caller prints the result table and writes nothing. Sup uses this mode.
 
 ## Sources
 
@@ -50,7 +50,7 @@ The step is done when each live link is listed with the file that holds it, and 
 
 Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last time that the record gives for the link. A comment or an edit after that time is new. If the record gives only a date, a comment or an edit on that date is new too. Read the body of each new comment and each new edit.
 
-An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link. The number of claims for a map is the number of listed claims from the links of that map.
+An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link.
 
 For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
 
@@ -71,7 +71,7 @@ Write one table. It has one row for each live link whose state is different from
 | [Subscription spec PR](https://github.com/org/repo/pull/12) | waiting Amin since 2026-10-03 | approved 2026-10-04 | index row, status `open` |
 | `acme.atlassian.net` | not in `sources.md` | Jira issues, Live `yes` | `sources.md` |
 
-For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked. Then list each link marked "not checked" or "check by hand".
+For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked and the number of claims for each map. Then list each link marked "not checked" or "check by hand".
 
-- In write mode, write each row to its place. Give each claim and its link to the caller. The caller sorts each claim with `productivity:settle-decisions`. The step is done when each row is written and the caller has sorted each claim.
-- In report mode, give the caller the table and the number of claims for each map. Give the caller no claim. Write nothing.
+- In write mode, write each row to its place. Give each claim and its link to the caller. The step is done when each row is written.
+- In report mode, print the table and write nothing. Print no claim.
