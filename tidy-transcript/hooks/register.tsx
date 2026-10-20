@@ -19,7 +19,7 @@ const threads: Threads = { byId: new Map() }
 // ponytail: like byId, it keeps every grouped call of the session.
 const grouped = new Set<string>()
 
-// A text block that a tool call follows is a note on the way, so it draws dim. `lastText` is the newest text block.
+// A text block that a tool call follows is a note on the way, so a short one draws dim. `lastText` is the newest text block.
 // Each note keeps its text, as Claude Code can draw a note as a one-line summary.
 const replies = { notes: new Map<string, string>(), lastText: undefined as { uuid: string; text: string } | undefined }
 
@@ -72,11 +72,12 @@ async function drawRow(
   e: RenderInput<'ToolUse' | 'ToolGroup'>,
   id: string | undefined,
   own: () => Promise<RenderElement>,
-  hasNoResultRow: boolean,
 ) {
   const thread = id === undefined ? undefined : threads.byId.get(id)
   if (!thread) return own()
   const isFirst = thread.firstId === id
+  // A running call has no output yet, and a group's call draws its output in its own row.
+  const hasNoResultRow = e.component === 'ToolUse' && (e.props.isRunning || grouped.has(e.props.tool_use_id))
   const isLast = thread.lastId === id && hasNoResultRow
   if (thread.isUnfolded && !isFirst && !isLast) return own()
   const { Box } = $.ui.resolve(e)
@@ -187,9 +188,9 @@ export const register: Register = on => {
     )
   })
 
-  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => drawRow($, e, e.props.tool_use_id, () => next(e), e.props.isRunning || grouped.has(e.props.tool_use_id)))
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => drawRow($, e, e.props.tool_use_id, () => next(e)))
 
-  // A note draws dim, so the last reply of a turn is the one bright text. The bullet stays, dim too.
+  // A short note draws dim, its bullet too, so the last reply of a turn and the long notes are the bright text.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const note = replies.notes.get(e.requestId)
     if (note === undefined) return next(e)
@@ -245,6 +246,6 @@ export const register: Register = on => {
     if (e.props.isExpanded) return next(e)
     const id = e.props.calls[0]?.tool_use_id
     if (id !== undefined && threads.byId.get(id)?.isUnfolded) return next({ ...e, props: { ...e.props, isExpanded: true } })
-    return drawRow($, e, id, () => next(e), true)
+    return drawRow($, e, id, () => next(e))
   })
 }
