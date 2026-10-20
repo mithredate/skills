@@ -4,7 +4,7 @@ import type { Dir } from './facts.js'
 
 const PANE = 'show-session'
 const TITLE = 'Session'
-// The rows a section shows at most. Its title counts them all.
+// The rows a section shows at most. Its chip counts them all.
 const MAX_ROWS = { dirs: 5, bash: 8, agents: 4 }
 // An open shell command shows this many lines of its output, then a count of the rest.
 const OUTPUT_LINES = 20
@@ -149,7 +149,7 @@ async function drawPane($: EngineInterface, e: RenderInput<'Pane'>) {
           </Text>
           <Text dimColor>{model}</Text>
         </Text>
-        {/* Claude Code draws its own close mark on a docked pane only. */}
+        {/* Claude Code draws its own close mark on a docked pane only, and the user did not find it there, so this one draws on every placement. */}
         <Button key="close" label="✕" role="dismiss" plain onPress={() => $.ui.close({ id: PANE })} />
       </Box>
       <Text wrap="truncate-end">
