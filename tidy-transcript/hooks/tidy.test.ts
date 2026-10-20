@@ -274,6 +274,22 @@ test("opens a group of reads into each call on a click on its line, and folds it
   for (const row of [group, first, second]) await row.unmount()
 })
 
+test("draws an unfolded group's line under its last call's row, as that row holds the call's output", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('g1', 'Read'), useOf('g2', 'Read')])
+  await reply($, 'r2', [textOf('Read both.')])
+
+  const group = await drawGroup($, ['g1', 'g2'], false)
+  await group.press({ key: 'fold-g1' })
+  const last = await drawToolRow($, 'g2', 'Read', false)
+  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Read ×2  0s ▾`)
+
+  await last.press({ key: 'fold-end-g1' })
+  expect(await group.find({ type: 'Box', text: '✓ Read ×2  0s ▸' })).toBeDefined()
+  expect(await last.find({ type: 'Text' })).toBeUndefined()
+  for (const row of [group, last]) await row.unmount()
+})
+
 test('ends the open thread when the turn ends', async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash')])

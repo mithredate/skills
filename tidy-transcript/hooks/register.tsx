@@ -14,6 +14,10 @@ type Block = { type: string; [field: string]: unknown }
 
 const threads: Threads = { byId: new Map() }
 
+// The calls Claude Code drew in a group. An unfolded group draws each call's output in the call's row, and no ToolResult row follows.
+// ponytail: like byId, it keeps every grouped call of the session.
+const grouped = new Set<string>()
+
 // A text block that a tool call follows is a note on the way, so it draws dim. `lastText` is the newest text block.
 // Each note keeps its text, as Claude Code can draw a note as a one-line summary.
 const replies = { notes: new Map<string, string>(), lastText: undefined as { uuid: string; text: string } | undefined }
@@ -182,7 +186,7 @@ export const register: Register = on => {
     )
   })
 
-  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => drawRow($, e, e.props.tool_use_id, () => next(e), e.props.isRunning))
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => drawRow($, e, e.props.tool_use_id, () => next(e), e.props.isRunning || grouped.has(e.props.tool_use_id)))
 
   // A note draws dim, so the last reply of a turn is the one bright text. The bullet stays, dim too.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
@@ -233,6 +237,7 @@ export const register: Register = on => {
   // An expanded group, as under --verbose or in the ctrl+o transcript, keeps Claude Code's rows.
   // An unfolded thread expands its group, so each call draws as a ToolUse row and the first one draws the line.
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
+    for (const call of e.props.calls) grouped.add(call.tool_use_id)
     if (e.props.isExpanded) return next(e)
     const id = e.props.calls[0]?.tool_use_id
     if (id !== undefined && threads.byId.get(id)?.isUnfolded) return next({ ...e, props: { ...e.props, isExpanded: true } })
