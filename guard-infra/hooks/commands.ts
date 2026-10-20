@@ -360,7 +360,7 @@ export function privilegedCalls(command: string): string[] {
 // A `*` or the legacy `:*` in a program matches any rest, so `aws*` and `aws:*` match each word that starts with `aws`, and `*` matches every word.
 // ponytail: a word test, not Claude Code's match. It asks more often, as for `xargs kubectl …`, which Claude Code keeps in the sandbox.
 export function leavesSandbox(command: string, excludedCommands: string[]) {
-  const programs = excludedCommands.map(pattern => pattern.trim().split(' ')[0]?.toLowerCase() ?? '')
+  const programs = excludedCommands.map(pattern => pattern.trim().split(/\s/)[0]?.toLowerCase() ?? '')
   const isProgram = (word: string) =>
     programs.some(program => {
       const wildcard = program.search(/[*:]/)
