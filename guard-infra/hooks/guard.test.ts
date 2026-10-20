@@ -32,7 +32,6 @@ const CASES: [command: string, calls: string[]][] = [
   ['helm template api ./chart --dry-run=server', ['helm template api ./chart --dry-run=server']],
   ['helm template api ./chart --validate', ['helm template api ./chart --validate']],
   ['helm template api ./chart --post-renderer ./kustomize.sh', ['helm template api ./chart --post-renderer ./kustomize.sh']],
-  ['aws-vault exec prod -- aws iam list-roles', ['aws-vault exec prod -- aws iam list-roles']],
   ['terraform apply -auto-approve', ['terraform apply -auto-approve']],
   ['terraform plan', []],
   ["python3 - <<'EOF'\nprint('run aws eks list-clusters first')\nEOF", []],

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "enableWeakerNetworkIsolation": true,
+    "excludedCommands": [
+      "aws *", "kubectl *", "helm *", "terraform *",
+      "grep *", "head *", "tail *", "wc *", "jq *", "cut *", "tr *",
+      "docker ps *", "docker logs *", "docker inspect *", "docker images *", "docker image *", "docker version *", "docker info *",
+      "docker exec *", "docker build *", "docker buildx *", "docker pull *", "docker push *", "docker tag *",
+      "docker start *", "docker stop *", "docker restart *", "docker kill *", "docker rm *", "docker rmi *",
+      "docker network *", "docker volume *", "docker system *", "docker stats *", "docker top *", "docker port *",
+      "docker compose up *", "docker compose down *", "docker compose exec *", "docker compose ps *", "docker compose logs *",
+      "docker compose build *", "docker compose pull *", "docker compose restart *", "docker compose stop *",
+      "docker compose start *", "docker compose config *", "docker compose ls *"
+    ],
+    "filesystem": {
+      "allowWrite": [
+        "~/.npm", "~/Library/pnpm", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
+        "~/.cache/uv", "~/Library/Caches/pip", "~/projects"
+      ],
+      "denyWrite": [
+        "~/projects/**/.git/hooks",
+        "~/projects/**/.git/config",
+        "~/projects/**/.claude/settings.json",
+        "~/projects/**/.claude/settings.local.json",
+        "~/projects/**/.claude/skills",
+        "~/projects/**/.claude/agents",
+        "~/projects/**/.claude/commands",
+        "~/projects/**/.claude/hooks",
+        "~/projects/**/.mcp.json",
+        "~/projects/**/.vscode",
+        "~/projects/**/.idea"
+      ]
+    },
+    "network": {
+      "strictAllowlist": true,
+      "allowLocalBinding": true,
+      "allowedDomains": [
+        "github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org",
+        "proxy.golang.org", "sum.golang.org", "repo.packagist.org", "pypi.org", "files.pythonhosted.org"
+      ]
+    },
+    "credentials": {
+      "files": [
+        { "path": "~/.aws", "mode": "deny" },
+        { "path": "~/.kube", "mode": "deny" }
+      ],
+      "envVars": [
+        { "name": "AWS_ACCESS_KEY_ID", "mode": "deny" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "mode": "deny" },
+        { "name": "AWS_SESSION_TOKEN", "mode": "deny" }
+      ]
+    }
+  }
+}
