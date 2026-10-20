@@ -192,13 +192,15 @@ export const register: Register = on => {
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const note = replies.notes.get(e.requestId)
     if (note === undefined) return next(e)
-    if (note.length > LONG_NOTE_CHARS) return next(e.props.isSummary ? { ...e, props: { ...e.props, text: note } } : e)
+    const isLong = note.length > LONG_NOTE_CHARS
+    // Claude Code marks a summary row's text as a summary, also a rewritten one, so the full note draws as this tree.
+    if (isLong && !e.props.isSummary) return next(e)
     const { Box, Text, Markdown } = $.ui.resolve(e)
     return (
       <Box flexDirection="row">
-        <Text dimColor>{e.props.isFirstOfReply ? '● ' : '  '}</Text>
+        <Text dimColor={!isLong}>{e.props.isFirstOfReply ? '● ' : '  '}</Text>
         <Box flexGrow={1}>
-          <Markdown text={e.props.text} dimColor />
+          <Markdown text={isLong ? note : e.props.text} dimColor={!isLong} />
         </Box>
       </Box>
     )

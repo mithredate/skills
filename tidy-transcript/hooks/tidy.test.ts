@@ -10,7 +10,7 @@ const GROUP_COUNT_LINE = 'Read 2 files'
 
 type Block = { type: string; [field: string]: unknown }
 
-// Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text. A reply draws its text.
+// Claude Code beneath the mod: it keeps each row as given, and draws its own rows as one Text. A reply draws its text, and marks a summary.
 // A group that is not expanded draws as its count line.
 // The session has used 62% of its context and cost $0.31 so far.
 function claudeCode(on: On) {
@@ -20,7 +20,7 @@ function claudeCode(on: On) {
   on('turn.complete', async () => ({ text: '' }))
   on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000, percent: 62 }, rateLimits: [], cost: { usd: 0.31 } } }))
   on('ui.render', async (_$, e) => {
-    if (e.component === 'AssistantMessage') return { type: 'Text', props: {}, children: [e.props.text] }
+    if (e.component === 'AssistantMessage') return { type: 'Text', props: {}, children: [e.props.isSummary ? `${e.props.text} · summary` : e.props.text] }
     if (e.component === 'ToolGroup' && !e.props.isExpanded) return { type: 'Text', props: {}, children: [GROUP_COUNT_LINE] }
     return { type: 'Text', props: {}, children: [OWN_ROW] }
   })
@@ -431,8 +431,11 @@ test("draws a note longer than 300 characters bright, and in full in place of Cl
   await note.unmount()
 
   const summary = await drawReply($, 'r1', 'The reviewer blocked the merge.', true)
-  expect(await summary.find({ type: 'Markdown' })).toBeUndefined()
-  expect((await summary.find({ type: 'Text' }))?.text).toBe(VERDICT)
+  expect(await summary.find({ type: 'Text', text: /summary/ })).toBeUndefined()
+  expect(await summary.find({ type: 'Text', text: '● ' })).toBeDefined()
+  const full = await summary.find({ type: 'Markdown' })
+  expect(full?.props.text).toBe(VERDICT)
+  expect(full?.props.dimColor).not.toBe(true)
   await summary.unmount()
 })
 
