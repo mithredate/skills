@@ -17,7 +17,10 @@
       "docker compose start *", "docker compose config *", "docker compose ls *"
     ],
     "filesystem": {
-      "allowWrite": ["~/.npm", "~/Library/pnpm", "~/projects"],
+      "allowWrite": [
+        "~/.npm", "~/Library/pnpm", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
+        "~/.cache/uv", "~/Library/Caches/pip", "~/projects"
+      ],
       "denyWrite": [
         "~/projects/**/.git/hooks",
         "~/projects/**/.git/config",
@@ -35,7 +38,10 @@
     "network": {
       "strictAllowlist": true,
       "allowLocalBinding": true,
-      "allowedDomains": ["github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org"]
+      "allowedDomains": [
+        "github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org",
+        "proxy.golang.org", "sum.golang.org", "repo.packagist.org", "pypi.org", "files.pythonhosted.org"
+      ]
     },
     "credentials": {
       "files": [
