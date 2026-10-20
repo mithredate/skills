@@ -31,11 +31,11 @@ const AGENTS: AgentInfo[] = [
   { id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'running' },
 ]
 
-// Claude Code beneath the mod: the session above, 42% of the context used, $1.20 spent, and 3 tool calls in agent a1.
-function claudeCode(on: On) {
+// Claude Code beneath the mod: the session above or the one a test gives, 42% of the context used, $1.20 spent, and 3 tool calls in agent a1.
+function claudeCode(on: On, messages = MESSAGES) {
   const clock = mock.clock(on)
   on('session.messages', async (_$, e) => {
-    if (e.agentId === undefined) return { value: MESSAGES }
+    if (e.agentId === undefined) return { value: messages }
     const calls = e.agentId === 'a1' ? 3 : 0
     const toolUses = Array.from({ length: calls }, (_, i) => ({ tool_use_id: `s${i}`, tool: 'Read', input: {}, text: 'ok' }))
     return { value: [{ role: 'assistant', text: '', toolUses }] }
@@ -92,6 +92,17 @@ test('draws a header, then a card each for the skills, the folders, the shell co
   const rules = await pane.findAll({ type: 'Text', text: /^─+$/ })
   expect(rules.map(rule => rule.text.length)).toEqual([56, 56, 56, 56])
   expect((await pane.find({ type: 'Text', text: /^ctx 42%$/ }))?.props).toMatchObject({ color: 'success' })
+  await pane.unmount()
+})
+
+test('lists the newest 8 shell commands, newest first, and counts them all', async ($, on) => {
+  const toolUses = Array.from({ length: 10 }, (_, i) => ({ tool_use_id: `b${i + 1}`, tool: 'Bash', input: { command: `echo ${i + 1}` }, text: 'ok' }))
+  claudeCode(on, [{ role: 'assistant', text: '', toolUses }])
+  const pane = await drawPane($)
+
+  const rows = (await pane.findAll({ type: 'Button', text: /^✓ echo / })).map(button => button.text)
+  expect(rows).toEqual(['✓ echo 10 ▸', '✓ echo 9 ▸', '✓ echo 8 ▸', '✓ echo 7 ▸', '✓ echo 6 ▸', '✓ echo 5 ▸', '✓ echo 4 ▸', '✓ echo 3 ▸'])
+  expect(await pane.find({ type: 'Text', text: ' Bash 10 ' })).toBeDefined()
   await pane.unmount()
 })
 
