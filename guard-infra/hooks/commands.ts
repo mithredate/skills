@@ -2,7 +2,7 @@
 // An unknown form then costs one question, not a missed call.
 // ponytail: no expansion or file reads. A program word from a variable, such as `$KUBECTL delete`, and a script file, such as `bash deploy.sh`, are not seen.
 
-const TOOLS = new Set(['aws', 'aws-vault', 'kubectl', 'helm', 'terraform'])
+const TOOLS = new Set(['aws', 'kubectl', 'helm', 'terraform'])
 // A tool's name inside a word, in any case, because macOS finds `Kubectl` too. Not inside a longer name, such as `kubectl-prod` or `AWS_PROFILE`.
 // Not before a `/` or a `.`, because a directory or a file such as `terraform/main.tf` runs nothing.
 const TOOL_NAME = new RegExp(`(^|[^A-Za-z0-9_-])(${[...TOOLS].join('|')})(?![A-Za-z_./-])`, 'i')

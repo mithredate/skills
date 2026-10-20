@@ -57,7 +57,7 @@
     {
       "name": "guard-infra",
       "source": "./guard-infra",
-      "description": "Mod: asks the user to Run or Cancel each aws, aws-vault, kubectl, helm, or terraform apply/destroy call that is not a read."
+      "description": "Mod: asks the user to Run or Cancel each aws, kubectl, helm, or terraform apply/destroy call that is not a read, and ships a sandbox config for every other form."
     },
     {
       "name": "watch-prs",

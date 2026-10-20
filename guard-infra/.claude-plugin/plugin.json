@@ -1,7 +1,7 @@
 {
   "name": "guard-infra",
   "version": "0.1.2",
-  "description": "Asks before each aws, aws-vault, kubectl, helm, or terraform apply/destroy call that is not a read. Ships a sandbox config that keeps every other form off AWS and EKS.",
+  "description": "Asks before each aws, kubectl, helm, or terraform apply/destroy call that is not a read. Ships a sandbox config that keeps every other form off AWS and EKS.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"
