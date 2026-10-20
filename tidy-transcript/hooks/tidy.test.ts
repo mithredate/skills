@@ -147,19 +147,38 @@ test("opens a finished thread's calls on a click on its line, and folds them aga
   for (const row of [first, second, firstResult, secondResult]) await row.unmount()
 })
 
-test("draws an unfolded thread's line again under its last row, and folds the thread on a click on that line", async ($, on) => {
+test("draws an unfolded thread's line again under its last call's result, and folds the thread on a click on that line", async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
   await reply($, 'r2', [textOf('Both done.')])
 
   const first = await drawToolRow($, 't1', 'Bash', false)
   const last = await drawToolRow($, 't2', 'Bash', false)
+  const lastResult = await drawToolResult($, 't2')
   await first.press({ key: 'fold-t1' })
   expect((await first.find({ type: 'Box' }))?.text).toBe(`✓ Bash ×2  0s ▾${OWN_ROW}`)
-  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Bash ×2  0s ▾`)
+  expect(await last.find({ type: 'Box' })).toBeUndefined()
+  expect(await last.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
+  expect((await lastResult.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Bash ×2  0s ▾`)
+
+  await lastResult.press({ key: 'fold-end-t1' })
+  expect((await first.find({ type: 'Box' }))?.text).toBe('✓ Bash ×2  0s ▸')
+  expect(await last.find({ type: 'Text' })).toBeUndefined()
+  expect(await lastResult.find({ type: 'Text' })).toBeUndefined()
+  for (const row of [first, last, lastResult]) await row.unmount()
+})
+
+test("draws an unfolded thread's line under its last call's row while that call runs", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
+
+  const first = await drawToolRow($, 't1', 'Bash', false)
+  await first.press({ key: 'fold-t1' })
+  const last = await drawToolRow($, 't2', 'Bash', true)
+  expect((await last.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}● Bash ×2 ▾`)
 
   await last.press({ key: 'fold-end-t1' })
-  expect((await first.find({ type: 'Box' }))?.text).toBe('✓ Bash ×2  0s ▸')
+  expect((await first.find({ type: 'Box' }))?.text).toBe('● Bash ×2 ▸')
   expect(await last.find({ type: 'Text' })).toBeUndefined()
   for (const row of [first, last]) await row.unmount()
 })
