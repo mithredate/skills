@@ -168,6 +168,38 @@ test("draws an unfolded thread's line again under its last call's result, and fo
   for (const row of [first, last, lastResult]) await row.unmount()
 })
 
+test("draws a finished one-call thread's line above its row and again under its result", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash')])
+  await reply($, 'r2', [textOf('Done.')])
+
+  const row = await drawToolRow($, 't1', 'Bash', false)
+  const result = await drawToolResult($, 't1')
+  await row.press({ key: 'fold-t1' })
+  expect((await row.find({ type: 'Box' }))?.text).toBe(`✓ Bash  0s ▾${OWN_ROW}`)
+  expect((await result.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✓ Bash  0s ▾`)
+  for (const each of [row, result]) await each.unmount()
+})
+
+test("draws an unfolded thread's line under its last call's result when that call failed", async ($, on) => {
+  claudeCode(on)
+  await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
+  await toolResult($, 'u1', [{ type: 'tool_result', tool_use_id: 't2', is_error: true, content: 'exit 1' }])
+  await reply($, 'r2', [textOf('The build failed.')])
+
+  const first = await drawToolRow($, 't1', 'Bash', false)
+  await first.press({ key: 'fold-t1' })
+  const lastResult = await $.ui.mount({
+    plugin: 'tidy-transcript',
+    surface: 'terminal',
+    component: 'ToolResult',
+    requestId: 't2',
+    props: { tool_use_id: 't2', tool: 'Bash', output: 'exit 1', isErrored: true },
+  })
+  expect((await lastResult.find({ type: 'Box' }))?.text).toBe(`${OWN_ROW}✗ Bash ×2 · 1 failed  0s ▾`)
+  for (const row of [first, lastResult]) await row.unmount()
+})
+
 test("draws an unfolded thread's line under its last call's row while that call runs", async ($, on) => {
   claudeCode(on)
   await reply($, 'r1', [useOf('t1', 'Bash'), useOf('t2', 'Bash')])
@@ -465,6 +497,17 @@ test('draws a note of 300 characters dim', async ($, on) => {
   const note = await drawReply($, 'r1', VERDICT.slice(0, 300))
   expect((await note.find({ type: 'Markdown' }))?.props).toMatchObject({ text: VERDICT.slice(0, 300), dimColor: true })
   await note.unmount()
+})
+
+test("draws Claude Code's summary of a short note dim", async ($, on) => {
+  claudeCode(on)
+  await prompt($, 'u1', { kind: 'composer' })
+  await reply($, 'r1', [textOf('Next is the parser rewrite.')])
+  await reply($, 'r2', [useOf('t1', 'Bash')])
+
+  const summary = await drawReply($, 'r1', 'Next is the parser rewrite.', true)
+  expect((await summary.find({ type: 'Markdown' }))?.props).toMatchObject({ text: 'Next is the parser rewrite.', dimColor: true })
+  await summary.unmount()
 })
 
 function drawTurnLine($: Engine, durationMs: number) {
