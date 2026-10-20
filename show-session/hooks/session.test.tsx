@@ -1,9 +1,12 @@
-import type { AgentInfo, CommandSpec, On, SessionMessage } from 'claude-code'
+import type { AgentInfo, CommandSpec, On, PaneOpenArgs, SessionMessage, SiteView } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import { shortPath } from './facts.js'
 
 const PANE = 'show-session'
+
+// A build that printed 25 lines, 5 more than an open row shows.
+const BUILD_OUTPUT = Array.from({ length: 25 }, (_, i) => `step ${i + 1}`).join('\n')
 
 // A session in /repo: a slash command, a skill, three shell commands, an edit in the repo, and a read under the home folder.
 // The last shell command still runs.
@@ -14,7 +17,7 @@ const MESSAGES: SessionMessage[] = [
     text: 'Checking the repo.',
     toolUses: [
       { tool_use_id: 't1', tool: 'Skill', input: { skill: 'dev:ponytail' }, text: 'ok' },
-      { tool_use_id: 't2', tool: 'Bash', input: { command: 'git status', description: 'Show status' }, text: 'clean' },
+      { tool_use_id: 't2', tool: 'Bash', input: { command: 'npm run build\nnpm run lint', description: 'Build the app' }, text: BUILD_OUTPUT },
       { tool_use_id: 't3', tool: 'Edit', input: { file_path: '/repo/src/a.ts' }, text: 'ok' },
       { tool_use_id: 't4', tool: 'Read', input: { file_path: '/Users/me/notes/todo.md' }, text: 'ok' },
       { tool_use_id: 't5', tool: 'Bash', input: { command: 'false' }, text: 'exit 1', isError: true },
@@ -56,7 +59,7 @@ function drawPane($: Engine) {
   })
 }
 
-test('draws the session as stacked sections: a header, the skills, the folders, the shell commands, and the agents', async ($, on) => {
+test('draws a header, then a card each for the skills, the folders, the shell commands with the newest first, and the agents', async ($, on) => {
   const clock = claudeCode(on)
   await clock.advance(23 * 60_000)
   const pane = await drawPane($)
@@ -64,38 +67,102 @@ test('draws the session as stacked sections: a header, the skills, the folders, 
   for (const line of [
     '◆ session  claude-opus-5-5',
     'ctx 42% · $1.20 · 23m',
-    'Skills 2',
     '◇ review-pr · dev:ponytail',
-    'Dirs 2',
     '· ~/notes  1 read',
     '✎ src  1 edit',
-    'Bash 3',
-    '✓ Show status',
-    '✗ false',
-    '● Run the tests',
-    'Agents 2',
-    '✓ Research CLI design',
     'general-purpose · 3 tools',
-    '● Review the PR',
     'dev:pr-reviewer · 0 tools',
   ]) {
     expect({ line, found: (await pane.find({ type: 'Text', text: line })) !== undefined }).toEqual({ line, found: true })
   }
-  const dirs = await pane.findAll({ type: 'Text', text: /^[·✎] .*  1 (read|edit)$/ })
-  expect(dirs.map(dir => dir.text)).toEqual(['· ~/notes  1 read', '✎ src  1 edit'])
-  expect((await pane.find({ type: 'Text', text: '● Run the tests' }))?.children[0]).toMatchObject({ props: { color: 'claude' } })
+  const buttons = await pane.findAll({ type: 'Button' })
+  expect(buttons.map(button => button.text)).toEqual([
+    '✕',
+    '● Run the tests ▸',
+    '✗ false ▸',
+    '✓ Build the app ▸',
+    '✓ Research CLI design',
+    '● Review the PR',
+  ])
+  const cards = (await pane.findAll({ type: 'Box' })).filter(box => box.props.borderStyle === 'round')
+  expect(cards.map(card => card.text.match(/^ \w+ \d+ /)?.[0])).toEqual([' Skills 2 ', ' Dirs 2 ', ' Bash 3 ', ' Agents 2 '])
+  expect(cards.map(card => card.props.borderColor)).toEqual(['suggestion', 'planMode', 'bashBorder', 'claude'])
+  expect((await pane.find({ type: 'Text', text: ' Agents 2 ' }))?.props).toMatchObject({ backgroundColor: 'claude', color: 'inverseText' })
+  // One line between each two rows of a card, across the card inside its border and padding: 1 for Dirs, 2 for Bash, 1 for Agents.
+  const rules = await pane.findAll({ type: 'Text', text: /^─+$/ })
+  expect(rules.map(rule => rule.text.length)).toEqual([56, 56, 56, 56])
   expect((await pane.find({ type: 'Text', text: /^ctx 42%$/ }))?.props).toMatchObject({ color: 'success' })
-  expect((await pane.find({ type: 'Text', text: /^Agents$/ }))?.props).toMatchObject({ color: 'claude', bold: true })
   await pane.unmount()
 })
 
-test('opens the pane on /show-session and closes it on the next /show-session', async ($, on) => {
+test('closes the pane on a press on the ✕ in its header', async ($, on) => {
+  claudeCode(on)
+  const closed: string[] = []
+  on('ui.close', async (_$, e) => {
+    closed.push(e.id)
+    return { value: undefined }
+  })
+  const pane = await drawPane($)
+  expect((await pane.find({ type: 'Button', text: '✕' }))?.props).toMatchObject({ role: 'dismiss' })
+
+  await pane.press({ key: 'close' })
+  expect(closed).toEqual([PANE])
+  await pane.unmount()
+})
+
+test('opens a shell command in place on a press on its row, and closes it on a second press', async ($, on) => {
+  claudeCode(on)
+  const pane = await drawPane($)
+
+  await pane.press({ key: 'bash-t2' })
+  expect(await pane.find({ type: 'Button', text: '✓ Build the app ▾' })).toBeDefined()
+  expect(await pane.find({ type: 'Text', text: 'npm run build\nnpm run lint' })).toBeDefined()
+  const output = (await pane.find({ type: 'Text', text: /^step 1\n/ }))?.text.split('\n')
+  expect(output).toHaveLength(20)
+  expect(output?.at(-1)).toBe('step 20')
+  expect(await pane.find({ type: 'Text', text: '… 5 more lines' })).toBeDefined()
+
+  await pane.press({ key: 'bash-t2' })
+  expect(await pane.find({ type: 'Button', text: '✓ Build the app ▸' })).toBeDefined()
+  expect(await pane.find({ type: 'Text', text: 'npm run build\nnpm run lint' })).toBeUndefined()
+  expect(await pane.find({ type: 'Text', text: /^step 1\n/ })).toBeUndefined()
+  expect(await pane.find({ type: 'Text', text: /more lines/ })).toBeUndefined()
+  await pane.unmount()
+})
+
+test('opens a running shell command to its command alone, as it has no output yet', async ($, on) => {
+  claudeCode(on)
+  const pane = await drawPane($)
+
+  await pane.press({ key: 'bash-t6' })
+  const opened = (await pane.findAll({ type: 'Box' })).find(box => box.text.startsWith('● Run the tests ▾'))
+  expect(opened?.text).toBe('● Run the tests ▾npm test')
+  await pane.unmount()
+})
+
+test("shows an agent's transcript in the main view on a press on its row", async ($, on) => {
+  claudeCode(on)
+  const viewed: SiteView[] = []
+  on('ui.view', async (_$, e) => {
+    viewed.push(e)
+    return { value: {} }
+  })
+  const pane = await drawPane($)
+
+  await pane.press({ key: 'agent-a2' })
+  expect(viewed).toEqual([{ agentId: 'a2' }])
+  await pane.unmount()
+})
+
+test('opens the pane on /show-session, to close on Escape, and closes it on the next /show-session', async ($, on) => {
   claudeCode(on)
   const panes: string[] = []
+  const opened: PaneOpenArgs[] = []
   on('ui.panes', async () => ({
     value: panes.map(id => ({ id, title: 'Session', isShown: true, isFocused: false, isPlaced: true, plugin: 'show-session' })),
   }))
   on('ui.open', async (_$, e) => {
+    opened.push(e)
     panes.push(e.id)
     return { value: { isPlaced: true } }
   })
@@ -107,6 +174,8 @@ test('opens the pane on /show-session and closes it on the next /show-session', 
   const typed = { command: 'show-session', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 200 } } as const
   await $.command.run(typed)
   expect(panes).toEqual([PANE])
+  // So Escape closes the pane while it holds the keyboard.
+  expect(opened).toMatchObject([{ id: PANE, closeOnEscape: true }])
   await $.command.run(typed)
   expect(panes).toEqual([])
 })
