@@ -4,9 +4,31 @@
     "enabled": true,
     "failIfUnavailable": true,
     "allowUnsandboxedCommands": false,
-    "excludedCommands": ["aws *", "aws-vault *", "kubectl *", "helm *", "terraform *"],
+    "enableWeakerNetworkIsolation": true,
+    "excludedCommands": [
+      "aws *", "aws-vault *", "kubectl *", "helm *", "terraform *",
+      "docker compose up *", "docker compose down *", "docker compose exec *", "docker compose ps *", "docker compose logs *",
+      "docker ps *", "docker logs *", "docker inspect *", "docker images *", "docker version *", "docker info *"
+    ],
+    "filesystem": {
+      "allowWrite": ["~/.npm", "~/Library/pnpm", "~/projects"],
+      "denyWrite": [
+        "~/projects/**/.git/hooks",
+        "~/projects/**/.git/config",
+        "~/projects/**/.claude/settings.json",
+        "~/projects/**/.claude/settings.local.json",
+        "~/projects/**/.claude/skills",
+        "~/projects/**/.claude/agents",
+        "~/projects/**/.claude/commands",
+        "~/projects/**/.claude/hooks",
+        "~/projects/**/.mcp.json",
+        "~/projects/**/.vscode",
+        "~/projects/**/.idea"
+      ]
+    },
     "network": {
       "strictAllowlist": true,
+      "allowLocalBinding": true,
       "allowedDomains": ["github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org"]
     },
     "credentials": {
