@@ -354,3 +354,17 @@ export function privilegedCalls(command: string): string[] {
   if (reader && writesToolText(command)) calls.push(reader.words.join(' '))
   return calls
 }
+
+// Claude Code takes a call out of the sandbox only when every command in it matches an `excludedCommands` pattern.
+// A command can match only if one of its words is the program of a pattern as written, because a path such as `/usr/local/bin/aws` does not match.
+// A `*` or the legacy `:*` in a program matches any rest, so `aws*` and `aws:*` match each word that starts with `aws`, and `*` matches every word.
+// ponytail: a word test, not Claude Code's match. It asks more often, as for `xargs kubectl …`, which Claude Code keeps in the sandbox.
+export function leavesSandbox(command: string, excludedCommands: string[]) {
+  const programs = excludedCommands.map(pattern => pattern.trim().split(/\s/)[0]?.toLowerCase() ?? '')
+  const isProgram = (word: string) =>
+    programs.some(program => {
+      const wildcard = program.search(/[*:]/)
+      return wildcard < 0 ? word === program : word.startsWith(program.slice(0, wildcard))
+    })
+  return splitScript(command).commands.every(each => each.words.some(word => isProgram(word.toLowerCase())))
+}
