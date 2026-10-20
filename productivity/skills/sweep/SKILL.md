@@ -10,7 +10,7 @@ The tracker of an orchestrator repo is a record. It shows the world at the time 
 The caller names a mode:
 
 - **write** mode: the caller edits the tracker files, then commits. Orchestrate uses this mode.
-- **report** mode: the caller prints the result table and writes nothing. Sup uses this mode.
+- **report** mode: the caller prints the result table and the number of claims for each map, and writes nothing. Sup uses this mode.
 
 ## Sources
 
@@ -47,15 +47,15 @@ The step is done when each live link is listed with the file that holds it, and 
 
 ## Check
 
-Check all live links in parallel, with one call for each link. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the date in the record.
+Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the date in the record. A comment or an edit after that date is new. Read the body of each new comment and each new edit.
 
-An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A **claim** is a statement in a link about something that the host does not own, such as the code, a count, or a plan.
+An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim. List each claim that a new comment or a new edit holds, with its link. The number of claims for a map is the number of new comments and edits that hold a claim.
 
-For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup`. The review state and the CI state are easy to miss.
+For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
 
 If the session has no tool for the host, or the call fails, mark the link "not checked" and give the reason. Do not guess the state.
 
-The step is done when each live link has a state or a "not checked" mark.
+The step is done when each live link has a state or a "not checked" mark, and you have listed each claim.
 
 ## Session items
 
@@ -72,5 +72,5 @@ Write one table. It has one row for each live link whose state is different from
 
 For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked. Then list each link marked "not checked" or "check by hand".
 
-- In write mode, write each row to its place. Give each claim and its link to the caller. The caller sorts each claim with `productivity:settle-decisions`. The step is done when each row is written and the caller has each claim.
-- In report mode, print the table and the number of claims for each map. Print no claim. Write nothing.
+- In write mode, write each row to its place. Give each claim and its link to the caller. The caller sorts each claim with `productivity:settle-decisions`. The step is done when each row is written and the caller has sorted each claim.
+- In report mode, give the caller the table and the number of claims for each map. Give the caller no claim. Write nothing.
