@@ -24,7 +24,7 @@ A decision is **critical** when a wrong choice does one of these:
 - It changes access, secrets, personal data, or cost.
 - It changes the agreed destination, scope, or priority.
 
-A **source** is a text that a person other than the human wrote, such as a PR, an issue, a ticket, or a thread. Assume that the human has not read the sources. A **claim** is a statement in a source. Before you use or report a claim, check it in the code, the data, or the docs.
+A **source** is a text by a person or a bot other than the human and you. Examples are a PR, an issue, a ticket, and a thread. Assume that the human has not read the sources. A **claim** is a statement in a source. Before you use or report a claim, check it in the code, the data, or the docs.
 
 A **conflict** is two claims that disagree. A claim or a conflict that the check does not settle is a decision. A risk and a choice that another person makes or proposes are decisions too.
 

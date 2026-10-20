@@ -47,11 +47,11 @@ The step is done when each live link is listed with the file that holds it, and 
 
 ## Check
 
-Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the date in the record. A comment or an edit after that date is new. Read the body of each new comment and each new edit.
+Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last date that the record gives for the link. A comment or an edit after that date is new. Read the body of each new comment and each new edit.
 
-An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim. List each claim that a new comment or a new edit holds, with its link. The number of claims for a map is the number of new comments and edits that hold a claim.
+An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link. The number of claims for a map is the number of listed claims from the links of that map.
 
-For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
+For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
 
 If the session has no tool for the host, or the call fails, mark the link "not checked" and give the reason. Do not guess the state.
 
