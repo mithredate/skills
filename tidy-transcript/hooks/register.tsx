@@ -118,7 +118,7 @@ function drawThreadLine($: EngineInterface, e: RenderInput<'ToolUse' | 'ToolGrou
 
 export const register: Register = on => {
   // A subagent's rows carry an agentId. They are not drawn in this transcript, so they join no thread.
-  // Threads read replies and tool results alone. On a row the engine injects, sec-default skips mods, and Claude Code reports a hook that matches it as skipped.
+  // A hook on a door that sec-default holds is skipped, and every session prints a line about it.
   on('session.append', { door: ['response', 'tool-result'] }, async ($, e, next) => {
     if (e.agentId !== undefined) return next(e)
     const now = await $.clock.now()
