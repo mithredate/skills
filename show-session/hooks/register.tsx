@@ -184,8 +184,9 @@ export const register: Register = on => {
     return {}
   })
 
-  // A new row, in the main conversation or in an agent's, can change what the pane shows. The engine throttles redraws.
-  on('session.append', async ($, e, next) => {
+  // The pane reads these doors alone, in the main conversation and in an agent's. A finished agent shows up first as a queue record.
+  // Claude Code skips a hook on a door that sec-default holds, and prints a line about it. The engine throttles redraws.
+  on('session.append', { door: ['command', 'response', 'tool-result', 'queue'] }, async ($, e, next) => {
     const stored = await next(e)
     $.ui.invalidate('ui.render')
     return stored
