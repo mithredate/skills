@@ -185,7 +185,8 @@ export const register: Register = on => {
   })
 
   // A new row, in the main conversation or in an agent's, can change what the pane shows. The engine throttles redraws.
-  on('session.append', async ($, e, next) => {
+  // The pane reads no row the engine injects. On those rows sec-default skips mods, and Claude Code reports a hook that matches one as skipped.
+  on('session.append', { door: ['prompt', 'command', 'response', 'tool-result', 'delivery'] }, async ($, e, next) => {
     const stored = await next(e)
     $.ui.invalidate('ui.render')
     return stored
