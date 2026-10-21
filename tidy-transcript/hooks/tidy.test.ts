@@ -554,3 +554,33 @@ test("keeps Claude Code's own line for a turn the mod did not see end", async ($
   expect(await line.find({ type: 'Text', text: OWN_ROW })).toBeDefined()
   await line.unmount()
 })
+
+// sec-default as Claude Code seats it: on a row the engine injects, it goes past every mod.
+// It logs each hook it went past, as Claude Code does in a session.
+const SEC_DEFAULT = {
+  name: 'sec-default',
+  tier: 'prepend',
+  register(on: On) {
+    on('session.append', { door: 'attachment' }, async ($, e, next) => {
+      const stored = await next.to(e, 'append')
+      for (const link of next.trace) if (link.outcome === 'skipped') await $.ui.log(`${link.plugin}: its session.append hook was skipped`)
+      return stored
+    })
+  },
+} as const
+
+test('hooks no row that sec-default holds, so Claude Code logs no skipped hook', { plugins: [SEC_DEFAULT] }, async ($, on) => {
+  claudeCode(on)
+  const logged: string[] = []
+  on('ui.log', async (_$, e) => {
+    logged.push(e.text)
+    return { value: undefined }
+  })
+  await $.session.append({
+    message: { type: 'attachment', name: 'nested_memory', role: 'user', isMeta: true, content: [textOf('Contents of CLAUDE.md')] },
+    door: 'attachment',
+    origin: { kind: 'engine' },
+    uuid: 'a1',
+  })
+  expect(logged).toEqual([])
+})

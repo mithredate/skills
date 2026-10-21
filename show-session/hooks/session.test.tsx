@@ -31,8 +31,8 @@ const AGENTS: AgentInfo[] = [
   { id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'running' },
 ]
 
-// Claude Code beneath the mod: the session above or the one a test gives, 42% of the context used, $1.20 spent, and 3 tool calls in agent a1.
-function claudeCode(on: On, messages = MESSAGES) {
+// Claude Code beneath the mod: the session and the agents above or the ones a test gives, 42% of the context used, $1.20 spent, and 3 tool calls in agent a1.
+function claudeCode(on: On, messages = MESSAGES, agents = AGENTS) {
   const clock = mock.clock(on)
   on('session.messages', async (_$, e) => {
     if (e.agentId === undefined) return { value: messages }
@@ -43,7 +43,7 @@ function claudeCode(on: On, messages = MESSAGES) {
   on('session.root', async () => ({ value: '/repo' }))
   on('session.model', async () => ({ value: 'claude-opus-5-5' }))
   on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000, percent: 42 }, rateLimits: [], cost: { usd: 1.2 } } }))
-  on('agent.list', async () => ({ value: AGENTS }))
+  on('agent.list', async () => ({ value: agents }))
   on('env.get', async (_$, e) => ({ value: e.name === 'HOME' ? '/Users/me' : undefined }))
   on('ui.render', async () => ({ type: 'Text', props: {}, children: ['own'] }))
   return clock
@@ -216,6 +216,53 @@ test('registers /show-session to run at once, so the pane opens while a turn run
   })
   await $.session.start({ cwd: '/repo', surface: 'terminal', isInteractive: true })
   expect(registered).toMatchObject([{ name: 'show-session', immediate: true }])
+})
+
+test("redraws a finished agent on the queue record of its notice", async ($, on) => {
+  const agents: AgentInfo[] = [{ id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'running' }]
+  claudeCode(on, MESSAGES, agents)
+  const pane = await drawPane($)
+  expect(await pane.find({ type: 'Button', text: '● Review the PR' })).toBeDefined()
+
+  agents[0] = { id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'completed' }
+  await $.session.append({
+    message: { type: 'user', role: 'user', isMeta: true, content: [{ type: 'text', text: '<task-notification>Review the PR finished</task-notification>' }] },
+    door: 'queue',
+    origin: { kind: 'task-notification' },
+    uuid: 'q1',
+  })
+  expect(await pane.find({ type: 'Button', text: '✓ Review the PR' })).toBeDefined()
+  await pane.unmount()
+})
+
+// sec-default as Claude Code seats it: on a row the engine injects, it goes past every mod.
+// It logs each hook it went past, as Claude Code does in a session.
+const SEC_DEFAULT = {
+  name: 'sec-default',
+  tier: 'prepend',
+  register(on: On) {
+    on('session.append', { door: 'attachment' }, async ($, e, next) => {
+      const stored = await next.to(e, 'append')
+      for (const link of next.trace) if (link.outcome === 'skipped') await $.ui.log(`${link.plugin}: its session.append hook was skipped`)
+      return stored
+    })
+  },
+} as const
+
+test('hooks no row that sec-default holds, so Claude Code logs no skipped hook', { plugins: [SEC_DEFAULT] }, async ($, on) => {
+  claudeCode(on)
+  const logged: string[] = []
+  on('ui.log', async (_$, e) => {
+    logged.push(e.text)
+    return { value: undefined }
+  })
+  await $.session.append({
+    message: { type: 'attachment', name: 'nested_memory', role: 'user', isMeta: true, content: [{ type: 'text', text: 'Contents of CLAUDE.md' }] },
+    door: 'attachment',
+    origin: { kind: 'engine' },
+    uuid: 'a1',
+  })
+  expect(logged).toEqual([])
 })
 
 test('shows a folder relative to the project root, as ~ for the home folder and under it, and in full elsewhere', async () => {
