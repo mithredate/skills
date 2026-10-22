@@ -11,6 +11,7 @@ type Sandbox = {
   failIfUnavailable?: boolean
   allowUnsandboxedCommands?: boolean
   excludedCommands?: string[]
+  network?: { deniedDomains?: string[] }
   credentials?: { files?: Credential[]; envVars?: Credential[] }
 }
 type BashCall = { command: string; dangerouslyDisableSandbox?: boolean; allowed_domains?: string[] }
@@ -18,6 +19,8 @@ type BashCall = { command: string; dangerouslyDisableSandbox?: boolean; allowed_
 // The credentials that `guard-infra/sandbox.json` hides from a sandboxed call.
 const HIDDEN_FILES = ['~/.aws', '~/.kube']
 const HIDDEN_VARIABLES = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']
+// The API host suffixes of every public AWS partition. The deny list keeps a key from a `.env` file off AWS.
+const DENIED_HOSTS = ['*.amazonaws.com', '*.amazonaws.com.cn', '*.api.aws', '*.api.amazonwebservices.com.cn', '*.amazonaws.eu', '*.api.amazonwebservices.eu']
 
 // Settings layers merge the lists, so a `mask` entry from another layer can stand beside the `deny` entry.
 const denies = (entries: Credential[] | undefined, key: 'path' | 'name', names: string[]) =>
@@ -33,6 +36,7 @@ function staysInSandbox(sandbox: Sandbox | undefined, call: BashCall) {
   if (!sandbox?.enabled || !sandbox.failIfUnavailable) return false
   if (!denies(sandbox.credentials?.files, 'path', HIDDEN_FILES)) return false
   if (!denies(sandbox.credentials?.envVars, 'name', HIDDEN_VARIABLES)) return false
+  if (!DENIED_HOSTS.every(host => sandbox.network?.deniedDomains?.includes(host))) return false
   if (call.allowed_domains?.length) return false
   if (call.dangerouslyDisableSandbox && sandbox.allowUnsandboxedCommands !== false) return false
   return !leavesSandbox(call.command, sandbox.excludedCommands ?? [])

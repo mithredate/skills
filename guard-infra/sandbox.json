@@ -36,12 +36,12 @@
       ]
     },
     "network": {
-      "strictAllowlist": true,
       "allowLocalBinding": true,
       "allowedDomains": [
         "github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org",
         "proxy.golang.org", "sum.golang.org", "repo.packagist.org", "pypi.org", "files.pythonhosted.org"
-      ]
+      ],
+      "deniedDomains": ["*.amazonaws.com", "*.amazonaws.com.cn", "*.api.aws", "*.api.amazonwebservices.com.cn", "*.amazonaws.eu", "*.api.amazonwebservices.eu"]
     },
     "credentials": {
       "files": [
