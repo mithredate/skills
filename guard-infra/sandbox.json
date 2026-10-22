@@ -41,7 +41,8 @@
       "allowedDomains": [
         "github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org",
         "proxy.golang.org", "sum.golang.org", "repo.packagist.org", "pypi.org", "files.pythonhosted.org"
-      ]
+      ],
+      "deniedDomains": ["*.amazonaws.com", "*.amazonaws.com.cn", "*.api.aws", "*.awsapps.com"]
     },
     "credentials": {
       "files": [
