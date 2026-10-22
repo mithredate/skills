@@ -19,8 +19,8 @@ type BashCall = { command: string; dangerouslyDisableSandbox?: boolean; allowed_
 // The credentials that `guard-infra/sandbox.json` hides from a sandboxed call.
 const HIDDEN_FILES = ['~/.aws', '~/.kube']
 const HIDDEN_VARIABLES = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']
-// The AWS CLI builds each API host from one of these suffixes. The deny list keeps a key from a `.env` file off AWS.
-const DENIED_HOSTS = ['*.amazonaws.com', '*.amazonaws.com.cn', '*.api.aws', '*.awsapps.com']
+// The AWS CLI builds each API host of a public AWS partition from one of these suffixes. The deny list keeps a key from a `.env` file off AWS.
+const DENIED_HOSTS = ['*.amazonaws.com', '*.amazonaws.com.cn', '*.api.aws', '*.api.amazonwebservices.com.cn', '*.awsapps.com']
 
 // Settings layers merge the lists, so a `mask` entry from another layer can stand beside the `deny` entry.
 const denies = (entries: Credential[] | undefined, key: 'path' | 'name', names: string[]) =>
