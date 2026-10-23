@@ -29,6 +29,7 @@ This lens checks whether the diff is the right change. Only you can raise a `dis
 - **Unlicensed architecture.** A new layer, a new cross-cutting mechanism, or a new dependency category has no precedent in the repo, and the brief does not allow it. Report this as `discrepancy`, and name the decision that the human must make.
 - **Scope.** A change that no FR or NFR line of the brief asks for is `blocking`. When there is no brief, use the PR body. A simple brief with a large diff is itself a finding.
 - **Tests.** A test must exercise the changed behavior, and it must be able to fail. Do not accept a test with an empty body or a tautology. A missing test, or a test that does not really test the behavior, is `blocking`. If the change is a fix, the test must reproduce the bug.
+- **Weakened tests.** If the diff deletes an existing test, marks a test as skipped, or loosens an assertion, report this as `blocking`. Cite the line. Examples of a loosened assertion are `toBe(401)` changed to `toBeDefined()`, a wider tolerance, and a removed `expect`. If an FR or NFR line of the brief asks for this change, do not report it. If a new test in the diff covers the same behavior, do not report it.
 - **Leftovers.** Commented-out code, debug print statements, new TODO or FIXME markers, and undeclared runtime dependencies are all `blocking`.
 
 ## Lens 2: fit and craft
