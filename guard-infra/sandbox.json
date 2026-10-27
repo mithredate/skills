@@ -7,6 +7,7 @@
     "enableWeakerNetworkIsolation": true,
     "excludedCommands": [
       "aws *", "kubectl *", "helm *", "terraform *",
+      "soffice *",
       "grep *", "head *", "tail *", "wc *", "jq *", "cut *", "tr *",
       "docker ps *", "docker logs *", "docker inspect *", "docker images *", "docker image *", "docker version *", "docker info *",
       "docker exec *", "docker build *", "docker buildx *", "docker pull *", "docker push *", "docker tag *",
@@ -37,6 +38,7 @@
     },
     "network": {
       "allowLocalBinding": true,
+      "allowMachLookup": ["com.apple.pasteboard.1"],
       "allowedDomains": [
         "github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org",
         "proxy.golang.org", "sum.golang.org", "repo.packagist.org", "pypi.org", "files.pythonhosted.org"

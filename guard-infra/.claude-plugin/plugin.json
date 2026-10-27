@@ -1,6 +1,6 @@
 {
   "name": "guard-infra",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Asks before each aws, kubectl, helm, or terraform apply/destroy call that is not a read. Ships a sandbox config that keeps every other form off AWS and EKS, and asks nothing about a sandboxed call.",
   "author": {
     "name": "Mehrdad Hedayati",
