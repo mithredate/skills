@@ -18,10 +18,12 @@ function pr(over: Partial<PrJson> = {}): PrJson {
 }
 
 const WATCH = 'mcp__watch-discussions__watch'
-// Two connectors as data: a Teams-shaped one prints one JSON object per text block, a Slack-shaped one one indented object.
+// Three connectors as data: a Teams-shaped one prints one JSON object per text block, HISTORY one indented object,
+// and Slack one object whose `messages` string holds the whole thread as text.
 const LIST = 'mcp__claude_ai_Microsoft_365__teams_list_channel_messages'
 const POST = 'mcp__claude_ai_Microsoft_365__teams_post_reply'
 const HISTORY = 'mcp__acme_chat__read_thread'
+const SLACK = 'mcp__plugin_slack_slack__slack_read_thread'
 const ARGS = { teamId: 'team-0001', channelId: '19:general0001@thread.tacv2', parentMessageId: '1700000000000' }
 const READ = { tool: LIST, ...ARGS } as const
 const ME = { id: 'user-robin', displayName: 'Robin Vale' }
@@ -44,7 +46,7 @@ const blocks = (tool: string, items: object[]) =>
 
 const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : undefined)
 
-// The world beneath the plugin: gh prints `gh.pr` for any PR and `me` for the user; a read of LIST or HISTORY, by
+// The world beneath the plugin: gh prints `gh.pr` for any PR and `me` for the user; a read of LIST, HISTORY or SLACK, by
 // Claude or by the mod, returns `c.items`; a POST adds Robin's reply and prints it; the question dialog answers
 // `c.answer`; repeats, questions, prompts and toasts are recorded.
 async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: string }, c: Chat = chat()) {
@@ -63,7 +65,7 @@ async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: st
     if (c.isHanging) await new Promise<void>(() => {})
     if (c.gate) await c.gate
     const tool = `mcp__${e.server}__${e.tool}`
-    if (c.isFailing || (tool !== LIST && tool !== HISTORY)) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
+    if (c.isFailing || (tool !== LIST && tool !== HISTORY && tool !== SLACK)) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
     repeats.push({ server: e.server, tool: e.tool, args: e.args })
     return { value: { content: blocks(tool, c.items).map(text => ({ type: 'text', text })), isError: false } }
   })
@@ -83,7 +85,7 @@ async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: st
       c.items = [...c.items, posted]
       return { result: 'ok', text: JSON.stringify(posted) }
     }
-    if (e.tool === LIST || e.tool === HISTORY) return { result: 'ok', text: blocks(e.tool, c.items).join(c.separator ?? '\n'), ...(c.isReadOnly ? { isReadOnly: true as const } : {}) }
+    if (e.tool === LIST || e.tool === HISTORY || e.tool === SLACK) return { result: 'ok', text: blocks(e.tool, c.items).join(c.separator ?? '\n'), ...(c.isReadOnly ? { isReadOnly: true as const } : {}) }
     return { result: 'ok', text: gh.toolOutput ?? URL + '\n' }
   })
   on('session.start', async (_$, e) => ({ cwd: e.cwd }))
@@ -287,6 +289,38 @@ test('reports an item that arrived between the read and the watch at the first c
   expect(submitted[0]).toContain(`${HISTORY} ${JSON.stringify(input)}`)
   expect(submitted[0]).toContain('It is not the cache.')
   expect(submitted[0]).not.toContain('Is it the cache?')
+})
+
+test('watches a Slack thread by the ts in its text, and reports a new reply once, without the old messages or a new reaction', async ($, on) => {
+  const input = { channel_id: 'C-crew', message_ts: '1700000000.000100' }
+  const c = chat([{
+    messages:
+      '=== THREAD PARENT MESSAGE ===\nFrom: Sara Lind <sara@example.com> (U-sara)\nTime: 2026-10-04 04:10:16 CEST\nMessage TS: 1700000000.000100\nIs it the cache?\n\n' +
+      '=== THREAD REPLIES (1 total) ===\n\n' +
+      '--- Reply 1 of 1 ---\nFrom: Amin Noor <amin@example.com> (U-amin)\nTime: 2026-10-20 17:37:30 CEST\nMessage TS: 1700000000.000200\nIt is not the cache.\n\nThe queue is full.\nFiles: image.png (ID: F-0001, image/png, 356.9 KB)\n',
+    pagination_info: 'There are no more messages in this thread.\n',
+  }])
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call({ tool: SLACK, ...input })
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: SLACK, input }))).toBeUndefined()
+
+  c.items = [{
+    messages:
+      '=== THREAD PARENT MESSAGE ===\nFrom: Sara Lind <sara@example.com> (U-sara)\nTime: 2026-10-04 04:10:16 CEST\nMessage TS: 1700000000.000100\nIs it the cache?\n\n' +
+      '=== THREAD REPLIES (2 total) ===\n\n' +
+      '--- Reply 1 of 2 ---\nFrom: Amin Noor <amin@example.com> (U-amin)\nTime: 2026-10-20 17:37:30 CEST\nMessage TS: 1700000000.000200\nIt is not the cache.\n\nThe queue is full.\nFiles: image.png (ID: F-0001, image/png, 356.9 KB)\nReactions: eyes (1)\n\n' +
+      '--- Reply 2 of 2 ---\nFrom: Robin Vale <robin@example.com> (U-robin)\nTime: 2026-10-21 09:00:00 CEST\nMessage TS: 1700000000.000300\nThe queue drains now.\n',
+    pagination_info: 'There are no more messages in this thread.\n',
+  }]
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('returned 1 new item')
+  expect(submitted[0]).toContain('From: Robin Vale')
+  expect(submitted[0]).toContain('The queue drains now.')
+  expect(submitted[0]).not.toContain('Is it the cache?')
+  expect(submitted[0]).not.toContain('It is not the cache.')
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
 })
 
 test('refuses a watch from a subagent, of a call the main session did not make, and of a result with no id or ts', async ($, on) => {
