@@ -1,4 +1,4 @@
-import type { Register, EngineInterface } from 'claude-code'
+import type { Register, EngineInterface, McpToolResult } from 'claude-code'
 import { PR_FIELDS, PR_URL, TEAMS, TEAMS_LINK, changes, contextBlock, instructions, line, newActivity, newReplies, parseItems, parsePr, threadInstructions, threadOfCall, threadOfLink, threadUri, toSnapshot } from './state.js'
 import type { Change, Reply, Snapshot, Thread, ThreadId } from './state.js'
 
@@ -34,10 +34,18 @@ async function lookUpSelf($: EngineInterface) {
   } catch {}
 }
 
+// A connector call has no timeout of its own. One that outlasts the gh calls' 20 seconds counts as failed.
+function callTeams($: EngineInterface, tool: string, args?: Record<string, unknown>) {
+  return new Promise<McpToolResult>((resolve, reject) => {
+    const timer = $.clock.after(20_000, () => reject(new Error(`${tool} timed out`)))
+    $.mcp.call(TEAMS, tool, args).then(resolve, reject).finally(() => timer.cancel())
+  })
+}
+
 async function lookUpMe($: EngineInterface) {
   if (me) return
   try {
-    const got = await $.mcp.call(TEAMS, 'get_me')
+    const got = await callTeams($, 'get_me')
     if (!got.isError) me = String(parseItems(got.content.map(b => b.text ?? ''))[0]?.id ?? '')
   } catch {}
 }
@@ -109,7 +117,7 @@ async function add($: EngineInterface, url: string) {
 // The thread's replies, newest first; one page is enough at one check a minute.
 async function fetchReplies($: EngineInterface, t: ThreadId) {
   try {
-    const got = await $.mcp.call(TEAMS, 'teams_list_channel_messages', { teamId: t.teamId, channelId: t.channelId, parentMessageId: t.messageId, limit: 50 })
+    const got = await callTeams($, 'teams_list_channel_messages', { teamId: t.teamId, channelId: t.channelId, parentMessageId: t.messageId, limit: 50 })
     if (got.isError) return undefined
     return parseItems(got.content.map(b => b.text ?? '')).filter(item => typeof item.id === 'string') as Reply[]
   } catch {
@@ -117,13 +125,15 @@ async function fetchReplies($: EngineInterface, t: ThreadId) {
   }
 }
 
+const NO_READ = 'the Microsoft 365 connector could not read the thread'
+
 // Returns why the thread could not join the watch, for /watch-discussions to say.
 async function addThread($: EngineInterface, t: ThreadId) {
   const uri = threadUri(t)
   if (watch.threads[uri] || watch.unwatched.includes(uri)) return undefined
   if (watchedCount() >= MAX_WATCHED) return `the watch holds ${MAX_WATCHED} PRs and threads already`
   const replies = await fetchReplies($, t)
-  if (!replies) return 'the Microsoft 365 connector could not read the thread'
+  if (!replies) return NO_READ
   watch.threads[uri] = { ...t, replyIds: replies.map(r => r.id), checkedAt: await $.clock.now() }
   await save($)
   return undefined
@@ -135,24 +145,31 @@ async function checkThreads($: EngineInterface) {
   if (!threads.length) return
   await lookUpMe($)
   let isFailing = !me
+  const checkedAt = await $.clock.now()
   if (me)
     await Promise.all(
       threads.map(async prev => {
         const replies = await fetchReplies($, prev)
+        const uri = threadUri(prev)
+        // /unwatch-discussions can run during the fetch.
+        if (!watch.threads[uri]) return
         if (!replies) {
           isFailing = true
           return
         }
-        const uri = threadUri(prev)
         const found = newReplies(replies, prev.replyIds, me)
-        const thread = { ...prev, replyIds: replies.map(r => r.id), checkedAt: await $.clock.now() }
+        const thread = { ...prev, replyIds: replies.map(r => r.id), checkedAt }
         watch.threads[uri] = thread
         if (found.length) pending[uri] = { thread, replies: [...(pending[uri]?.replies ?? []), ...found] }
       }),
     )
+  noteTeams($, isFailing)
+  await save($)
+}
+
+function noteTeams($: EngineInterface, isFailing: boolean) {
   if (isFailing && !isTeamsFailing) $.ui.toast('watch-discussions could not read Teams. Check the Microsoft 365 sign-in in /mcp.')
   isTeamsFailing = isFailing
-  await save($)
 }
 
 function takePending() {
@@ -232,7 +249,7 @@ export const register: Register = on => {
     const read = threadOfCall(e as Record<string, unknown>, ran.text ?? '')
     if (read) {
       await load($)
-      await addThread($, read)
+      if ((await addThread($, read)) === NO_READ) noteTeams($, true)
     }
     if (e.agentId || !Object.keys(pending).length) return ran
     const news = takePending().map(({ thread, replies }) => {
