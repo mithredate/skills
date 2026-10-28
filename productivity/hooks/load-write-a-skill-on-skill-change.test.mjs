@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -56,6 +56,11 @@ function bashCall(repo, command, extra = {}) {
     const start = Date.now();
     const { status } = spawnSync('sh', ['-c', command], { cwd: extra.cwd ?? repo });
     return hookOutput({ hook_event_name: status === 0 ? 'PostToolUse' : 'PostToolUseFailure', tool_name: 'Bash', tool_input: { command }, tool_use_id: 'toolu_bash', duration_ms: Date.now() - start, cwd: repo, ...extra });
+}
+
+// A commit that fails also gets no reminder, so a silent test checks that its commit landed.
+function headSubject(dir) {
+    return spawnSync('git', ['log', '-1', '--format=%s'], { cwd: dir }).stdout.toString().trim();
 }
 
 test('reminds after an Edit of a SKILL.md', () => {
@@ -173,7 +178,9 @@ test('stays silent after a Bash call that commits no skill or agent file', () =>
         'echo x >> README.md && echo x >> .claude-plugin/marketplace.json && echo x >> guard-worktree/hooks/register.ts && git commit -qam x',
         'echo x >> dev/skills/tdd/SKILL.md && echo x >> README.md && git commit -qm x README.md',
     ]) {
-        assert.equal(bashCall(makeRepo(), command).additionalContext, '', command);
+        const repo = makeRepo();
+        assert.equal(bashCall(repo, command).additionalContext, '', command);
+        assert.equal(headSubject(repo), 'x', command);
     }
 });
 
@@ -181,6 +188,7 @@ test('stays silent after a Bash call that commits a skill file in a repo with no
     const repo = makeRepo({ marketplace: false });
 
     assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md && git commit -qam x').additionalContext, '');
+    assert.equal(headSubject(repo), 'x');
 });
 
 test('reminds after a Bash call that commits a skill file inside a subagent', () => {
@@ -226,11 +234,26 @@ test('stays silent after a Bash call from the main checkout that commits other f
     addWorktree(repo);
 
     assert.equal(bashCall(repo, 'echo x >> .worktrees/feature/README.md && echo x >> .worktrees/feature/dev/skills/README.md && git -C .worktrees/feature add -A && git -C .worktrees/feature commit -qm x').additionalContext, '');
+    assert.equal(headSubject(join(repo, '.worktrees/feature')), 'x');
 });
 
 test('counts back the run time of the Bash call from duration_ms', () => {
     const command = 'echo x >> dev/skills/tdd/SKILL.md && GIT_COMMITTER_DATE="@$(($(date +%s) - 60)) +0000" git commit -qam x';
 
     assert.equal(bashCall(makeRepo(), command, { duration_ms: 61000 }).additionalContext, LOAD_WRITE_A_SKILL);
-    assert.equal(bashCall(makeRepo(), command, { duration_ms: undefined }).additionalContext, '');
+    const repo = makeRepo();
+    assert.equal(bashCall(repo, command, { duration_ms: undefined }).additionalContext, '');
+    assert.equal(headSubject(repo), 'x');
+});
+
+test('hooks.json starts the hook for a Bash call only after the call, and only with a git subcommand', () => {
+    const { hooks } = JSON.parse(readFileSync(new URL('./hooks.json', import.meta.url), 'utf8'));
+    const runsHook = (handler) => handler.command.includes('load-write-a-skill-on-skill-change.mjs');
+
+    for (const event of ['PostToolUse', 'PostToolUseFailure']) {
+        const handlers = hooks[event].filter((entry) => entry.matcher.split('|').includes('Bash')).flatMap((entry) => entry.hooks).filter(runsHook);
+        assert.ok(handlers.length > 0, event);
+        for (const handler of handlers) assert.equal(handler.if, 'Bash(git *)', event);
+    }
+    assert.ok(!(hooks.PreToolUse ?? []).some((entry) => entry.hooks.some(runsHook)));
 });
