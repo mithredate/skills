@@ -180,8 +180,8 @@ export function canon(v: unknown): string {
   return JSON.stringify(v) ?? 'null'
 }
 
-// A result's JSON objects and arrays, in order. Core joins a result's content blocks with no separator, so one
-// value can follow another as `}{`. A brace inside a string does not count.
+// A result's JSON objects and arrays, in order. The types do not state how `text` joins a result's content blocks,
+// so one value can follow another with no separator, as `}{`. A brace inside a string does not count.
 export function parse(texts: string[]): unknown[] {
   const values: unknown[] = []
   for (const text of texts) {
@@ -207,7 +207,7 @@ export function parse(texts: string[]): unknown[] {
 }
 
 // The `id` and `ts` values an object holds itself: a reply, a message, or a comment carries one.
-export function idsOf(o: object) {
+function idsOf(o: object) {
   return ['id', 'ts'].flatMap(k => {
     const v = (o as Record<string, unknown>)[k]
     return typeof v === 'string' || typeof v === 'number' ? [String(v)] : []

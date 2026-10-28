@@ -1,5 +1,5 @@
 import type { Register, EngineInterface, McpToolResult } from 'claude-code'
-import { MCP, PR_FIELDS, PR_URL, callLabel, callNews, canon, changes, contextBlock, ids, idsOf, instructions, line, newActivity, newItems, parse, parsePr, toSnapshot } from './state.js'
+import { MCP, PR_FIELDS, PR_URL, callLabel, callNews, canon, changes, contextBlock, ids, instructions, line, newActivity, newItems, parse, parsePr, toSnapshot } from './state.js'
 import type { Call, Change, Snapshot } from './state.js'
 
 const POLL_MS = 60_000
@@ -10,7 +10,7 @@ const PLUGIN = 'watch-discussions'
 const WATCH = `mcp__${PLUGIN}__watch`
 const RUN = 'Run'
 const CANCEL = 'Cancel'
-const FULL = `the watch holds ${MAX_WATCHED} items already. The user can stop one with /unwatch-discussions`
+const FULL = `the watch holds ${MAX_WATCHED} items already, and /unwatch-discussions frees a place`
 
 // `mergedHere` holds the URLs of the PRs this session merged with `gh pr merge`. Calls are keyed by `callKey`.
 type Watch = { prs: Record<string, Snapshot>; calls: Record<string, Call>; turns: Record<string, number>; mergedHere: string[] }
@@ -26,8 +26,6 @@ let self = ''
 const runningTurns = new Set<string>()
 // The connector calls the main loop made in this session, by `callKey`: what `watch` can pick, and its baseline.
 let made: Record<string, { args: Record<string, unknown>; seen: string[]; isReadOnly: boolean }> = {}
-// The `id` and `ts` values of Claude's own writes, by MCP server: a post by Claude is not news.
-let own: Record<string, Set<string>> = {}
 // News found during a turn, by call key, held for the main loop's next tool result.
 let pending: Record<string, { call: Call; items: object[] }> = {}
 // A failing connector shows one toast, not one a minute.
@@ -137,9 +135,9 @@ async function checkCalls($: EngineInterface) {
         isFailed = true
         return
       }
-      const values = parse(got.content.map(b => b.text ?? ''))
-      const mine = own[prev.tool.match(MCP)?.[1] ?? ''] ?? []
-      const found = newItems(values, new Set([...prev.seen, ...mine]))
+      // Joined as the baseline's `ran.text` is, so both read the same text.
+      const values = parse([got.content.map(b => b.text ?? '').join('')])
+      const found = newItems(values, new Set(prev.seen))
       const call = { ...prev, seen: [...ids(values)], checkedAt }
       watch.calls[key] = call
       if (found.length) pending[key] = { call, items: [...(pending[key]?.items ?? []), ...found] }
@@ -150,14 +148,8 @@ async function checkCalls($: EngineInterface) {
   await save($)
 }
 
-// A check can find Claude's post before the post's own call returns and adds its IDs to `own`.
 function takePending() {
-  const news = Object.entries(pending)
-    .map(([key, { call, items }]) => {
-      const mine = own[call.tool.match(MCP)?.[1] ?? ''] ?? new Set<string>()
-      return { key, call, items: items.filter(item => idsOf(item).some(id => !mine.has(id))) }
-    })
-    .filter(({ items }) => items.length)
+  const news = Object.entries(pending).map(([key, { call, items }]) => ({ key, call, items }))
   pending = {}
   return news
 }
@@ -177,7 +169,6 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     storeKey = ''
     made = {}
-    own = {}
     pending = {}
     isFailing = false
     await load($)
@@ -235,15 +226,18 @@ export const register: Register = on => {
     const ran = await next(e)
     const isCreate = /\bgh\s+pr\s+create\b/.test(e.command)
     const isMerge = /\bgh\s+pr\s+merge\b/.test(e.command)
-    if (!isCreate && !isMerge) return ran
+    if (ran.deny !== undefined || (!isCreate && !isMerge)) return ran
     await load($)
     if (isMerge) await noteMergesHere($)
-    // `fire` waits on its own PR, so a PR left out says why.
+    // `fire` waits on its own PR, so a PR left out tells the user and Claude why.
+    const notes: string[] = []
     for (const url of new Set(isCreate ? (ran.text ?? '').match(PR_URL) ?? [] : [])) {
       const why = await add($, url)
-      if (why) $.ui.toast(`${PLUGIN} could not watch ${url}: ${why}.`)
+      if (!why) continue
+      $.ui.toast(`${PLUGIN} could not watch ${url}: ${why}.`)
+      notes.push(`${PLUGIN} could not watch ${url}: ${why}. Nothing will report its reviews, checks, or merge. Tell the user.`)
     }
-    return ran
+    return notes.length ? { ...ran, context: [...(ran.context ?? []), ...notes] } : ran
   })
 
   // Claude picks what to watch. A subagent cannot: the main loop holds the task.
@@ -278,7 +272,7 @@ export const register: Register = on => {
     return { result: `${PLUGIN} repeats ${callLabel(call)} every minute and tells you each new item.` }
   })
 
-  // Records the connector calls: the main loop's are what `watch` can pick, and a write's IDs are Claude's own.
+  // Records the main loop's connector calls: what `watch` can pick.
   // News found during a turn goes into the main loop's next tool result: a subagent's would not reach the loop that
   // pushes and opens PRs.
   on('tool.call', async ($, e, next) => {
@@ -286,12 +280,9 @@ export const register: Register = on => {
     if (next.origin.plugin === PLUGIN) return next(e)
     const ran = await next(e)
     if (ran.deny !== undefined) return ran
-    const server = e.tool.match(MCP)?.[1]
-    if (server && e.tool !== WATCH && !ran.isError) {
+    if (!e.agentId && MCP.test(e.tool) && e.tool !== WATCH && !ran.isError) {
       const args = Object.fromEntries(Object.entries(e).filter(([k]) => !['tool', 'tool_use_id', 'agentId', 'requestMeta'].includes(k)))
-      const seen = ids(parse([ran.text ?? '']))
-      if (!e.agentId) made[callKey(e.tool, args)] = { args, seen: [...seen], isReadOnly: ran.isReadOnly === true }
-      if (!ran.isReadOnly) own[server] = new Set([...(own[server] ?? []), ...seen])
+      made[callKey(e.tool, args)] = { args, seen: [...ids(parse([ran.text ?? '']))], isReadOnly: ran.isReadOnly === true }
     }
     if (e.agentId) return ran
     const news = takePending().map(({ call, items }) => {
