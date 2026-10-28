@@ -13,6 +13,7 @@ function makeRepo({ marketplace = true } = {}) {
     const repo = mkdtempSync(join(tmpdir(), 'write-a-skill-'));
     const files = {
         'README.md': '# Skills\n',
+        '.gitignore': '.worktrees/\n',
         '.claude-plugin/marketplace.json': '{}\n',
         'guard-worktree/hooks/register.ts': 'export {};\n',
         'dev/skills/tdd/SKILL.md': '# tdd\n',
@@ -33,6 +34,11 @@ function makeRepo({ marketplace = true } = {}) {
         ['commit', '-qm', 'init'],
     ]) spawnSync('git', args, { cwd: repo });
     return repo;
+}
+
+function addWorktree(repo) {
+    spawnSync('git', ['worktree', 'add', '-q', '-b', 'feature', '.worktrees/feature'], { cwd: repo });
+    return join(repo, '.worktrees/feature');
 }
 
 function hookOutput(input) {
@@ -98,7 +104,7 @@ test('reminds after an Edit of an agent file', () => {
 test('stays silent after an Edit of a file that is not a skill or agent file', () => {
     const repo = makeRepo();
 
-    for (const path of ['README.md', '.claude-plugin/marketplace.json', 'guard-worktree/hooks/register.ts', 'dev/skills/README.md', 'dev/agents/notes/verifier.md']) {
+    for (const path of ['README.md', '.claude-plugin/marketplace.json', 'guard-worktree/hooks/register.ts', 'dev/skills/README.md', 'dev/agents/notes/verifier.md', '.claude/skills/tdd/SKILL.md']) {
         assert.equal(fileToolContext(repo, 'Edit', { file_path: join(repo, path), old_string: 'a', new_string: 'b' }), '', path);
     }
 });
@@ -221,4 +227,37 @@ test('stays silent after a call with no tool_use_id', () => {
 
     assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md', { tool_use_id: undefined }).additionalContext, '');
     assert.equal(fileToolContext(repo, 'Edit', { file_path: join(repo, 'dev/skills/tdd/SKILL.md'), old_string: 'tdd', new_string: 'TDD' }, { tool_use_id: undefined }), '');
+});
+
+test('reminds after an Edit and a Bash call in a linked worktree, where .git is a file', () => {
+    const worktree = addWorktree(makeRepo());
+
+    assert.equal(fileToolContext(worktree, 'Edit', { file_path: join(worktree, 'dev/skills/tdd/SKILL.md'), old_string: 'tdd', new_string: 'TDD' }), LOAD_WRITE_A_SKILL);
+    assert.equal(bashCall(worktree, 'echo x >> dev/skills/tdd/SKILL.md && git commit -qam x').additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('reminds after a Bash call from the main checkout that changes a skill file in a linked worktree', () => {
+    const repo = makeRepo();
+    addWorktree(repo);
+
+    assert.equal(bashCall(repo, 'echo x >> .worktrees/feature/dev/skills/tdd/SKILL.md && git -C .worktrees/feature commit -qam x').additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('reminds after a Bash call from a linked worktree that changes an agent file in the main checkout', () => {
+    const worktree = addWorktree(makeRepo());
+
+    assert.equal(bashCall(worktree, 'echo x >> ../../dev/agents/verifier.md').additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('stays silent after a Bash call from the main checkout that changes other files in a linked worktree', () => {
+    const repo = makeRepo();
+    addWorktree(repo);
+
+    assert.equal(bashCall(repo, 'echo x >> .worktrees/feature/README.md && echo x >> .worktrees/feature/dev/skills/README.md').additionalContext, '');
+});
+
+test('stays silent after a Bash call that only adds a linked worktree', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'git worktree add -q -b other .worktrees/other').additionalContext, '');
 });

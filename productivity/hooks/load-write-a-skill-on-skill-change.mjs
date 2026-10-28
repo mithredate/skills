@@ -1,19 +1,12 @@
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 
 let data = '';
 for await (const chunk of process.stdin) data += chunk;
 
-const SKILL_OR_AGENT_FILE = /^[^/]+\/(skills\/[^/]+\/.+|agents\/[^/]+\.md)$/;
-const SKILL_AND_AGENT_FILES = [':(glob)*/skills/*/**', ':(glob)*/agents/*.md'];
-
-function git(dir, args) {
-    const { status, stdout } = spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
-    return status === 0 ? stdout : '';
-}
+const SKILL_OR_AGENT_FILE = /^[^./][^/]*\/(skills\/[^/]+\/.+|agents\/[^/]+\.md)$/;
 
 // A walk up to .git costs less than a git call, and the hook runs twice for each Bash call.
 function marketplaceTop(dir) {
@@ -23,15 +16,35 @@ function marketplaceTop(dir) {
     return null;
 }
 
+// Imports and refreshes edit in a linked worktree under .worktrees/, which a call from the main checkout can change.
+function worktrees(top) {
+    const dotGit = join(top, '.git');
+    const common = statSync(dotGit).isFile() ? resolve(top, readFileSync(dotGit, 'utf8').replace(/^gitdir: /, '').trim(), '../..') : dotGit;
+    const linked = existsSync(join(common, 'worktrees')) ? readdirSync(join(common, 'worktrees')) : [];
+    return [dirname(common), ...linked.map((name) => dirname(resolve(common, 'worktrees', name, readFileSync(join(common, 'worktrees', name, 'gitdir'), 'utf8').trim())))];
+}
+
+function list(dir, recursive = false) {
+    try {
+        return readdirSync(dir, { recursive }).sort();
+    } catch {
+        return [];
+    }
+}
+
 // A command can commit its change, which leaves git status clean, so the snapshot hashes the file contents.
-function snapshot(top) {
+function snapshot(roots) {
     const hash = createHash('sha1');
-    for (const file of git(top, ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', ...SKILL_AND_AGENT_FILES]).split('\0').sort()) {
-        hash.update(`${file}\0`);
-        try {
-            hash.update(readFileSync(join(top, file)));
-        } catch {
-            hash.update('\0deleted\0');
+    for (const root of roots) {
+        const dirs = list(root).flatMap((plugin) => [`${plugin}/skills`, `${plugin}/agents`]);
+        for (const path of dirs.flatMap((dir) => list(join(root, dir), true).map((file) => `${dir}/${file}`))) {
+            if (!SKILL_OR_AGENT_FILE.test(path)) continue;
+            hash.update(`${root}/${path}\0`);
+            try {
+                hash.update(readFileSync(join(root, path)));
+            } catch {
+                // A directory has no content.
+            }
         }
     }
     return hash.digest('hex');
@@ -41,7 +54,7 @@ try {
     const input = JSON.parse(data || '{}');
     // Without an id, all Bash calls would share one state file.
     if (!input.tool_use_id) process.exit(0);
-    // ponytail: a Bash call is checked only in the repo of its cwd, and a change that a background command makes after the call returns is missed.
+    // ponytail: a Bash call is checked only in the worktrees of the repo that holds its cwd, and a change that a background command makes after the call returns is missed.
     const state = join(tmpdir(), `load-write-a-skill-${input.tool_use_id}`);
     let changed = false;
 
@@ -51,11 +64,15 @@ try {
         changed = top && SKILL_OR_AGENT_FILE.test(relative(top, path));
     } else if (input.hook_event_name === 'PreToolUse') {
         const top = marketplaceTop(input.cwd);
-        if (top) writeFileSync(state, `${top}\0${snapshot(top)}`);
+        if (top) {
+            // Post compares the same worktrees, so a worktree that the command adds is not a change.
+            const roots = worktrees(top);
+            writeFileSync(state, JSON.stringify({ roots, before: snapshot(roots) }));
+        }
     } else if (existsSync(state)) {
-        const [top, before] = readFileSync(state, 'utf8').split('\0');
+        const { roots, before } = JSON.parse(readFileSync(state, 'utf8'));
         rmSync(state);
-        changed = snapshot(top) !== before;
+        changed = snapshot(roots) !== before;
     }
 
     if (changed) {
