@@ -134,6 +134,12 @@ test('lets a new worktree branch from origin through', async ($, on) => {
   expect(refusal(ran)).toBeUndefined()
 })
 
+test('lets the command of the edit refusal through', async ($, on) => {
+  fakeGit(on)
+  const ran = await $.tool.call({ tool: 'Bash', command: `git -C ${REPO} fetch origin && git -C ${REPO} worktree add --no-track .worktrees/x -b x origin/main` })
+  expect(refusal(ran)).toBeUndefined()
+})
+
 test('leaves worktree commands alone in a repo with no origin', async ($, on) => {
   const calls: string[][] = []
   fakeGit(on, { calls, cwd: NO_ORIGIN })
