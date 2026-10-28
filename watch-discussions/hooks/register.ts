@@ -1,5 +1,5 @@
 import type { Register, EngineInterface, McpToolResult } from 'claude-code'
-import { MCP, PR_FIELDS, PR_URL, callLabel, callNews, canon, changes, contextBlock, ids, instructions, line, newActivity, newItems, parse, parsePr, toSnapshot } from './state.js'
+import { MCP, PR_FIELDS, PR_URL, callLabel, callNews, canon, changes, contextBlock, ids, idsOf, instructions, line, newActivity, newItems, parse, parsePr, toSnapshot } from './state.js'
 import type { Call, Change, Snapshot } from './state.js'
 
 const POLL_MS = 60_000
@@ -150,8 +150,14 @@ async function checkCalls($: EngineInterface) {
   await save($)
 }
 
+// A check can find Claude's post before the post's own call returns and adds its IDs to `own`.
 function takePending() {
   const news = Object.entries(pending)
+    .map(([key, { call, items }]) => {
+      const mine = own[call.tool.match(MCP)?.[1] ?? ''] ?? new Set<string>()
+      return { key, call, items: items.filter(item => idsOf(item).some(id => !mine.has(id))) }
+    })
+    .filter(({ items }) => items.length)
   pending = {}
   return news
 }
@@ -181,7 +187,7 @@ export const register: Register = on => {
     $.clock.every(POLL_MS, async () => {
       await checkCalls($)
       if (runningTurns.size) return
-      for (const [key, { call, items }] of takePending())
+      for (const { key, call, items } of takePending())
         await announce($, key, `The watched call ${callLabel(call)}`, call.tool.replace(MCP, '$2'), callNews(call, items, nextTurn(key)))
     })
 
@@ -232,7 +238,11 @@ export const register: Register = on => {
     if (!isCreate && !isMerge) return ran
     await load($)
     if (isMerge) await noteMergesHere($)
-    for (const url of new Set(isCreate ? (ran.text ?? '').match(PR_URL) ?? [] : [])) await add($, url)
+    // `fire` waits on its own PR, so a PR left out says why.
+    for (const url of new Set(isCreate ? (ran.text ?? '').match(PR_URL) ?? [] : [])) {
+      const why = await add($, url)
+      if (why) $.ui.toast(`${PLUGIN} could not watch ${url}: ${why}.`)
+    }
     return ran
   })
 
@@ -283,12 +293,12 @@ export const register: Register = on => {
       if (!e.agentId) made[callKey(e.tool, args)] = { args, seen: [...seen], isReadOnly: ran.isReadOnly === true }
       if (!ran.isReadOnly) own[server] = new Set([...(own[server] ?? []), ...seen])
     }
-    if (e.agentId || !Object.keys(pending).length) return ran
-    const news = takePending().map(([, { call, items }]) => {
+    if (e.agentId) return ran
+    const news = takePending().map(({ call, items }) => {
       const { what, steps } = callNews(call, items, 0)
       return `While you worked, the watched call ${callLabel(call)} ${what}.\n\n${steps.join('\n\n')}`
     })
-    return { ...ran, context: [...(ran.context ?? []), news.join('\n\n')] }
+    return news.length ? { ...ran, context: [...(ran.context ?? []), news.join('\n\n')] } : ran
   })
 
   // The user's prompt carries PR state fetched now, not at the start of the session. Calls keep their last check,
@@ -302,7 +312,7 @@ export const register: Register = on => {
       const { what, steps } = instructions(snap, found, 0, watch.mergedHere.includes(snap.url))
       extra.push(`Since the last check, PR ${snap.url} ${what}.` + (steps.length ? " After the user's request: " + steps.join(' ') : ''))
     }
-    for (const [, { call, items }] of takePending()) {
+    for (const { call, items } of takePending()) {
       const { what, steps } = callNews(call, items, 0)
       extra.push(`Since the last check, the watched call ${callLabel(call)} ${what}. ${steps.join(' ')}`)
     }
@@ -329,6 +339,8 @@ export const register: Register = on => {
       delete pending[key]
     }
     watch.mergedHere = watch.mergedHere.filter(url => !picked.includes(url))
+    // A call watched later starts a failure streak of its own, with its own toast.
+    if (!Object.keys(watch.calls).length) isFailing = false
     await save($)
     return { text: `Watching ${watchedCount()} items.` }
   })

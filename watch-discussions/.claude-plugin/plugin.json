@@ -1,7 +1,7 @@
 {
   "name": "watch-discussions",
   "version": "0.1.3",
-  "description": "Watches the PRs and Teams channel threads a session touches, keeps their live state in every prompt, and tells the session when Copilot reviews, checks fail, a PR merges, or another person replies in a thread.",
+  "description": "Watches the PRs and connector calls that Claude picks with its watch tool, and each PR the session opens. New items reach the session during a turn, and start a turn while it is idle.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"
