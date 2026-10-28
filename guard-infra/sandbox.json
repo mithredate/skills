@@ -19,7 +19,8 @@
     "filesystem": {
       "allowWrite": [
         "~/.npm", "~/Library/pnpm", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
-        "~/.cache/uv", "~/Library/Caches/pip", "~/projects", "/private/var/folders/*/*/T/**/*"
+        "~/.cache/uv", "~/Library/Caches/pip", "~/projects", "/private/var/folders/*/*/T/**/*",
+        "~/Library/Developer/MobileBuildMCP/workspaces", "~/Library/Developer/Xcode/DerivedData"
       ],
       "denyWrite": [
         "~/projects/**/.git/hooks",
