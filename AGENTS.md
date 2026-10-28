@@ -32,6 +32,7 @@ Per session:
 - Do all file edits in the worktree.
 - On successful validation: commit, push the branch, open a PR with the body shape from `write-a-skill` (Why, What, Verified, Links). CI on the feature branch is the actual gate.
 - On validation failure: leave the worktree dirty for inspection. Don't commit, don't push.
+- After the merge, leave the worktree with `ExitWorktree` and `action: "remove"`. `git worktree remove` fails in the sandbox.
 
 ## Lifecycle
 
