@@ -1,4 +1,4 @@
-import type { On } from 'claude-code'
+import type { On, ToolCallResult } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 import { changes, instructions, newActivity, summarizeChecks, toSnapshot } from './state.js'
@@ -17,66 +17,87 @@ function pr(over: Partial<PrJson> = {}): PrJson {
   }
 }
 
-const TEAM = 'team-0001'
-const CHANNEL = '19:general0001@thread.tacv2'
-const ROOT = '1700000000000'
-const THREAD = `teams:///teams/${TEAM}/channels/${CHANNEL}/messages/${ROOT}`
+const WATCH = 'mcp__watch-discussions__watch'
+// Two connectors as data: a Teams-shaped one prints one JSON object per text block, a Slack-shaped one one indented object.
 const LIST = 'mcp__claude_ai_Microsoft_365__teams_list_channel_messages'
-const READ_ARGS = { tool: LIST, teamId: TEAM, channelId: CHANNEL, parentMessageId: ROOT } as const
-const ME = { userId: 'user-robin', displayName: 'Robin Vale' }
-const SARA = { userId: 'user-sara', displayName: 'Sara Lind' }
-const AMIN = { userId: 'user-amin', displayName: 'Amin Noor' }
-// A link to a reply: the path names the reply, `parentMessageId` the thread, and the channel ID is URL-encoded.
-const LINK = `https://teams.microsoft.com/l/message/${encodeURIComponent(CHANNEL)}/1700000000500?tenantId=tenant-0001&groupId=${TEAM}&parentMessageId=${ROOT}&teamName=Crew&channelName=General&createdTime=1700000000500`
+const POST = 'mcp__claude_ai_Microsoft_365__teams_post_reply'
+const HISTORY = 'mcp__acme_chat__read_thread'
+const ARGS = { teamId: 'team-0001', channelId: '19:general0001@thread.tacv2', parentMessageId: '1700000000000' }
+const READ = { tool: LIST, ...ARGS } as const
+const ME = { id: 'user-robin', displayName: 'Robin Vale' }
+const SARA = { id: 'user-sara', displayName: 'Sara Lind' }
+const AMIN = { id: 'user-amin', displayName: 'Amin Noor' }
 
-function reply(id: string, from: { userId: string; displayName: string }) {
-  return {
-    id, replyToId: ROOT, messageType: 'message', from, createdDateTime: '2026-10-28T09:15:00Z', lastModifiedDateTime: '2026-10-28T09:15:00Z',
-    bodyPreview: 'The cause is elsewhere.', bodyTruncated: false, webUrl: `https://teams.microsoft.com/l/message/${CHANNEL}/${id}`,
-  }
+function message(id: string, user: { id: string; displayName: string }, bodyPreview = 'The cause is elsewhere.') {
+  return { id, replyToId: ARGS.parentMessageId, messageType: 'message', from: { user }, createdDateTime: '2026-10-28T09:15:00Z', bodyPreview }
 }
 
-// `isFailing` fails every connector call, `failingTool` only that tool's, `isHanging` leaves every call unanswered,
-// and `gate` holds every call until it resolves.
-type Teams = { replies: object[]; isFailing?: boolean; failingTool?: string; isHanging?: boolean; gate?: Promise<void> }
+// The thread that Claude's read and the mod's repeat both return. `isReadOnly` is core's mark on Claude's read.
+// `answer` is the user's pick in the mod's question. `isFailing` fails every repeat, `isHanging` leaves it unanswered,
+// and `gate` holds it until it resolves.
+type Chat = { items: object[]; isReadOnly: boolean; answer: string; isFailing?: boolean; isHanging?: boolean; gate?: Promise<void> }
 
-// The world beneath the plugin: gh prints `pr` for any PR and `me` for the user; the Microsoft 365 connector lists
-// `teams.replies` for the thread ROOT, one JSON object per block, and `get_me` is Robin; prompts and toasts are recorded.
-async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: string }, teams: Teams = { replies: [] }) {
+const chat = (items: object[] = []): Chat => ({ items, isReadOnly: true, answer: 'Run' })
+
+const blocks = (tool: string, items: object[]) =>
+  tool === HISTORY ? [JSON.stringify({ ok: true, messages: items }, null, 2)] : items.map(item => JSON.stringify(item))
+
+const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : undefined)
+
+// The world beneath the plugin: gh prints `gh.pr` for any PR and `me` for the user; a read of LIST or HISTORY, by
+// Claude or by the mod, returns `c.items`; a POST adds Robin's reply and prints it; the question dialog answers
+// `c.answer`; repeats, questions, prompts and toasts are recorded.
+async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: string }, c: Chat = chat()) {
   const clock = mock.clock(on)
   mock.store(on)
   const submitted: string[] = []
   const toasts: string[] = []
+  const questions: string[] = []
+  const repeats: object[] = []
   on('session.id', async () => ({ value: 's1' }))
   on('process.run', async (_$, e) =>
     e.argv.includes('user')
       ? { value: { exitCode: 0, stdout: 'me\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
       : { value: { exitCode: 0, stdout: JSON.stringify(gh.pr), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
   on('mcp.call', async (_$, e) => {
-    if (teams.isHanging) await new Promise<void>(() => {})
-    if (teams.gate) await teams.gate
-    if (teams.isFailing || e.tool === teams.failingTool) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
-    const items = e.tool === 'get_me'
-      ? [{ id: ME.userId, displayName: ME.displayName, mail: 'robin@example.com', userPrincipalName: 'robin@example.com' }]
-      : e.args.parentMessageId === ROOT ? teams.replies : []
-    return { value: { content: items.map(item => ({ type: 'text', text: JSON.stringify(item) })), isError: false } }
+    if (c.isHanging) await new Promise<void>(() => {})
+    if (c.gate) await c.gate
+    const tool = `mcp__${e.server}__${e.tool}`
+    if (c.isFailing || (tool !== LIST && tool !== HISTORY)) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
+    repeats.push({ server: e.server, tool: e.tool, args: e.args })
+    return { value: { content: blocks(tool, c.items).map(text => ({ type: 'text', text })), isError: false } }
   })
   on('prompt.submit', async (_$, e) => {
     submitted.push(e.text)
     return { text: e.text, context: e.context }
   })
-  on('tool.call', async (_$, e) => ({ result: 'ok', text: e.tool.endsWith('read_resource') ? JSON.stringify(reply('1700000000500', SARA)) : gh.toolOutput ?? URL + '\n' }))
+  on('tool.call', { tool: 'AskUserQuestion' }, async (_$, e) => {
+    const asked = 'questions' in e ? e.questions : []
+    const question = asked[0]?.question ?? ''
+    questions.push(question)
+    return { result: { questions: asked, answers: { [question]: c.answer } } }
+  })
+  on('tool.call', async (_$, e) => {
+    if (e.tool === POST) {
+      const posted = message('1700000000900', ME, 'Posted by Claude.')
+      c.items = [...c.items, posted]
+      return { result: 'ok', text: JSON.stringify(posted) }
+    }
+    if (e.tool === LIST || e.tool === HISTORY) return { result: 'ok', text: blocks(e.tool, c.items).join('\n'), ...(c.isReadOnly ? { isReadOnly: true as const } : {}) }
+    return { result: 'ok', text: gh.toolOutput ?? URL + '\n' }
+  })
   on('session.start', async (_$, e) => ({ cwd: e.cwd }))
   on('turn.start', async (_$, e) => ({ turnId: e.turnId }))
   on('turn.complete', async () => ({ text: '' }))
   on('command.register', async (_$, e) => ({ value: { command: e.name } }))
+  on('tool.register', async (_$, e) => ({ value: { tool: `mcp__watch-discussions__${e.name}` } }))
   on('ui.status', async () => ({ value: undefined }))
   on('ui.toast', async (_$, e) => {
     toasts.push(e.text)
     return { value: undefined }
   })
   await $.session.start({ cwd: '/repo', surface: 'terminal', isInteractive: true })
-  return { clock, submitted, toasts }
+  return { clock, submitted, toasts, questions, repeats }
 }
 
 test('summarizes checks', async () => {
@@ -174,17 +195,21 @@ test('skips polls during a turn, so a failure fixed in that turn is never report
   expect(submitted).toEqual([])
 })
 
-test('watches only the PR a command names, and keeps an unwatched PR unwatched', async ($, on) => {
-  const gh = { pr: pr(), toolOutput: `${URL}\n${OTHER}\n` }
+test('watches the PR that gh pr create opens, and not a PR that another gh command names', async ($, on) => {
+  const gh = { pr: pr(), toolOutput: `${OTHER}\n` }
   await startSession($, on, gh)
-
-  await $.tool.call({ tool: 'Bash', command: 'gh pr list --json url' })
+  await $.tool.call({ tool: 'Bash', command: `gh pr view ${OTHER}` })
   expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
 
-  await $.tool.call({ tool: 'Bash', command: `gh pr view ${URL}` })
-  await $.command.run({ command: 'unwatch-discussions', args: URL, ...TYPED })
-  await $.tool.call({ tool: 'Bash', command: `gh pr view ${URL}` })
-  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
+  gh.toolOutput = `${URL}\n`
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toBe(`1. #74 review required · checks pending  ${URL}`)
+})
+
+test('watches a PR that Claude passes to watch', async ($, on) => {
+  await startSession($, on, { pr: pr() })
+  expect(refusal(await $.tool.call({ tool: WATCH, url: URL }))).toBeUndefined()
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toBe(`1. #74 review required · checks pending  ${URL}`)
 })
 
 test('starts no turn for a merge this session ran, even with no PR named, and still shows a toast', async ($, on) => {
@@ -225,204 +250,193 @@ test('starts a turn when a merge this session asked for lands later, as with --a
   expect(submitted[0]?.endsWith('If nothing is left to do, reply in one line.')).toBe(true)
 })
 
-test("puts another person's reply into the main loop's next tool result, mid-turn, once", async ($, on) => {
-  const teams: Teams = { replies: [reply('1700000000100', ME)] }
-  const { clock, submitted } = await startSession($, on, { pr: pr() }, teams)
+test("puts a new item of a watched call into the main loop's next tool result, once, and never into a subagent's", async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted, questions, repeats } = await startSession($, on, { pr: pr() }, c)
   await $.turn.start({ text: 'fix the bug', turnId: 't1' })
-  await $.tool.call(READ_ARGS)
+  await $.tool.call(READ)
+  const { parentMessageId, ...rest } = ARGS
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: { parentMessageId, ...rest } }))).toBeUndefined()
+  expect(questions).toEqual([])
 
-  teams.replies = [reply('1700000000200', SARA), ...teams.replies]
+  c.items = [...c.items, message('1700000000200', SARA)]
   await clock.advance(60_000)
-  const ran = await $.tool.call({ tool: 'Bash', command: 'ls' })
-  expect(ran.context?.length).toBe(1)
-  const news = ran.context?.[0] ?? ''
-  expect(news).toContain(THREAD)
-  expect(news).toContain('Sara Lind at 2026-10-28T09:15:00Z')
-  expect(news).toContain(`teams_list_channel_messages ${JSON.stringify({ teamId: TEAM, channelId: CHANNEL, parentMessageId: ROOT })}`)
-  expect(news).toContain('read_resource')
-  expect(news).toContain('change course')
+  expect(repeats).toEqual([{ server: 'claude_ai_Microsoft_365', tool: 'teams_list_channel_messages', args: ARGS }])
+  expect((await $.tool.call({ tool: 'Bash', command: 'ls', agentId: 'agent-1' })).context ?? []).toEqual([])
+  const news = (await $.tool.call({ tool: 'Bash', command: 'ls' })).context ?? []
+  expect(news.length).toBe(1)
+  expect(news[0]).toContain(`${LIST} ${JSON.stringify(ARGS)}`)
+  expect(news[0]).toContain('"id":"1700000000200"')
+  expect(news[0]).toContain('Sara Lind')
+  expect(news[0]).not.toContain('1700000000100')
   expect((await $.tool.call({ tool: 'Bash', command: 'ls' })).context ?? []).toEqual([])
   expect(submitted).toEqual([])
   await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
 })
 
-test("keeps the news out of a subagent's tool result and gives it to the main loop's", async ($, on) => {
-  const teams: Teams = { replies: [] }
-  const { clock } = await startSession($, on, { pr: pr() }, teams)
-  await $.turn.start({ text: 'look into it', turnId: 't1' })
-  await $.tool.call({ ...READ_ARGS, agentId: 'agent-1' })
+test('reports an item that arrived between the read and the watch at the first check, by its ts at any depth', async ($, on) => {
+  const input = { channel: 'C-crew', thread: '1700000000.000100' }
+  const c = chat([{ ts: '1700000000.000100', user: 'U-amin', text: 'Is it the cache?' }])
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call({ tool: HISTORY, ...input })
+  c.items = [...c.items, { ts: '1700000000.000200', user: 'U-sara', text: 'It is not the cache.' }]
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: HISTORY, input }))).toBeUndefined()
 
-  teams.replies = [reply('1700000000200', SARA)]
-  await clock.advance(60_000)
-  expect((await $.tool.call({ tool: 'Bash', command: 'ls', agentId: 'agent-1' })).context ?? []).toEqual([])
-  expect((await $.tool.call({ tool: 'Bash', command: 'ls' })).context?.[0]).toContain('Sara Lind')
-  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
-})
-
-test("watches the thread of a reply that read_resource reads, and starts nothing for the user's own reply", async ($, on) => {
-  const teams: Teams = { replies: [] }
-  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
-  await $.tool.call({ tool: 'mcp__claude_ai_Microsoft_365__read_resource', uri: `teams:///teams/${TEAM}/channels/${CHANNEL}/messages/1700000000500` })
-
-  teams.replies = [reply('1700000000600', ME)]
-  await clock.advance(60_000)
-  expect(submitted).toEqual([])
-  expect(toasts).toEqual([])
-
-  teams.replies = [reply('1700000000700', SARA), ...teams.replies]
   await clock.advance(60_000)
   expect(submitted.length).toBe(1)
-  expect(submitted[0]).toContain('Sara Lind')
-  expect(submitted[0]).not.toContain('Robin Vale')
+  expect(submitted[0]).toContain(`${HISTORY} ${JSON.stringify(input)}`)
+  expect(submitted[0]).toContain('It is not the cache.')
+  expect(submitted[0]).not.toContain('Is it the cache?')
 })
 
-test('starts a turn on news while idle, and only shows a toast from the sixth turn for one thread', async ($, on) => {
-  const teams: Teams = { replies: [] }
-  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
-  await $.tool.call(READ_ARGS)
+test('refuses a watch from a subagent, of a call the main session did not make, and of a result with no id or ts', async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  await startSession($, on, { pr: pr() }, c)
+  await $.tool.call({ ...READ, agentId: 'agent-1' })
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS }))).toContain('did not make')
+
+  await $.tool.call(READ)
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS, agentId: 'agent-1' }))).toContain('only the main session')
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: { ...ARGS, parentMessageId: '1700000000999' } }))).toContain('did not make')
+
+  const empty = { ...ARGS, parentMessageId: '1700000000300' }
+  c.items = [{ text: 'No messages.' }]
+  await $.tool.call({ tool: LIST, ...empty })
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: empty }))).toContain('no id or ts')
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
+})
+
+test('refuses a watch when 20 items are watched', async ($, on) => {
+  await startSession($, on, { pr: pr() })
+  for (let i = 1; i <= 20; i++) expect(refusal(await $.tool.call({ tool: WATCH, url: `https://github.com/acme/api/pull/${i}` }))).toBeUndefined()
+  expect(refusal(await $.tool.call({ tool: WATCH, url: OTHER }))).toContain('20 items')
+})
+
+test('asks before it repeats a call that core does not mark read-only, and watches it only on Run', async ($, on) => {
+  const c = { ...chat([message('1700000000100', AMIN)]), isReadOnly: false, answer: 'Cancel' }
+  const { questions } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS }))).toContain('the user cancelled')
+  expect(questions.length).toBe(1)
+  expect(questions[0]).toContain(`${LIST} ${JSON.stringify(ARGS)}`)
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
+
+  c.answer = 'Run'
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS }))).toBeUndefined()
+  expect(questions.length).toBe(2)
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(`1. ${LIST}`)
+})
+
+test("reports the user's own reply, but not Claude's post to the same server or an edit", async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: POST, ...ARGS, content: 'Posted by Claude.' })
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  c.items = c.items.map(item => ({ ...item, bodyPreview: 'Edited: the cause is elsewhere.' }))
+  await clock.advance(60_000)
+  expect(submitted).toEqual([])
+
+  c.items = [...c.items, message('1700000000300', ME, 'I checked it myself.')]
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('I checked it myself.')
+  expect(submitted[0]).not.toContain('1700000000900')
+})
+
+test('starts a turn on news while idle, and only shows a toast from the sixth turn for one call', async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
 
   for (let i = 1; i <= 6; i++) {
-    teams.replies = [reply(`17000000010${i}0`, SARA), ...teams.replies]
+    c.items = [...c.items, message(`17000000010${i}0`, SARA)]
     await clock.advance(60_000)
   }
   expect(submitted.length).toBe(5)
-  expect(submitted[0]).toContain(THREAD)
+  expect(submitted[0]).toContain(`${LIST} ${JSON.stringify(ARGS)}`)
   expect(submitted[0]?.endsWith('If nothing is left to do, reply in one line.')).toBe(true)
   expect(toasts.length).toBe(6)
   expect(toasts[5]).toContain('started 5 turns')
 })
 
-test('shows one toast while the connector fails, starts no turn, and resumes once it works', async ($, on) => {
-  const teams: Teams = { replies: [] }
-  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
-  await $.tool.call(READ_ARGS)
+test('ends a hung repeat after 20 seconds with one toast for the streak, keeps the call, and resumes once a repeat works', async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
 
-  teams.isFailing = true
-  teams.replies = [reply('1700000000200', SARA)]
+  c.isHanging = true
+  c.items = [...c.items, message('1700000000200', SARA)]
   await clock.advance(60_000)
+  await clock.advance(19_000)
+  expect(toasts).toEqual([])
+  await clock.advance(1_000)
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain('could not repeat')
   await clock.advance(60_000)
   expect(toasts.length).toBe(1)
-  expect(toasts[0]).toContain('could not read')
   expect(submitted).toEqual([])
 
-  teams.isFailing = false
-  await clock.advance(60_000)
+  c.isHanging = false
+  await clock.advance(40_000)
   expect(submitted.length).toBe(1)
   expect(submitted[0]).toContain('Sara Lind')
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(`1. ${LIST}`)
 })
 
-test('watches and unwatches a thread by its Teams link, and watches it again after an unwatch', async ($, on) => {
-  await startSession($, on, { pr: pr() })
-  const plainLink = `https://teams.microsoft.com/l/message/${CHANNEL}/${ROOT}?tenantId=tenant-0001&groupId=${TEAM}&parentMessageId=${ROOT}`
-
-  expect((await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text).toContain(THREAD)
-  await $.command.run({ command: 'unwatch-discussions', args: plainLink, ...TYPED })
-  await $.tool.call(READ_ARGS)
-  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
-  expect((await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text).toContain(THREAD)
-})
-
-test("puts a thread's live state and the news a turn missed into the user's next prompt, once", async ($, on) => {
-  const teams: Teams = { replies: [reply('1700000000100', ME)] }
-  const { clock } = await startSession($, on, { pr: pr() }, teams)
-  await $.tool.call(READ_ARGS)
-  await $.turn.start({ text: 'fix the bug', turnId: 't1' })
-  teams.replies = [reply('1700000000200', SARA), ...teams.replies]
-  await clock.advance(60_000)
-  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
-  await clock.advance(30_000)
-
-  const typed = (await $.prompt.submit({ text: 'what next?', wait: false, origin: { kind: 'composer' } })).context ?? []
-  expect(typed.join('\n')).toContain(`Teams thread ${THREAD}: 2 replies (checked 30s ago)`)
-  expect(typed.join('\n')).toContain(`Since the last check, Teams thread ${THREAD} got 1 new reply: Sara Lind at 2026-10-28T09:15:00Z.`)
-  const again = (await $.prompt.submit({ text: 'and now?', wait: false, origin: { kind: 'composer' } })).context ?? []
-  expect(again.join('\n')).toContain(`Teams thread ${THREAD}: 2 replies`)
-  expect(again.join('\n')).not.toContain('Since the last check')
-})
-
-test('polls PRs on time while a Teams check hangs', async ($, on) => {
+test('polls PRs on time while a repeat hangs', async ($, on) => {
   const gh = { pr: pr() }
-  const teams: Teams = { replies: [] }
-  const { clock, submitted } = await startSession($, on, gh, teams)
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted } = await startSession($, on, gh, c)
   await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
-  await $.tool.call(READ_ARGS)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
 
-  teams.isHanging = true
+  c.isHanging = true
   gh.pr = pr({ reviews: [COPILOT] })
   await clock.advance(60_000)
   expect(submitted.length).toBe(1)
   expect(submitted[0]).toContain('Copilot reviewed')
 })
 
-test('keeps a thread whose fetch failed, shows one toast, and then reports the replies since the last good check', async ($, on) => {
-  const teams: Teams = { replies: [reply('1700000000100', AMIN)] }
-  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
-  await $.tool.call(READ_ARGS)
-  await clock.advance(60_000)
-
-  teams.failingTool = 'teams_list_channel_messages'
-  teams.replies = [reply('1700000000200', SARA), ...teams.replies]
-  await clock.advance(60_000)
-  await clock.advance(60_000)
-  expect(toasts.length).toBe(1)
-  expect(toasts[0]).toContain('could not read')
-  expect(submitted).toEqual([])
-
-  teams.failingTool = undefined
-  await clock.advance(60_000)
-  expect(submitted.length).toBe(1)
-  expect(submitted[0]).toContain('got 1 new reply: Sara Lind')
-  expect(submitted[0]).not.toContain('Amin Noor')
-  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(THREAD)
-})
-
-test('says why /watch-discussions could not watch a Teams link', async ($, on) => {
-  await startSession($, on, { pr: pr() }, { replies: [], isFailing: true })
-  const text = (await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text
-  expect(text).toContain(`Could not watch ${LINK}: the Microsoft 365 connector could not read the thread.`)
-})
-
-test("returns Claude's Teams read and /watch-discussions once a hung connector call passes 20 seconds", async ($, on) => {
-  const { clock } = await startSession($, on, { pr: pr() }, { replies: [], isHanging: true })
-  let read: string | undefined
-  void $.tool.call(READ_ARGS).then(ran => (read = ran.text))
-  await clock.advance(19_000)
-  expect(read).toBe(undefined)
-  await clock.advance(1_000)
-  expect(read).toBe(URL + '\n')
-
-  let listed: string | undefined
-  void $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED }).then(ran => (listed = ran.text))
-  await clock.advance(20_000)
-  expect(listed).toContain(`Could not watch ${LINK}: the Microsoft 365 connector could not read the thread.`)
-})
-
-test("shows one toast when the threads Claude reads cannot be fetched, and watches once a read works", async ($, on) => {
-  const teams: Teams = { replies: [], isFailing: true }
-  const { toasts } = await startSession($, on, { pr: pr() }, teams)
-  await $.tool.call(READ_ARGS)
-  await $.tool.call(READ_ARGS)
-  expect(toasts.length).toBe(1)
-  expect(toasts[0]).toContain('could not read Teams')
-
-  teams.isFailing = false
-  await $.tool.call(READ_ARGS)
-  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(THREAD)
-})
-
-test('keeps a thread unwatched when /unwatch-discussions runs while its check waits on the connector', async ($, on) => {
-  const teams: Teams = { replies: [] }
-  const { clock, submitted } = await startSession($, on, { pr: pr() }, teams)
-  await $.tool.call(READ_ARGS)
-  await clock.advance(60_000)
+test('/unwatch-discussions 1 stops item 1, also while its repeat waits on the connector', async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(`1. ${LIST} ${JSON.stringify(ARGS)}`)
 
   let release = () => {}
-  teams.gate = new Promise<void>(resolve => (release = () => resolve()))
-  teams.replies = [reply('1700000000200', SARA)]
+  c.gate = new Promise<void>(resolve => (release = () => resolve()))
+  c.items = [...c.items, message('1700000000200', SARA)]
   await clock.advance(60_000)
-  await $.command.run({ command: 'unwatch-discussions', args: LINK, ...TYPED })
+  await $.command.run({ command: 'unwatch-discussions', args: '1', ...TYPED })
   release()
   await clock.advance(60_000)
   expect(submitted).toEqual([])
   expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
+})
+
+test("puts each watched item's live state and the news a turn missed into the user's next prompt, once", async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  await $.turn.start({ text: 'fix the bug', turnId: 't1' })
+  c.items = [...c.items, message('1700000000200', SARA)]
+  await clock.advance(60_000)
+  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
+  await clock.advance(30_000)
+
+  const typed = ((await $.prompt.submit({ text: 'what next?', wait: false, origin: { kind: 'composer' } })).context ?? []).join('\n')
+  expect(typed).toContain(`- ${URL} "Add export": OPEN`)
+  expect(typed).toContain(`- ${LIST} ${JSON.stringify(ARGS)} (checked 30s ago)`)
+  expect(typed).toContain(`Since the last check, the watched call ${LIST} ${JSON.stringify(ARGS)} returned 1 new item`)
+  expect(typed).toContain('Sara Lind')
+  const again = ((await $.prompt.submit({ text: 'and now?', wait: false, origin: { kind: 'composer' } })).context ?? []).join('\n')
+  expect(again).toContain(`- ${LIST} ${JSON.stringify(ARGS)}`)
+  expect(again).not.toContain('Since the last check')
 })
