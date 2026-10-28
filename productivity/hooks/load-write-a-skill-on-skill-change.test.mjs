@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -34,14 +35,22 @@ function makeRepo({ marketplace = true } = {}) {
     return repo;
 }
 
-function contextFor(input) {
+function hookOutput(input) {
     const { status, stdout } = spawnSync('node', [HOOK], { input: typeof input === 'string' ? input : JSON.stringify(input) });
     assert.equal(status, 0);
-    return stdout.toString() ? JSON.parse(stdout).hookSpecificOutput.additionalContext : '';
+    return stdout.toString() ? JSON.parse(stdout).hookSpecificOutput : { additionalContext: '' };
 }
 
 function fileToolContext(repo, toolName, toolInput, extra = {}) {
-    return contextFor({ hook_event_name: 'PostToolUse', tool_name: toolName, tool_input: toolInput, tool_use_id: 'toolu_file', cwd: repo, ...extra });
+    return hookOutput({ hook_event_name: 'PostToolUse', tool_name: toolName, tool_input: toolInput, tool_use_id: 'toolu_file', cwd: repo, ...extra }).additionalContext;
+}
+
+// Runs the hook before and after the command, as Claude Code does for one Bash call.
+function bashCall(repo, command, extra = {}) {
+    const call = { tool_name: 'Bash', tool_input: { command }, tool_use_id: `toolu_${randomUUID()}`, cwd: repo, ...extra };
+    assert.equal(hookOutput({ ...call, hook_event_name: 'PreToolUse' }).additionalContext, '');
+    const { status } = spawnSync('sh', ['-c', command], { cwd: repo });
+    return hookOutput({ ...call, hook_event_name: status === 0 ? 'PostToolUse' : 'PostToolUseFailure' });
 }
 
 test('reminds after an Edit of a SKILL.md', () => {
@@ -114,5 +123,79 @@ test('stays silent and exits 0 for a file outside a git repo or for input it can
     const dir = mkdtempSync(join(tmpdir(), 'write-a-skill-'));
 
     assert.equal(fileToolContext(dir, 'Edit', { file_path: join(dir, 'dev/skills/tdd/SKILL.md'), old_string: 'a', new_string: 'b' }), '');
-    assert.equal(contextFor('not json'), '');
+    assert.equal(hookOutput('not json').additionalContext, '');
+});
+
+test('reminds after a Bash call that changes a skill file', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md').additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('reminds after a Bash call that adds, deletes, or renames a skill or agent file', () => {
+    for (const command of [
+        'mkdir -p dev/skills/tdd/scripts && echo x > dev/skills/tdd/scripts/check.sh',
+        'rm dev/skills/tdd/references/mocking.md',
+        'git mv dev/agents/verifier.md dev/agents/checker.md',
+        'mv dev/skills/tdd dev/skills/test-first',
+        'echo x >> dev/agents/verifier.md',
+    ]) {
+        assert.equal(bashCall(makeRepo(), command).additionalContext, LOAD_WRITE_A_SKILL, command);
+    }
+});
+
+test('reminds when the same Bash call commits the change', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/references/mocking.md && git commit -qam x').additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('reminds when a script writes a skill file that the command does not name', () => {
+    const repo = makeRepo();
+    const script = join(mkdtempSync(join(tmpdir(), 'write-a-skill-script-')), 'touch-skills.sh');
+    writeFileSync(script, 'for f in $(git ls-files "*.md"); do echo x >> "$f"; done\n');
+
+    assert.equal(bashCall(repo, `sh ${script}`).additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('stays silent after a Bash call that only reads skill files', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'cat dev/skills/tdd/SKILL.md && grep -r tdd dev/skills && git log -1 -- dev/agents').additionalContext, '');
+});
+
+test('stays silent when a Bash call rewrites a skill file with the same content and commits', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, "perl -pi -e 's/tdd/tdd/' dev/skills/tdd/SKILL.md && git commit -q --allow-empty -am x").additionalContext, '');
+});
+
+test('stays silent after a Bash call that changes and commits other files', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'echo x >> README.md && echo x >> .claude-plugin/marketplace.json && echo x >> guard-worktree/hooks/register.ts && git commit -qam x').additionalContext, '');
+});
+
+test('stays silent after a Bash call that changes a skill file in a repo with no write-a-skill', () => {
+    const repo = makeRepo({ marketplace: false });
+
+    assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md').additionalContext, '');
+});
+
+test('reminds after a Bash call inside a subagent', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md', { agent_id: 'agent-1', agent_type: 'general-purpose' }).additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('reminds after a failed Bash call that changed a skill file', () => {
+    const repo = makeRepo();
+
+    assert.deepEqual(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md && false'), { hookEventName: 'PostToolUseFailure', additionalContext: LOAD_WRITE_A_SKILL });
+});
+
+test('stays silent and exits 0 after a Bash call outside a git repo', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'write-a-skill-'));
+
+    assert.equal(bashCall(dir, 'echo x > notes.md').additionalContext, '');
 });
