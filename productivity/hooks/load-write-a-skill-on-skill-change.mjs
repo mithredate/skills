@@ -36,9 +36,11 @@ function subdirs(dir) {
 // An open() costs about 100 times an lstat() here, so a folder or a file is read again only when its stat changes.
 function snapshot(roots) {
     const cachePath = join(tmpdir(), `load-write-a-skill-cache-${createHash('sha1').update(roots[0]).digest('hex')}`);
+    let cached = '';
     let cache = {};
     try {
-        cache = JSON.parse(readFileSync(cachePath, 'utf8'));
+        cached = readFileSync(cachePath, 'utf8');
+        cache = JSON.parse(cached);
     } catch {
         // No cache yet.
     }
@@ -59,8 +61,10 @@ function snapshot(roots) {
     for (const root of roots) {
         for (const plugin of subdirs(root)) for (const kind of ['skills', 'agents']) walk(join(root, plugin, kind), `${plugin}/${kind}`);
     }
-    writeFileSync(`${cachePath}.${process.pid}`, JSON.stringify(next));
-    renameSync(`${cachePath}.${process.pid}`, cachePath);
+    if (JSON.stringify(next) !== cached) {
+        writeFileSync(`${cachePath}.${process.pid}`, JSON.stringify(next));
+        renameSync(`${cachePath}.${process.pid}`, cachePath);
+    }
     return hash.digest('hex');
 }
 
