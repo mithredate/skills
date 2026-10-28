@@ -25,7 +25,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 
 ## Worktree workflow (imports and refreshes)
 
-Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree per session**, never on `main` directly. Worktrees live under `.worktrees/<branch-name>/` at the repo root (gitignored); branch name = directory name.
+Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree per session**, never on `main` directly. Make the worktree with the `EnterWorktree` tool. It lives under `.claude/worktrees/<name>/` at the repo root (gitignored). In the worktree, run `git switch -c <branch> --no-track` to name the branch. A branch rename or a tracking branch writes `.git/config`, which the sandbox denies.
 
 Per session:
 - Create a worktree on a feature branch — `import/<target-name>` for imports, `refresh/<date>` for refreshes.
