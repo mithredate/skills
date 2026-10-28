@@ -15,7 +15,9 @@ export function worktreeAdvice(path: string, edited: { top: string; base?: strin
       `Then make this edit under ${top}/.worktrees/<branch>/.`
     )
   }
-  if (!session.isMain) return intro + `This session is in the worktree ${session.top}. Make this edit there.`
+  // `top` has its symlinks resolved, so a path through a symlink such as /tmp does not start with it.
+  const target = path.startsWith(top + '/') ? session.top + path.slice(top.length) : session.top
+  if (!session.isMain) return intro + `This session is in the worktree ${session.top}. Make this edit in ${target}.`
   return (
     intro +
     `Call the \`EnterWorktree\` tool with a name. Then run \`git switch -c <branch> --no-track\` in the worktree. ` +
