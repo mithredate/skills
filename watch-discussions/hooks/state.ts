@@ -167,7 +167,7 @@ export function instructions(s: Snapshot, found: Change[], turn: number, isMerge
 // A connector tool's name, `mcp__<server>__<tool>`. `$.mcp.call` takes the server in this spelling too.
 export const MCP = /^mcp__(.+?)__(.+)$/
 
-// A watched connector call: the tool and arguments the main loop called, and the `id` and `ts` values of its last result.
+// A watched connector call: the tool and arguments the main loop called, and the values that `ids` read in its last result.
 export type Call = { tool: string; args: Record<string, unknown>; seen: string[]; checkedAt: number }
 
 export const callLabel = (c: Call) => `${c.tool} ${JSON.stringify(c.args)}`
@@ -214,9 +214,10 @@ function idsOf(o: object) {
   })
 }
 
-// Slack prints each message's ts in text, as `Message TS: 1700000000.000100`. A generic `ID:` label is not read:
-// it also matches a value that changes on each call, such as a request id.
-const TEXT_TS = /\bTS: (\d+\.\d+)/g
+// Slack prints each message's ts on its own line, as `Message TS: 1700000000.000100`. A `TS:` inside a message's
+// text is not a ts. A generic `ID:` label is not read: it also matches a value that changes on each call, such as a
+// request id.
+const TEXT_TS = /^Message TS: (\d+\.\d+)/gm
 
 // Every `id` and `ts` value at any depth, and every ts in a text.
 export function ids(v: unknown, out = new Set<string>()) {
@@ -235,7 +236,11 @@ export function newItems(v: unknown, seen: Set<string>): object[] {
   if (typeof v === 'string') {
     const found = [...v.matchAll(TEXT_TS)]
     const starts = found.map(m => v.lastIndexOf('\n\n', m.index) + 1)
-    return found.flatMap(([, ts = ''], i) => (seen.has(ts) ? [] : [{ ts, text: v.slice(starts[i], starts[i + 1]).trim() }]))
+    return found.flatMap(([, ts = ''], i) => {
+      const start = starts[i]
+      const end = starts[i + 1] ?? v.length
+      return seen.has(ts) ? [] : [{ ts, text: v.slice(start, end).trim() }]
+    })
   }
   if (!v || typeof v !== 'object') return []
   if (idsOf(v).some(id => !seen.has(id))) return [v]
