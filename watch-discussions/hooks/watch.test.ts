@@ -32,10 +32,10 @@ function message(id: string, user: { id: string; displayName: string }, bodyPrev
   return { id, replyToId: ARGS.parentMessageId, messageType: 'message', from: { user }, createdDateTime: '2026-10-28T09:15:00Z', bodyPreview }
 }
 
-// The thread that Claude's read and the mod's repeat both return. `isReadOnly` is core's mark on Claude's read.
-// `answer` is the user's pick in the mod's question. `isFailing` fails every repeat, `isHanging` leaves it unanswered,
-// and `gate` holds it until it resolves.
-type Chat = { items: object[]; isReadOnly: boolean; answer: string; isFailing?: boolean; isHanging?: boolean; gate?: Promise<void> }
+// The thread that Claude's read and the mod's repeat both return. `isReadOnly` is core's mark on Claude's read, and
+// `separator` joins the blocks of Claude's read, a newline when absent. `answer` is the user's pick in the mod's
+// question. `isFailing` fails every repeat, `isHanging` leaves it unanswered, and `gate` holds it until it resolves.
+type Chat = { items: object[]; isReadOnly: boolean; answer: string; separator?: string; isFailing?: boolean; isHanging?: boolean; gate?: Promise<void> }
 
 const chat = (items: object[] = []): Chat => ({ items, isReadOnly: true, answer: 'Run' })
 
@@ -83,7 +83,7 @@ async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: st
       c.items = [...c.items, posted]
       return { result: 'ok', text: JSON.stringify(posted) }
     }
-    if (e.tool === LIST || e.tool === HISTORY) return { result: 'ok', text: blocks(e.tool, c.items).join('\n'), ...(c.isReadOnly ? { isReadOnly: true as const } : {}) }
+    if (e.tool === LIST || e.tool === HISTORY) return { result: 'ok', text: blocks(e.tool, c.items).join(c.separator ?? '\n'), ...(c.isReadOnly ? { isReadOnly: true as const } : {}) }
     return { result: 'ok', text: gh.toolOutput ?? URL + '\n' }
   })
   on('session.start', async (_$, e) => ({ cwd: e.cwd }))
@@ -327,21 +327,51 @@ test('asks before it repeats a call that core does not mark read-only, and watch
   expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(`1. ${LIST}`)
 })
 
-test("reports the user's own reply, but not Claude's post to the same server or an edit", async ($, on) => {
+test("reports the user's own reply and Claude's post, once, but not an edit", async ($, on) => {
   const c = chat([message('1700000000100', AMIN)])
   const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
   await $.tool.call(READ)
-  await $.tool.call({ tool: POST, ...ARGS, content: 'Posted by Claude.' })
   await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
   c.items = c.items.map(item => ({ ...item, bodyPreview: 'Edited: the cause is elsewhere.' }))
   await clock.advance(60_000)
   expect(submitted).toEqual([])
 
   c.items = [...c.items, message('1700000000300', ME, 'I checked it myself.')]
+  await $.tool.call({ tool: POST, ...ARGS, content: 'Posted by Claude.' })
   await clock.advance(60_000)
   expect(submitted.length).toBe(1)
   expect(submitted[0]).toContain('I checked it myself.')
-  expect(submitted[0]).not.toContain('1700000000900')
+  expect(submitted[0]).toContain('Posted by Claude.')
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+})
+
+test('reports a reply that a call to the same server, not marked read-only, returned before the check', async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  c.items = [...c.items, message('1700000000200', SARA)]
+  c.isReadOnly = false
+  await $.tool.call({ ...READ, agentId: 'agent-1' })
+
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('Sara Lind')
+})
+
+test('watches a read whose blocks are joined with no separator, and reports only the new items', async ($, on) => {
+  const c = { ...chat([message('1700000000100', AMIN), message('1700000000110', ME, 'Looking into it.')]), separator: '' }
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS }))).toBeUndefined()
+  c.items = [...c.items, message('1700000000200', SARA), message('1700000000210', AMIN, 'Agreed, it is not the cache.')]
+
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('returned 2 new items')
+  expect(submitted[0]).toContain('Agreed, it is not the cache.')
+  expect(submitted[0]).not.toContain('Looking into it.')
 })
 
 test('starts a turn on news while idle, and only shows a toast from the sixth turn for one call', async ($, on) => {
@@ -441,37 +471,11 @@ test("puts each watched item's live state and the news a turn missed into the us
   expect(again).not.toContain('Since the last check')
 })
 
-test('reads JSON values that follow each other with no separator, and keeps a }{ inside a string', async () => {
-  const a = message('1700000000100', AMIN, 'The log shows }{ where the cause was.')
-  const b = message('1700000000200', SARA)
+test('reads JSON values that follow each other with no separator, and keeps a }{ or an escaped quote inside a string', async () => {
+  const a = message('1700000000100', AMIN, 'The log shows "}{" where the cause was.')
+  const b = message('1700000000200', SARA, 'The log is in C:\\')
   const c = { ts: '1700000000.000300' }
   expect(parse([JSON.stringify(a) + JSON.stringify(b) + '\n ' + JSON.stringify(c)])).toEqual([a, b, c])
-})
-
-test("drops Claude's post that a check finds before the post's own call returns, and keeps the reply beside it", async ($, on) => {
-  let release = () => {}
-  const posted = new Promise<void>(resolve => (release = () => resolve()))
-  on('tool.call', { tool: POST }, async (_$, e, next) => {
-    const ran = await next(e)
-    await posted
-    return ran
-  })
-  const c = chat([message('1700000000100', AMIN)])
-  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
-  await $.tool.call(READ)
-  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
-  await $.turn.start({ text: 'answer in the thread', turnId: 't1' })
-
-  const posting = $.tool.call({ tool: POST, ...ARGS, content: 'Posted by Claude.' })
-  c.items = [...c.items, message('1700000000200', SARA)]
-  await clock.advance(60_000)
-  release()
-  const news = (await posting).context ?? []
-  expect(news.length).toBe(1)
-  expect(news[0]).toContain('Sara Lind')
-  expect(news[0]).not.toContain('1700000000900')
-  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
-  expect(submitted).toEqual([])
 })
 
 test("keeps news out of the mod's own question, so it reaches the main loop's next tool call", async ($, on) => {
@@ -494,13 +498,17 @@ test("keeps news out of the mod's own question, so it reaches the main loop's ne
   await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
 })
 
-test('shows a toast with the reason when gh pr create opens a PR that cannot join the watch', async ($, on) => {
+test('tells the user and Claude why gh pr create opened a PR that cannot join the watch', async ($, on) => {
   const { toasts } = await startSession($, on, { pr: pr(), toolOutput: `${OTHER}\n` })
   for (let i = 1; i <= 20; i++) await $.tool.call({ tool: WATCH, url: `https://github.com/acme/api/pull/${i}` })
-  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+  const ran = await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
   expect(toasts.length).toBe(1)
   expect(toasts[0]).toContain(`could not watch ${OTHER}`)
   expect(toasts[0]).toContain('20 items')
+  expect(toasts[0]).not.toContain('The user can stop one')
+  const context = (ran.context ?? []).join('\n')
+  expect(context).toContain(`could not watch ${OTHER}`)
+  expect(context).toContain('20 items')
 })
 
 test('starts a new failure streak, with its own toast, after /unwatch-discussions all', async ($, on) => {
