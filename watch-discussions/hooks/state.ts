@@ -214,8 +214,13 @@ function idsOf(o: object) {
   })
 }
 
-// Every `id` and `ts` value at any depth.
+// Slack prints each message's ts in text, as `Message TS: 1700000000.000100`. A generic `ID:` label is not read:
+// it also matches a value that changes on each call, such as a request id.
+const TEXT_TS = /\bTS: (\d+\.\d+)/g
+
+// Every `id` and `ts` value at any depth, and every ts in a text.
 export function ids(v: unknown, out = new Set<string>()) {
+  if (typeof v === 'string') for (const [, ts = ''] of v.matchAll(TEXT_TS)) out.add(ts)
   if (v && typeof v === 'object') {
     for (const id of idsOf(v)) out.add(id)
     for (const x of Object.values(v)) ids(x, out)
@@ -224,7 +229,14 @@ export function ids(v: unknown, out = new Set<string>()) {
 }
 
 // The outermost objects with an `id` or `ts` value that `seen` lacks. An edit keeps its ID, so it is not news.
+// In a text, the part that holds a new ts: a whole thread can pass the cut in `callNews`. A part starts at the blank
+// line before its ts, so it keeps the `From` line above the ts and the blank lines inside a reply.
 export function newItems(v: unknown, seen: Set<string>): object[] {
+  if (typeof v === 'string') {
+    const found = [...v.matchAll(TEXT_TS)]
+    const starts = found.map(m => v.lastIndexOf('\n\n', m.index) + 1)
+    return found.flatMap(([, ts = ''], i) => (seen.has(ts) ? [] : [{ ts, text: v.slice(starts[i], starts[i + 1]).trim() }]))
+  }
   if (!v || typeof v !== 'object') return []
   if (idsOf(v).some(id => !seen.has(id))) return [v]
   return Object.values(v).flatMap(x => newItems(x, seen))
