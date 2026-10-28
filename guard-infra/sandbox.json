@@ -19,7 +19,7 @@
     "filesystem": {
       "allowWrite": [
         "~/.npm", "~/Library/pnpm", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
-        "~/.cache/uv", "~/Library/Caches/pip", "~/projects"
+        "~/.cache/uv", "~/Library/Caches/pip", "~/projects", "/private/var/folders/*/*/T/**"
       ],
       "denyWrite": [
         "~/projects/**/.git/hooks",
