@@ -58,6 +58,12 @@ test('refuses an edit in the main checkout while the session is in a worktree of
   expect(refusal(ran)).not.toContain('worktree add')
 })
 
+test('points to the session worktree folder when the edited path does not start with the resolved repo top', async ($, on) => {
+  fakeGit(on, { cwd: REPO + '/.claude/worktrees/wt' })
+  const ran = await $.tool.call({ tool: 'Edit', file_path: '/link/src/a.ts', old_string: 'a', new_string: 'b' })
+  expect(refusal(ran)).toContain('This session is in the worktree /repo/.claude/worktrees/wt. Make this edit in /repo/.claude/worktrees/wt.')
+})
+
 // EnterWorktree makes a worktree only in the repo of the session's folder.
 test('refuses an edit in the main checkout of another repo and names git worktree add, not EnterWorktree', async ($, on) => {
   fakeGit(on, { cwd: OTHER })
