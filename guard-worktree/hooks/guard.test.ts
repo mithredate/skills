@@ -5,7 +5,7 @@ import { parseWorktreeAdd } from './rules.js'
 const REPO = '/repo'
 const NO_ORIGIN = '/home'
 
-// A fake git: /repo has an origin and worktrees under /repo/.worktrees/wt; /home has no origin.
+// A fake git: /repo has an origin and worktrees under /repo/.worktrees/wt and /repo/.claude/worktrees/wt; /home has no origin.
 // A fake gh answers whether /repo's default branch is protected. '' makes gh exit 1, and ghThrows makes the run itself fail.
 function fakeGit(on: On, { calls = [] as string[][], originUrl = 'git@github.com:acme/api.git\n', originHead = 'origin/main\n', branchProtected = 'true\n', ghThrows = false, cwd = REPO } = {}) {
   on('fs.exists', async () => ({ value: true }))
@@ -23,6 +23,7 @@ function fakeGit(on: On, { calls = [] as string[][], originUrl = 'git@github.com
     if (argv.includes('rev-parse')) {
       if (dir.startsWith(NO_ORIGIN)) return ok(`${NO_ORIGIN}\n${NO_ORIGIN}/.git\n${NO_ORIGIN}/.git\n`)
       if (dir.startsWith(REPO + '/.worktrees/wt')) return ok(`${REPO}/.worktrees/wt\n${REPO}/.git/worktrees/wt\n${REPO}/.git\n`)
+      if (dir.startsWith(REPO + '/.claude/worktrees/wt')) return ok(`${REPO}/.claude/worktrees/wt\n${REPO}/.git/worktrees/wt\n${REPO}/.git\n`)
       return ok(`${REPO}\n${REPO}/.git\n${REPO}/.git\n`)
     }
     if (argv.includes('get-url')) return dir === NO_ORIGIN ? fail : ok(originUrl)
@@ -56,6 +57,12 @@ test('names no made-up branch when origin/HEAD is unset', async ($, on) => {
 test('allows an edit in a linked worktree', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/.worktrees/wt/src/a.ts', content: 'x' })
+  expect(refusal(ran)).toBeUndefined()
+})
+
+test('allows an edit in a worktree that EnterWorktree made', async ($, on) => {
+  fakeGit(on)
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/.claude/worktrees/wt/src/a.ts', content: 'x' })
   expect(refusal(ran)).toBeUndefined()
 })
 
