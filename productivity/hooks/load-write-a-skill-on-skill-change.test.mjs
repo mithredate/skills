@@ -261,3 +261,13 @@ test('stays silent after a Bash call that only adds a linked worktree', () => {
 
     assert.equal(bashCall(repo, 'git worktree add -q -b other .worktrees/other').additionalContext, '');
 });
+
+test('reminds after each Bash call that changes a skill file, and only then, in a series of calls in one repo', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'cat dev/skills/tdd/SKILL.md').additionalContext, '');
+    assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md').additionalContext, LOAD_WRITE_A_SKILL);
+    assert.equal(bashCall(repo, 'cat dev/skills/tdd/SKILL.md').additionalContext, '');
+    assert.equal(bashCall(repo, 'echo y >> dev/skills/tdd/SKILL.md').additionalContext, LOAD_WRITE_A_SKILL);
+    assert.equal(bashCall(repo, "perl -pi -e 's/y/y/' dev/skills/tdd/SKILL.md").additionalContext, '');
+});

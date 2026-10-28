@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
@@ -24,29 +24,43 @@ function worktrees(top) {
     return [dirname(common), ...linked.map((name) => dirname(resolve(common, 'worktrees', name, readFileSync(join(common, 'worktrees', name, 'gitdir'), 'utf8').trim())))];
 }
 
-function list(dir, recursive = false) {
+function subdirs(dir) {
     try {
-        return readdirSync(dir, { recursive }).sort();
+        return readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
     } catch {
         return [];
     }
 }
 
 // A command can commit its change, which leaves git status clean, so the snapshot hashes the file contents.
+// An open() costs about 100 times an lstat() here, so a folder or a file is read again only when its stat changes.
 function snapshot(roots) {
-    const hash = createHash('sha1');
-    for (const root of roots) {
-        const dirs = list(root).flatMap((plugin) => [`${plugin}/skills`, `${plugin}/agents`]);
-        for (const path of dirs.flatMap((dir) => list(join(root, dir), true).map((file) => `${dir}/${file}`))) {
-            if (!SKILL_OR_AGENT_FILE.test(path)) continue;
-            hash.update(`${root}/${path}\0`);
-            try {
-                hash.update(readFileSync(join(root, path)));
-            } catch {
-                // A directory has no content.
-            }
-        }
+    const cachePath = join(tmpdir(), `load-write-a-skill-cache-${createHash('sha1').update(roots[0]).digest('hex')}`);
+    let cache = {};
+    try {
+        cache = JSON.parse(readFileSync(cachePath, 'utf8'));
+    } catch {
+        // No cache yet.
     }
+    const next = {};
+    const hash = createHash('sha1');
+    const walk = (path, inRepo) => {
+        const stat = lstatSync(path, { throwIfNoEntry: false });
+        const key = stat && `${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`;
+        const cached = cache[path]?.key === key ? cache[path] : null;
+        if (stat?.isDirectory()) {
+            next[path] = { key, entries: cached?.entries ?? readdirSync(path).sort() };
+            for (const entry of next[path].entries) walk(join(path, entry), `${inRepo}/${entry}`);
+        } else if (stat?.isFile() && SKILL_OR_AGENT_FILE.test(inRepo)) {
+            next[path] = { key, content: cached?.content ?? createHash('sha1').update(readFileSync(path)).digest('hex') };
+            hash.update(`${path}\0${next[path].content}\0`);
+        }
+    };
+    for (const root of roots) {
+        for (const plugin of subdirs(root)) for (const kind of ['skills', 'agents']) walk(join(root, plugin, kind), `${plugin}/${kind}`);
+    }
+    writeFileSync(`${cachePath}.${process.pid}`, JSON.stringify(next));
+    renameSync(`${cachePath}.${process.pid}`, cachePath);
     return hash.digest('hex');
 }
 
