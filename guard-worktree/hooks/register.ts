@@ -82,7 +82,7 @@ export const register: Register = on => {
       return {
         deny:
           `guard-worktree: a new worktree branch starts from ${base}, which I just fetched. ` +
-          `Run the same command with \`${base}\` as the start point (the last argument).`,
+          `Run the same command with \`--no-track\`, and with \`${base}\` as the start point (the last argument).`,
       }
     }
     return next(e)
