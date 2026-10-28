@@ -7,7 +7,7 @@ export function worktreeAdvice(top: string, base: string | undefined, path: stri
   const start = base ?? 'origin/<default branch>'
   return (
     `guard-worktree: ${path} is in the main checkout of ${top}. Code changes go in a worktree. ` +
-    `Run \`git -C ${top} fetch origin && git -C ${top} worktree add .worktrees/<branch> -b <branch> ${start}\`, ` +
+    `Run \`git -C ${top} fetch origin && git -C ${top} worktree add --no-track .worktrees/<branch> -b <branch> ${start}\`, ` +
     `then make this edit under ${top}/.worktrees/<branch>/.`
   )
 }
