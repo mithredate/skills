@@ -1,6 +1,6 @@
 {
   "name": "dev",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "General development tooling skills, and the pr-reviewer, verifier, and merge-judge agents.",
   "author": {
     "name": "Mehrdad Hedayati",
