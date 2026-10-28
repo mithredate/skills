@@ -291,7 +291,7 @@ test('reports an item that arrived between the read and the watch at the first c
   expect(submitted[0]).not.toContain('Is it the cache?')
 })
 
-test('watches a Slack thread by the ts in its text, and reports a new reply once, without the old messages or a new reaction', async ($, on) => {
+test('watches a Slack thread by the ts in its text, and reports a new reply once, without the old messages or an edit of one', async ($, on) => {
   const input = { channel_id: 'C-crew', message_ts: '1700000000.000100' }
   const c = chat([{
     messages:
@@ -304,11 +304,12 @@ test('watches a Slack thread by the ts in its text, and reports a new reply once
   await $.tool.call({ tool: SLACK, ...input })
   expect(refusal(await $.tool.call({ tool: WATCH, toolName: SLACK, input }))).toBeUndefined()
 
+  // Reply 1 gets an edit: a `TS:` label inside its text, a new file `ID:`, and a reaction. None of them is news.
   c.items = [{
     messages:
       '=== THREAD PARENT MESSAGE ===\nFrom: Sara Lind <sara@example.com> (U-sara)\nTime: 2026-10-04 04:10:16 CEST\nMessage TS: 1700000000.000100\nIs it the cache?\n\n' +
       '=== THREAD REPLIES (2 total) ===\n\n' +
-      '--- Reply 1 of 2 ---\nFrom: Amin Noor <amin@example.com> (U-amin)\nTime: 2026-10-20 17:37:30 CEST\nMessage TS: 1700000000.000200\nIt is not the cache.\n\nThe queue is full.\nFiles: image.png (ID: F-0001, image/png, 356.9 KB)\nReactions: eyes (1)\n\n' +
+      '--- Reply 1 of 2 ---\nFrom: Amin Noor <amin@example.com> (U-amin)\nTime: 2026-10-20 17:37:30 CEST\nMessage TS: 1700000000.000200\nIt is not the cache.\n\nThe queue is full.\nSee TS: 5.4 in the log.\nFiles: image.png (ID: F-0002, image/png, 356.9 KB)\nReactions: eyes (1)\n\n' +
       '--- Reply 2 of 2 ---\nFrom: Robin Vale <robin@example.com> (U-robin)\nTime: 2026-10-21 09:00:00 CEST\nMessage TS: 1700000000.000300\nThe queue drains now.\n',
     pagination_info: 'There are no more messages in this thread.\n',
   }]
