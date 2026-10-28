@@ -1,5 +1,4 @@
-import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
@@ -32,48 +31,26 @@ function subdirs(dir) {
     }
 }
 
-// A command can commit its change, which leaves git status clean, so the snapshot hashes the file contents.
-// An open() costs about 100 times an lstat() here, so a folder or a file is read again only when its stat changes.
-// ponytail: with no cache yet, as after a reboot, the first snapshot reads every file, about 170 ms in 10 worktrees.
+// A command can commit its change, which leaves git status clean, so the snapshot keeps the lstat of each file.
+// An lstat() costs about a hundredth of an open() here, so the snapshot reads no file content.
 function snapshot(roots) {
-    const cachePath = join(tmpdir(), `load-write-a-skill-cache-${createHash('sha1').update(roots[0]).digest('hex')}`);
-    let cacheText = '';
-    let cache = {};
-    try {
-        cacheText = readFileSync(cachePath, 'utf8');
-        cache = JSON.parse(cacheText);
-    } catch {
-        // No cache yet.
-    }
-    const next = {};
-    const hash = createHash('sha1');
+    const files = [];
     const walk = (path, inRepo) => {
         const stat = lstatSync(path, { throwIfNoEntry: false });
-        const key = stat && `${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`;
-        const cached = cache[path]?.key === key ? cache[path] : null;
-        if (stat?.isDirectory()) {
-            next[path] = { key, entries: cached?.entries ?? readdirSync(path).sort() };
-            for (const entry of next[path].entries) walk(join(path, entry), `${inRepo}/${entry}`);
-        } else if (stat?.isFile() && SKILL_OR_AGENT_FILE.test(inRepo)) {
-            next[path] = { key, content: cached?.content ?? createHash('sha1').update(readFileSync(path)).digest('hex') };
-            hash.update(`${path}\0${next[path].content}\0`);
-        }
+        if (stat?.isDirectory()) for (const entry of readdirSync(path).sort()) walk(join(path, entry), `${inRepo}/${entry}`);
+        else if (stat && SKILL_OR_AGENT_FILE.test(inRepo)) files.push(`${path}\0${stat.size}\0${stat.mtimeMs}\0${stat.ctimeMs}\0${stat.ino}\0${stat.mode}`);
     };
     for (const root of roots) {
         for (const plugin of subdirs(root)) for (const kind of ['skills', 'agents']) walk(join(root, plugin, kind), `${plugin}/${kind}`);
     }
-    if (JSON.stringify(next) !== cacheText) {
-        writeFileSync(`${cachePath}.${process.pid}`, JSON.stringify(next));
-        renameSync(`${cachePath}.${process.pid}`, cachePath);
-    }
-    return hash.digest('hex');
+    return files.join('\n');
 }
 
 try {
     const input = JSON.parse(data || '{}');
     // Without an id, all Bash calls would share one state file.
     if (!input.tool_use_id) process.exit(0);
-    // ponytail: a Bash call is checked only in the worktrees of the repo that holds its cwd, and a change that a background command makes after the call returns is missed.
+    // ponytail: a Bash call is checked only in the worktrees of the repo that holds its cwd, a change that a background command makes after the call returns is missed, and a touch or a same-content write gets the reminder.
     const state = join(tmpdir(), `load-write-a-skill-${input.tool_use_id}`);
     let changed = false;
 

@@ -170,10 +170,18 @@ test('stays silent after a Bash call that only reads skill files', () => {
     assert.equal(bashCall(repo, 'cat dev/skills/tdd/SKILL.md && grep -r tdd dev/skills && git log -1 -- dev/agents').additionalContext, '');
 });
 
-test('stays silent when a Bash call rewrites a skill file with the same content and commits', () => {
+test('reminds when a Bash call rewrites a skill file with the same content and commits', () => {
     const repo = makeRepo();
 
-    assert.equal(bashCall(repo, "perl -pi -e 's/tdd/tdd/' dev/skills/tdd/SKILL.md && git commit -q --allow-empty -am x").additionalContext, '');
+    assert.equal(bashCall(repo, "perl -pi -e 's/tdd/tdd/' dev/skills/tdd/SKILL.md && git commit -q --allow-empty -am x").additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('reminds after a Bash call that only changes the mode of a skill script', () => {
+    const repo = makeRepo();
+    mkdirSync(join(repo, 'dev/skills/tdd/scripts'));
+    writeFileSync(join(repo, 'dev/skills/tdd/scripts/check.sh'), 'echo ok\n');
+
+    assert.equal(bashCall(repo, 'chmod +x dev/skills/tdd/scripts/check.sh').additionalContext, LOAD_WRITE_A_SKILL);
 });
 
 test('stays silent after a Bash call that changes and commits other files', () => {
@@ -260,14 +268,4 @@ test('stays silent after a Bash call that only adds a linked worktree', () => {
     const repo = makeRepo();
 
     assert.equal(bashCall(repo, 'git worktree add -q -b other .worktrees/other').additionalContext, '');
-});
-
-test('reminds after each Bash call that changes a skill file, and only then, in a series of calls in one repo', () => {
-    const repo = makeRepo();
-
-    assert.equal(bashCall(repo, 'cat dev/skills/tdd/SKILL.md').additionalContext, '');
-    assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md').additionalContext, LOAD_WRITE_A_SKILL);
-    assert.equal(bashCall(repo, 'cat dev/skills/tdd/SKILL.md').additionalContext, '');
-    assert.equal(bashCall(repo, 'echo y >> dev/skills/tdd/SKILL.md').additionalContext, LOAD_WRITE_A_SKILL);
-    assert.equal(bashCall(repo, "perl -pi -e 's/y/y/' dev/skills/tdd/SKILL.md").additionalContext, '');
 });
