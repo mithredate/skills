@@ -1,7 +1,7 @@
 import type { On, ToolCallResult } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import { changes, instructions, newActivity, summarizeChecks, toSnapshot } from './state.js'
+import { changes, instructions, newActivity, parse, summarizeChecks, toSnapshot } from './state.js'
 import type { PrJson, Review } from './state.js'
 
 const URL = 'https://github.com/acme/api/pull/74'
@@ -439,4 +439,82 @@ test("puts each watched item's live state and the news a turn missed into the us
   const again = ((await $.prompt.submit({ text: 'and now?', wait: false, origin: { kind: 'composer' } })).context ?? []).join('\n')
   expect(again).toContain(`- ${LIST} ${JSON.stringify(ARGS)}`)
   expect(again).not.toContain('Since the last check')
+})
+
+test('reads JSON values that follow each other with no separator, and keeps a }{ inside a string', async () => {
+  const a = message('1700000000100', AMIN, 'The log shows }{ where the cause was.')
+  const b = message('1700000000200', SARA)
+  const c = { ts: '1700000000.000300' }
+  expect(parse([JSON.stringify(a) + JSON.stringify(b) + '\n ' + JSON.stringify(c)])).toEqual([a, b, c])
+})
+
+test("drops Claude's post that a check finds before the post's own call returns, and keeps the reply beside it", async ($, on) => {
+  let release = () => {}
+  const posted = new Promise<void>(resolve => (release = () => resolve()))
+  on('tool.call', { tool: POST }, async (_$, e, next) => {
+    const ran = await next(e)
+    await posted
+    return ran
+  })
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  await $.turn.start({ text: 'answer in the thread', turnId: 't1' })
+
+  const posting = $.tool.call({ tool: POST, ...ARGS, content: 'Posted by Claude.' })
+  c.items = [...c.items, message('1700000000200', SARA)]
+  await clock.advance(60_000)
+  release()
+  const news = (await posting).context ?? []
+  expect(news.length).toBe(1)
+  expect(news[0]).toContain('Sara Lind')
+  expect(news[0]).not.toContain('1700000000900')
+  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
+  expect(submitted).toEqual([])
+})
+
+test("keeps news out of the mod's own question, so it reaches the main loop's next tool call", async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, questions } = await startSession($, on, { pr: pr() }, c)
+  const other = { ...ARGS, parentMessageId: '1700000000500' }
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  c.isReadOnly = false
+  await $.tool.call({ tool: LIST, ...other })
+  await $.turn.start({ text: 'fix the bug', turnId: 't1' })
+  c.items = [...c.items, message('1700000000200', SARA)]
+  await clock.advance(60_000)
+
+  expect(refusal(await $.tool.call({ tool: WATCH, toolName: LIST, input: other }))).toBeUndefined()
+  expect(questions.length).toBe(1)
+  const news = (await $.tool.call({ tool: 'Bash', command: 'ls' })).context ?? []
+  expect(news.length).toBe(1)
+  expect(news[0]).toContain('Sara Lind')
+  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
+})
+
+test('shows a toast with the reason when gh pr create opens a PR that cannot join the watch', async ($, on) => {
+  const { toasts } = await startSession($, on, { pr: pr(), toolOutput: `${OTHER}\n` })
+  for (let i = 1; i <= 20; i++) await $.tool.call({ tool: WATCH, url: `https://github.com/acme/api/pull/${i}` })
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain(`could not watch ${OTHER}`)
+  expect(toasts[0]).toContain('20 items')
+})
+
+test('starts a new failure streak, with its own toast, after /unwatch-discussions all', async ($, on) => {
+  const c = chat([message('1700000000100', AMIN)])
+  const { clock, toasts } = await startSession($, on, { pr: pr() }, c)
+  await $.tool.call(READ)
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  c.isFailing = true
+  await clock.advance(60_000)
+  expect(toasts.length).toBe(1)
+
+  await $.command.run({ command: 'unwatch-discussions', args: 'all', ...TYPED })
+  await $.tool.call({ tool: WATCH, toolName: LIST, input: ARGS })
+  await clock.advance(60_000)
+  expect(toasts.length).toBe(2)
+  expect(toasts[1]).toContain('could not repeat')
 })
