@@ -41,6 +41,8 @@ const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : u
 test('refuses an edit in the main checkout and names EnterWorktree, not git worktree add', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
+  // EnterWorktree runs only when the user asks for a worktree.
+  expect(refusal(ran)).toContain('The user requires that code changes go in a worktree.')
   expect(refusal(ran)).toContain(
     'Call the `EnterWorktree` tool with a name. Then run `git switch -c <branch> --no-track` in the worktree. Then make this edit under /repo/.claude/worktrees/<name>/.',
   )

@@ -6,6 +6,7 @@ export function isMainCheckout(gitDir: string, commonDir: string) {
 // `session` is the checkout of the session's folder, only when it is in the edited repo. `EnterWorktree` works only there.
 export function worktreeAdvice(path: string, edited: { top: string; base?: string }, session?: { top: string; isMain: boolean }) {
   const { top } = edited
+  // The `EnterWorktree` tool runs only when the user or the project instructions ask for a worktree.
   const intro = `guard-worktree: ${path} is in the main checkout of ${top}. The user requires that code changes go in a worktree. `
   if (!session) {
     const start = edited.base ?? 'origin/<default branch>'
