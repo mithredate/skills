@@ -7,7 +7,6 @@
     "enableWeakerNetworkIsolation": true,
     "excludedCommands": [
       "aws *", "kubectl *", "helm *", "terraform *",
-      "soffice *",
       "grep *", "head *", "tail *", "wc *", "jq *", "cut *", "tr *",
       "docker ps *", "docker logs *", "docker inspect *", "docker images *", "docker image *", "docker version *", "docker info *",
       "docker exec *", "docker build *", "docker buildx *", "docker pull *", "docker push *", "docker tag *",
