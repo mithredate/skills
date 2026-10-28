@@ -38,7 +38,7 @@ const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : u
 test('refuses an edit in the main checkout', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
-  expect(refusal(ran)).toContain('worktree add .worktrees/<branch> -b <branch> origin/main')
+  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/main')
 })
 
 test('refuses a notebook edit in the main checkout', async ($, on) => {
@@ -50,7 +50,7 @@ test('refuses a notebook edit in the main checkout', async ($, on) => {
 test('names no made-up branch when origin/HEAD is unset', async ($, on) => {
   fakeGit(on, { originHead: '' })
   const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
-  expect(refusal(ran)).toContain('-b <branch> origin/<default branch>')
+  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/<default branch>')
 })
 
 test('allows an edit in a linked worktree', async ($, on) => {
@@ -115,6 +115,7 @@ test('fetches, then refuses a new worktree branch from a local base', async ($, 
   const calls: string[][] = []
   fakeGit(on, { calls })
   const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add .worktrees/x -b x main' })
+  expect(refusal(ran)).toContain('with `--no-track`')
   expect(refusal(ran)).toContain('`origin/main` as the start point')
   expect(calls.some(c => c.includes('fetch'))).toBe(true)
 })
