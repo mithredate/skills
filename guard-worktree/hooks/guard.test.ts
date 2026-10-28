@@ -36,22 +36,20 @@ function fakeGit(on: On, { calls = [] as string[][], originUrl = 'git@github.com
 
 const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : undefined)
 
-test('refuses an edit in the main checkout', async ($, on) => {
+test('refuses an edit in the main checkout and names EnterWorktree, not git worktree add', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
-  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/main')
+  expect(refusal(ran)).toContain('Call the `EnterWorktree` tool with a name')
+  expect(refusal(ran)).toContain('run `git switch -c <branch> --no-track` in the worktree')
+  expect(refusal(ran)).toContain('make this edit under /repo/.claude/worktrees/<name>/')
+  expect(refusal(ran)).not.toContain('worktree add')
+  expect(refusal(ran)).not.toContain('.worktrees/')
 })
 
 test('refuses a notebook edit in the main checkout', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'NotebookEdit', notebook_path: REPO + '/n.ipynb', new_source: 'x' })
   expect(refusal(ran)).toContain('main checkout')
-})
-
-test('names no made-up branch when origin/HEAD is unset', async ($, on) => {
-  fakeGit(on, { originHead: '' })
-  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
-  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/<default branch>')
 })
 
 test('allows an edit in a linked worktree', async ($, on) => {
@@ -141,7 +139,7 @@ test('lets a new worktree branch from origin through', async ($, on) => {
   expect(refusal(ran)).toBeUndefined()
 })
 
-test('lets the command of the edit refusal through', async ($, on) => {
+test('lets a fetch and a new worktree branch from origin through', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Bash', command: `git -C ${REPO} fetch origin && git -C ${REPO} worktree add --no-track .worktrees/x -b x origin/main` })
   expect(refusal(ran)).toBeUndefined()

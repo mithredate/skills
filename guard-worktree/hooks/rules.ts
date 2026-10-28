@@ -3,12 +3,11 @@ export function isMainCheckout(gitDir: string, commonDir: string) {
   return gitDir.replace(/\/$/, '') === commonDir.replace(/\/$/, '')
 }
 
-export function worktreeAdvice(top: string, base: string | undefined, path: string) {
-  const start = base ?? 'origin/<default branch>'
+export function worktreeAdvice(top: string, path: string) {
   return (
-    `guard-worktree: ${path} is in the main checkout of ${top}. Code changes go in a worktree. ` +
-    `Run \`git -C ${top} fetch origin && git -C ${top} worktree add --no-track .worktrees/<branch> -b <branch> ${start}\`, ` +
-    `then make this edit under ${top}/.worktrees/<branch>/.`
+    `guard-worktree: ${path} is in the main checkout of ${top}. The user requires that code changes go in a worktree. ` +
+    `Call the \`EnterWorktree\` tool with a name, then run \`git switch -c <branch> --no-track\` in the worktree, ` +
+    `then make this edit under ${top}/.claude/worktrees/<name>/.`
   )
 }
 

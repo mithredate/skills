@@ -60,7 +60,7 @@ async function guardEdit($: EngineInterface, path: string | undefined) {
   const checkout = await guardedCheckout($, await nearestDir($, path))
   if (!checkout?.isMain) return undefined
   if ((await git($, ['-C', checkout.top, 'check-ignore', '-q', path])).exitCode === 0) return undefined
-  return worktreeAdvice(checkout.top, checkout.base, path)
+  return worktreeAdvice(checkout.top, path)
 }
 
 export const register: Register = on => {
