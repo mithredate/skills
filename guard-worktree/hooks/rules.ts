@@ -3,12 +3,26 @@ export function isMainCheckout(gitDir: string, commonDir: string) {
   return gitDir.replace(/\/$/, '') === commonDir.replace(/\/$/, '')
 }
 
-export function worktreeAdvice(top: string, base: string | undefined, path: string) {
-  const start = base ?? 'origin/<default branch>'
+// `session` is the checkout of the session's folder, only when it is in the edited repo. `EnterWorktree` works only there.
+export function worktreeAdvice(path: string, edited: { top: string; base?: string }, session?: { top: string; isMain: boolean }) {
+  const { top } = edited
+  // The `EnterWorktree` tool runs only when the user or the project instructions ask for a worktree.
+  const intro = `guard-worktree: ${path} is in the main checkout of ${top}. The user requires that code changes go in a worktree. `
+  if (!session) {
+    const start = edited.base ?? 'origin/<default branch>'
+    return (
+      intro +
+      `Run \`git -C ${top} fetch origin && git -C ${top} worktree add --no-track .worktrees/<branch> -b <branch> ${start}\`. ` +
+      `Then make this edit under ${top}/.worktrees/<branch>/.`
+    )
+  }
+  // `top` has its symlinks resolved, so a path through a symlink such as /tmp does not start with it.
+  const target = path.startsWith(top + '/') ? session.top + path.slice(top.length) : session.top
+  if (!session.isMain) return intro + `This session is in the worktree ${session.top}. Make this edit in ${target}.`
   return (
-    `guard-worktree: ${path} is in the main checkout of ${top}. Code changes go in a worktree. ` +
-    `Run \`git -C ${top} fetch origin && git -C ${top} worktree add --no-track .worktrees/<branch> -b <branch> ${start}\`, ` +
-    `then make this edit under ${top}/.worktrees/<branch>/.`
+    intro +
+    `Call the \`EnterWorktree\` tool with a name. Then run \`git switch -c <branch> --no-track\` in the worktree. ` +
+    `Then make this edit under ${top}/.claude/worktrees/<name>/.`
   )
 }
 

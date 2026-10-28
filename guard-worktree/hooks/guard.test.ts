@@ -4,8 +4,9 @@ import { parseWorktreeAdd } from './rules.js'
 
 const REPO = '/repo'
 const NO_ORIGIN = '/home'
+const OTHER = '/other'
 
-// A fake git: /repo has an origin and worktrees under /repo/.worktrees/wt; /home has no origin.
+// A fake git: /repo has an origin and worktrees under /repo/.worktrees/wt and /repo/.claude/worktrees/wt; /home has no origin; /other is a second repo with an origin.
 // A fake gh answers whether /repo's default branch is protected. '' makes gh exit 1, and ghThrows makes the run itself fail.
 function fakeGit(on: On, { calls = [] as string[][], originUrl = 'git@github.com:acme/api.git\n', originHead = 'origin/main\n', branchProtected = 'true\n', ghThrows = false, cwd = REPO } = {}) {
   on('fs.exists', async () => ({ value: true }))
@@ -22,7 +23,9 @@ function fakeGit(on: On, { calls = [] as string[][], originUrl = 'git@github.com
     }
     if (argv.includes('rev-parse')) {
       if (dir.startsWith(NO_ORIGIN)) return ok(`${NO_ORIGIN}\n${NO_ORIGIN}/.git\n${NO_ORIGIN}/.git\n`)
+      if (dir.startsWith(OTHER)) return ok(`${OTHER}\n${OTHER}/.git\n${OTHER}/.git\n`)
       if (dir.startsWith(REPO + '/.worktrees/wt')) return ok(`${REPO}/.worktrees/wt\n${REPO}/.git/worktrees/wt\n${REPO}/.git\n`)
+      if (dir.startsWith(REPO + '/.claude/worktrees/wt')) return ok(`${REPO}/.claude/worktrees/wt\n${REPO}/.git/worktrees/wt\n${REPO}/.git\n`)
       return ok(`${REPO}\n${REPO}/.git\n${REPO}/.git\n`)
     }
     if (argv.includes('get-url')) return dir === NO_ORIGIN ? fail : ok(originUrl)
@@ -35,10 +38,52 @@ function fakeGit(on: On, { calls = [] as string[][], originUrl = 'git@github.com
 
 const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : undefined)
 
-test('refuses an edit in the main checkout', async ($, on) => {
+test('refuses an edit in the main checkout and names EnterWorktree, not git worktree add', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
-  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/main')
+  // EnterWorktree runs only when the user asks for a worktree.
+  expect(refusal(ran)).toContain('The user requires that code changes go in a worktree.')
+  expect(refusal(ran)).toContain(
+    'Call the `EnterWorktree` tool with a name. Then run `git switch -c <branch> --no-track` in the worktree. Then make this edit under /repo/.claude/worktrees/<name>/.',
+  )
+  expect(refusal(ran)).not.toContain('worktree add')
+  expect(refusal(ran)).not.toContain('.worktrees/')
+})
+
+test('refuses an edit in the main checkout while the session is in a worktree of that repo, and points to that worktree', async ($, on) => {
+  fakeGit(on, { cwd: REPO + '/.claude/worktrees/wt' })
+  const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
+  expect(refusal(ran)).toContain('This session is in the worktree /repo/.claude/worktrees/wt. Make this edit in /repo/.claude/worktrees/wt/src/a.ts.')
+  expect(refusal(ran)).not.toContain('EnterWorktree')
+  expect(refusal(ran)).not.toContain('worktree add')
+})
+
+test('points to the session worktree folder when the edited path does not start with the resolved repo top', async ($, on) => {
+  fakeGit(on, { cwd: REPO + '/.claude/worktrees/wt' })
+  const ran = await $.tool.call({ tool: 'Edit', file_path: '/link/src/a.ts', old_string: 'a', new_string: 'b' })
+  expect(refusal(ran)).toContain('This session is in the worktree /repo/.claude/worktrees/wt. Make this edit in /repo/.claude/worktrees/wt.')
+})
+
+// EnterWorktree makes a worktree only in the repo of the session's folder.
+test('refuses an edit in the main checkout of another repo and names git worktree add, not EnterWorktree', async ($, on) => {
+  fakeGit(on, { cwd: OTHER })
+  const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
+  expect(refusal(ran)).toContain('Run `git -C /repo fetch origin && git -C /repo worktree add --no-track .worktrees/<branch> -b <branch> origin/main`.')
+  expect(refusal(ran)).toContain('make this edit under /repo/.worktrees/<branch>/.')
+  expect(refusal(ran)).not.toContain('EnterWorktree')
+})
+
+test('refuses an edit in the main checkout and names git worktree add when the session folder is in no guarded repo', async ($, on) => {
+  fakeGit(on, { cwd: NO_ORIGIN })
+  const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
+  expect(refusal(ran)).toContain('Run `git -C /repo fetch origin && git -C /repo worktree add --no-track .worktrees/<branch> -b <branch> origin/main`.')
+  expect(refusal(ran)).not.toContain('EnterWorktree')
+})
+
+test('names no made-up branch in the refusal for another repo when origin/HEAD is unset', async ($, on) => {
+  fakeGit(on, { cwd: OTHER, originHead: '' })
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
+  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/<default branch>`.')
 })
 
 test('refuses a notebook edit in the main checkout', async ($, on) => {
@@ -47,15 +92,15 @@ test('refuses a notebook edit in the main checkout', async ($, on) => {
   expect(refusal(ran)).toContain('main checkout')
 })
 
-test('names no made-up branch when origin/HEAD is unset', async ($, on) => {
-  fakeGit(on, { originHead: '' })
-  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
-  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/<default branch>')
-})
-
 test('allows an edit in a linked worktree', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/.worktrees/wt/src/a.ts', content: 'x' })
+  expect(refusal(ran)).toBeUndefined()
+})
+
+test('allows an edit in a worktree that EnterWorktree made', async ($, on) => {
+  fakeGit(on)
+  const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/.claude/worktrees/wt/src/a.ts', content: 'x' })
   expect(refusal(ran)).toBeUndefined()
 })
 
@@ -120,6 +165,12 @@ test('fetches, then refuses a new worktree branch from a local base', async ($, 
   expect(calls.some(c => c.includes('fetch'))).toBe(true)
 })
 
+test('names no made-up branch for a new worktree branch from a local base when origin/HEAD is unset', async ($, on) => {
+  fakeGit(on, { originHead: '' })
+  const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add .worktrees/x -b x main' })
+  expect(refusal(ran)).toContain('`origin/<default branch>` as the start point')
+})
+
 // An agent can fetch a PR in one call and add its worktree from FETCH_HEAD in the next.
 test('fetches without overwriting FETCH_HEAD', async ($, on) => {
   const calls: string[][] = []
@@ -134,7 +185,7 @@ test('lets a new worktree branch from origin through', async ($, on) => {
   expect(refusal(ran)).toBeUndefined()
 })
 
-test('lets the command of the edit refusal through', async ($, on) => {
+test('lets a fetch and a new worktree branch from origin through', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Bash', command: `git -C ${REPO} fetch origin && git -C ${REPO} worktree add --no-track .worktrees/x -b x origin/main` })
   expect(refusal(ran)).toBeUndefined()

@@ -6,8 +6,8 @@ const ALWAYS_ALLOWED = /(^|\/)\.wayfinder\//
 
 // A repo with no origin, such as a stray `git init` in a home directory, has no PR workflow to guard.
 // Nor has a GitHub repo whose default branch takes direct pushes, such as a private repo on a free plan.
-// `base` is `origin/<default>` when origin/HEAD is set, and undefined when it is not.
-type Checkout = { top: string; isMain: boolean; base?: string }
+// `base` is `origin/<default>` when origin/HEAD is set, and undefined when it is not. `common` is the same in each worktree of a repo.
+type Checkout = { top: string; common: string; isMain: boolean; base?: string }
 
 const checkouts = new Map<string, Checkout | null>()
 const directPush = new Map<string, Promise<boolean>>()
@@ -49,7 +49,7 @@ async function guardedCheckout($: EngineInterface, dir: string) {
   if (origin?.exitCode === 0) {
     const head = await git($, ['-C', top, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD'])
     const base = head.exitCode === 0 ? head.stdout.trim() : undefined
-    if (!(await takesDirectPush($, origin.stdout.trim(), base))) found = { top, isMain: isMainCheckout(gitDir, commonDir), base }
+    if (!(await takesDirectPush($, origin.stdout.trim(), base))) found = { top, common: commonDir, isMain: isMainCheckout(gitDir, commonDir), base }
   }
   checkouts.set(dir, found)
   return found
@@ -60,7 +60,8 @@ async function guardEdit($: EngineInterface, path: string | undefined) {
   const checkout = await guardedCheckout($, await nearestDir($, path))
   if (!checkout?.isMain) return undefined
   if ((await git($, ['-C', checkout.top, 'check-ignore', '-q', path])).exitCode === 0) return undefined
-  return worktreeAdvice(checkout.top, checkout.base, path)
+  const session = await guardedCheckout($, await $.session.cwd())
+  return worktreeAdvice(path, checkout, session?.common === checkout.common ? session : undefined)
 }
 
 export const register: Register = on => {

@@ -25,13 +25,14 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 
 ## Worktree workflow (imports and refreshes)
 
-Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree per session**, never on `main` directly. Worktrees live under `.worktrees/<branch-name>/` at the repo root (gitignored); branch name = directory name.
+Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree per session**, never on `main` directly. Make the worktree with the `EnterWorktree` tool. It lives under `.claude/worktrees/<name>/` at the repo root (gitignored). In the worktree, run `git switch -c <branch> --no-track` to name the branch. A branch rename or a tracking branch writes `.git/config`, which the sandbox denies.
 
 Per session:
 - Create a worktree on a feature branch — `import/<target-name>` for imports, `refresh/<date>` for refreshes.
 - Do all file edits in the worktree.
 - On successful validation: commit, push the branch, open a PR with the body shape from `write-a-skill` (Why, What, Verified, Links). CI on the feature branch is the actual gate.
 - On validation failure: leave the worktree dirty for inspection. Don't commit, don't push.
+- After the merge, leave the worktree with `ExitWorktree` and `action: "remove"`. If the tool refuses and lists changes, show the list to the user and ask before you discard anything. `ExitWorktree` acts only on a worktree that the same session made with `EnterWorktree`. For a worktree from an earlier session, give the user `git worktree remove <path>` to run with `!`. `git worktree remove` fails in the sandbox.
 
 ## Lifecycle
 
