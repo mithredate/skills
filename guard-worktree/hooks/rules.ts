@@ -18,8 +18,8 @@ export function worktreeAdvice(path: string, edited: { top: string; base?: strin
   if (!session.isMain) return intro + `This session is in the worktree ${session.top}. Make this edit there.`
   return (
     intro +
-    `Call the \`EnterWorktree\` tool with a name, then run \`git switch -c <branch> --no-track\` in the worktree, ` +
-    `then make this edit under ${top}/.claude/worktrees/<name>/.`
+    `Call the \`EnterWorktree\` tool with a name. Then run \`git switch -c <branch> --no-track\` in the worktree. ` +
+    `Then make this edit under ${top}/.claude/worktrees/<name>/.`
   )
 }
 
