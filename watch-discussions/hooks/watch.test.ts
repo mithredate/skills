@@ -311,7 +311,7 @@ test('watches a Slack thread by the ts in its text, and reports each new reply o
       '=== THREAD PARENT MESSAGE ===\nFrom: Sara Lind <sara@example.com> (U-sara)\nTime: 2026-10-04 04:10:16 CEST\nMessage TS: 1700000000.000100\nIs it the cache?\n\n' +
       '=== THREAD REPLIES (3 total) ===\n\n' +
       '--- Reply 1 of 3 ---\nFrom: Amin Noor <amin@example.com> (U-amin)\nTime: 2026-10-20 17:37:30 CEST\nMessage TS: 1700000000.000200\nIt is not the cache.\n\nThe queue is full.\nSee TS: 5.4 in the log.\nFiles: image.png (ID: F-0002, image/png, 356.9 KB)\nReactions: eyes (1)\n\n' +
-      '--- Reply 2 of 3 ---\nFrom: Robin Vale <robin@example.com> (U-robin)\nTime: 2026-10-21 09:00:00 CEST\nMessage TS: 1700000000.000300\nThe queue drains now.\n\n' +
+      '--- Reply 2 of 3 ---\nFrom: Robin Vale <robin@example.com> (U-robin)\nTime: 2026-10-21 09:00:00 CEST\nMessage TS: 1700000000.000300\nThe queue drains now.\n\nIt took 4 s.\n\n' +
       '--- Reply 3 of 3 ---\nFrom: Lea Park <lea@example.com> (U-lea)\nTime: 2026-10-21 09:05:00 CEST\nMessage TS: 1700000000.000400\nThanks, closing this.\n',
     pagination_info: 'There are no more messages in this thread.\n',
   }]
@@ -324,6 +324,7 @@ test('watches a Slack thread by the ts in its text, and reports each new reply o
   expect(submitted[0]).toContain('Thanks, closing this.')
   const reply2 = submitted[0].split('\n').find(line => line.includes('"ts":"1700000000.000300"'))
   expect(reply2).toContain('The queue drains now.')
+  expect(reply2).toContain('It took 4 s.')
   expect(reply2).not.toContain('Thanks, closing this.')
   expect(submitted[0]).not.toContain('Is it the cache?')
   expect(submitted[0]).not.toContain('It is not the cache.')
