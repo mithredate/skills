@@ -1,6 +1,6 @@
 {
   "name": "watch-discussions",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Watches the PRs and connector calls that Claude picks with its watch tool, and each PR the session opens. New items reach the session during a turn, and start a turn while it is idle.",
   "author": {
     "name": "Mehrdad Hedayati",
