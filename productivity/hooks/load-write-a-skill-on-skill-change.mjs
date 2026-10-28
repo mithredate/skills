@@ -34,13 +34,14 @@ function subdirs(dir) {
 
 // A command can commit its change, which leaves git status clean, so the snapshot hashes the file contents.
 // An open() costs about 100 times an lstat() here, so a folder or a file is read again only when its stat changes.
+// ponytail: with no cache yet, as after a reboot, the first snapshot reads every file, about 170 ms in 10 worktrees.
 function snapshot(roots) {
     const cachePath = join(tmpdir(), `load-write-a-skill-cache-${createHash('sha1').update(roots[0]).digest('hex')}`);
-    let cached = '';
+    let cacheText = '';
     let cache = {};
     try {
-        cached = readFileSync(cachePath, 'utf8');
-        cache = JSON.parse(cached);
+        cacheText = readFileSync(cachePath, 'utf8');
+        cache = JSON.parse(cacheText);
     } catch {
         // No cache yet.
     }
@@ -61,7 +62,7 @@ function snapshot(roots) {
     for (const root of roots) {
         for (const plugin of subdirs(root)) for (const kind of ['skills', 'agents']) walk(join(root, plugin, kind), `${plugin}/${kind}`);
     }
-    if (JSON.stringify(next) !== cached) {
+    if (JSON.stringify(next) !== cacheText) {
         writeFileSync(`${cachePath}.${process.pid}`, JSON.stringify(next));
         renameSync(`${cachePath}.${process.pid}`, cachePath);
     }
