@@ -49,7 +49,7 @@ function fileToolContext(repo, toolName, toolInput, extra = {}) {
 function bashCall(repo, command, extra = {}) {
     const call = { tool_name: 'Bash', tool_input: { command }, tool_use_id: `toolu_${randomUUID()}`, cwd: repo, ...extra };
     assert.equal(hookOutput({ ...call, hook_event_name: 'PreToolUse' }).additionalContext, '');
-    const { status } = spawnSync('sh', ['-c', command], { cwd: repo });
+    const { status } = spawnSync('sh', ['-c', command], { cwd: call.cwd });
     return hookOutput({ ...call, hook_event_name: status === 0 ? 'PostToolUse' : 'PostToolUseFailure' });
 }
 
@@ -198,4 +198,27 @@ test('stays silent and exits 0 after a Bash call outside a git repo', () => {
     const dir = mkdtempSync(join(tmpdir(), 'write-a-skill-'));
 
     assert.equal(bashCall(dir, 'echo x > notes.md').additionalContext, '');
+});
+
+test('reminds after a Bash call from a subdirectory of the repo', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'echo x >> skills/tdd/SKILL.md', { cwd: join(repo, 'dev') }).additionalContext, LOAD_WRITE_A_SKILL);
+});
+
+test('stays silent after a Bash PostToolUse with no PreToolUse before it', () => {
+    const repo = makeRepo();
+    const command = 'echo x >> dev/skills/tdd/SKILL.md';
+    spawnSync('sh', ['-c', command], { cwd: repo });
+
+    const context = hookOutput({ hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_input: { command }, tool_use_id: `toolu_${randomUUID()}`, cwd: repo }).additionalContext;
+
+    assert.equal(context, '');
+});
+
+test('stays silent after a call with no tool_use_id', () => {
+    const repo = makeRepo();
+
+    assert.equal(bashCall(repo, 'echo x >> dev/skills/tdd/SKILL.md', { tool_use_id: undefined }).additionalContext, '');
+    assert.equal(fileToolContext(repo, 'Edit', { file_path: join(repo, 'dev/skills/tdd/SKILL.md'), old_string: 'tdd', new_string: 'TDD' }, { tool_use_id: undefined }), '');
 });

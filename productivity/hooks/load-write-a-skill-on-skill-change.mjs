@@ -39,6 +39,8 @@ function snapshot(top) {
 
 try {
     const input = JSON.parse(data || '{}');
+    // Without an id, all Bash calls would share one state file.
+    if (!input.tool_use_id) process.exit(0);
     // ponytail: a Bash call is checked only in the repo of its cwd, and a change that a background command makes after the call returns is missed.
     const state = join(tmpdir(), `load-write-a-skill-${input.tool_use_id}`);
     let changed = false;
