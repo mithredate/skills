@@ -32,7 +32,7 @@ Per session:
 - Do all file edits in the worktree.
 - On successful validation: commit, push the branch, open a PR with the body shape from `write-a-skill` (Why, What, Verified, Links). CI on the feature branch is the actual gate.
 - On validation failure: leave the worktree dirty for inspection. Don't commit, don't push.
-- After the merge, leave the worktree with `ExitWorktree` and `action: "remove"`. After a squash merge, the branch commits are not on `main`, and the tool refuses. Then add `discard_changes: true`, because the merged PR holds that work. `ExitWorktree` acts only on a worktree that the same session made with `EnterWorktree`. For a worktree from an earlier session, give the user `git worktree remove <path>` to run with `!`. `git worktree remove` fails in the sandbox.
+- After the merge, leave the worktree with `ExitWorktree` and `action: "remove"`. If the tool refuses and lists changes, show the list to the user and ask before you discard anything. `ExitWorktree` acts only on a worktree that the same session made with `EnterWorktree`. For a worktree from an earlier session, give the user `git worktree remove <path>` to run with `!`. `git worktree remove` fails in the sandbox.
 
 ## Lifecycle
 
