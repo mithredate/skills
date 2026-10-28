@@ -25,6 +25,7 @@ const LIST = 'mcp__claude_ai_Microsoft_365__teams_list_channel_messages'
 const READ_ARGS = { tool: LIST, teamId: TEAM, channelId: CHANNEL, parentMessageId: ROOT } as const
 const ME = { userId: 'user-robin', displayName: 'Robin Vale' }
 const SARA = { userId: 'user-sara', displayName: 'Sara Lind' }
+const AMIN = { userId: 'user-amin', displayName: 'Amin Noor' }
 // A link to a reply: the path names the reply, `parentMessageId` the thread, and the channel ID is URL-encoded.
 const LINK = `https://teams.microsoft.com/l/message/${encodeURIComponent(CHANNEL)}/1700000000500?tenantId=tenant-0001&groupId=${TEAM}&parentMessageId=${ROOT}&teamName=Crew&channelName=General&createdTime=1700000000500`
 
@@ -35,7 +36,8 @@ function reply(id: string, from: { userId: string; displayName: string }) {
   }
 }
 
-type Teams = { replies: object[]; isFailing?: boolean }
+// `isFailing` fails every connector call, `failingTool` only that tool's, and `isHanging` leaves every call unanswered.
+type Teams = { replies: object[]; isFailing?: boolean; failingTool?: string; isHanging?: boolean }
 
 // The world beneath the plugin: gh prints `pr` for any PR and `me` for the user; the Microsoft 365 connector lists
 // `teams.replies` for the thread ROOT, one JSON object per block, and `get_me` is Robin; prompts and toasts are recorded.
@@ -50,7 +52,8 @@ async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: st
       ? { value: { exitCode: 0, stdout: 'me\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
       : { value: { exitCode: 0, stdout: JSON.stringify(gh.pr), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
   on('mcp.call', async (_$, e) => {
-    if (teams.isFailing) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
+    if (teams.isHanging) await new Promise<void>(() => {})
+    if (teams.isFailing || e.tool === teams.failingTool) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
     const items = e.tool === 'get_me'
       ? [{ id: ME.userId, displayName: ME.displayName, mail: 'robin@example.com', userPrincipalName: 'robin@example.com' }]
       : e.args.parentMessageId === ROOT ? teams.replies : []
@@ -315,4 +318,64 @@ test('watches and unwatches a thread by its Teams link, and watches it again aft
   await $.tool.call(READ_ARGS)
   expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
   expect((await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text).toContain(THREAD)
+})
+
+test("puts a thread's live state and the news a turn missed into the user's next prompt, once", async ($, on) => {
+  const teams: Teams = { replies: [reply('1700000000100', ME)] }
+  const { clock } = await startSession($, on, { pr: pr() }, teams)
+  await $.tool.call(READ_ARGS)
+  await $.turn.start({ text: 'fix the bug', turnId: 't1' })
+  teams.replies = [reply('1700000000200', SARA), ...teams.replies]
+  await clock.advance(60_000)
+  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
+  await clock.advance(30_000)
+
+  const typed = (await $.prompt.submit({ text: 'what next?', wait: false, origin: { kind: 'composer' } })).context ?? []
+  expect(typed.join('\n')).toContain(`Teams thread ${THREAD}: 2 replies (checked 30s ago)`)
+  expect(typed.join('\n')).toContain(`Since the last check, Teams thread ${THREAD} got 1 new reply: Sara Lind at 2026-10-28T09:15:00Z.`)
+  const again = (await $.prompt.submit({ text: 'and now?', wait: false, origin: { kind: 'composer' } })).context ?? []
+  expect(again.join('\n')).toContain(`Teams thread ${THREAD}: 2 replies`)
+  expect(again.join('\n')).not.toContain('Since the last check')
+})
+
+test('polls PRs on time while a Teams check hangs', async ($, on) => {
+  const gh = { pr: pr() }
+  const teams: Teams = { replies: [] }
+  const { clock, submitted } = await startSession($, on, gh, teams)
+  await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
+  await $.tool.call(READ_ARGS)
+
+  teams.isHanging = true
+  gh.pr = pr({ reviews: [COPILOT] })
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('Copilot reviewed')
+})
+
+test('keeps a thread whose fetch failed, shows one toast, and then reports the replies since the last good check', async ($, on) => {
+  const teams: Teams = { replies: [reply('1700000000100', AMIN)] }
+  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
+  await $.tool.call(READ_ARGS)
+  await clock.advance(60_000)
+
+  teams.failingTool = 'teams_list_channel_messages'
+  teams.replies = [reply('1700000000200', SARA), ...teams.replies]
+  await clock.advance(60_000)
+  await clock.advance(60_000)
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain('could not read')
+  expect(submitted).toEqual([])
+
+  teams.failingTool = undefined
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('got 1 new reply: Sara Lind')
+  expect(submitted[0]).not.toContain('Amin Noor')
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(THREAD)
+})
+
+test('says why /watch-discussions could not watch a Teams link', async ($, on) => {
+  await startSession($, on, { pr: pr() }, { replies: [], isFailing: true })
+  const text = (await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text
+  expect(text).toContain(`Could not watch ${LINK}: the Microsoft 365 connector could not read the thread.`)
 })
