@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { test, expect, mock } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import { MAX_TURNS_PER_PR, changes, instructions, newActivity, summarizeChecks, toSnapshot } from './state.js'
+import { changes, instructions, newActivity, summarizeChecks, toSnapshot } from './state.js'
 import type { PrJson, Review } from './state.js'
 
 const URL = 'https://github.com/acme/api/pull/74'
@@ -17,8 +17,29 @@ function pr(over: Partial<PrJson> = {}): PrJson {
   }
 }
 
-// The world beneath the plugin: gh prints `pr` for any PR and `me` for the user; prompts and toasts are recorded.
-async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: string }) {
+const TEAM = 'team-0001'
+const CHANNEL = '19:general0001@thread.tacv2'
+const ROOT = '1700000000000'
+const THREAD = `teams:///teams/${TEAM}/channels/${CHANNEL}/messages/${ROOT}`
+const LIST = 'mcp__claude_ai_Microsoft_365__teams_list_channel_messages'
+const READ_ARGS = { tool: LIST, teamId: TEAM, channelId: CHANNEL, parentMessageId: ROOT } as const
+const ME = { userId: 'user-robin', displayName: 'Robin Vale' }
+const SARA = { userId: 'user-sara', displayName: 'Sara Lind' }
+// A link to a reply: the path names the reply, `parentMessageId` the thread, and the channel ID is URL-encoded.
+const LINK = `https://teams.microsoft.com/l/message/${encodeURIComponent(CHANNEL)}/1700000000500?tenantId=tenant-0001&groupId=${TEAM}&parentMessageId=${ROOT}&teamName=Crew&channelName=General&createdTime=1700000000500`
+
+function reply(id: string, from: { userId: string; displayName: string }) {
+  return {
+    id, replyToId: ROOT, messageType: 'message', from, createdDateTime: '2026-10-28T09:15:00Z', lastModifiedDateTime: '2026-10-28T09:15:00Z',
+    bodyPreview: 'The cause is elsewhere.', bodyTruncated: false, webUrl: `https://teams.microsoft.com/l/message/${CHANNEL}/${id}`,
+  }
+}
+
+type Teams = { replies: object[]; isFailing?: boolean }
+
+// The world beneath the plugin: gh prints `pr` for any PR and `me` for the user; the Microsoft 365 connector lists
+// `teams.replies` for the thread ROOT, one JSON object per block, and `get_me` is Robin; prompts and toasts are recorded.
+async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: string }, teams: Teams = { replies: [] }) {
   const clock = mock.clock(on)
   mock.store(on)
   const submitted: string[] = []
@@ -28,11 +49,18 @@ async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: st
     e.argv.includes('user')
       ? { value: { exitCode: 0, stdout: 'me\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
       : { value: { exitCode: 0, stdout: JSON.stringify(gh.pr), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+  on('mcp.call', async (_$, e) => {
+    if (teams.isFailing) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
+    const items = e.tool === 'get_me'
+      ? [{ id: ME.userId, displayName: ME.displayName, mail: 'robin@example.com', userPrincipalName: 'robin@example.com' }]
+      : e.args.parentMessageId === ROOT ? teams.replies : []
+    return { value: { content: items.map(item => ({ type: 'text', text: JSON.stringify(item) })), isError: false } }
+  })
   on('prompt.submit', async (_$, e) => {
     submitted.push(e.text)
     return { text: e.text, context: e.context }
   })
-  on('tool.call', async () => ({ result: 'ok', text: gh.toolOutput ?? URL + '\n' }))
+  on('tool.call', async (_$, e) => ({ result: 'ok', text: e.tool.endsWith('read_resource') ? JSON.stringify(reply('1700000000500', SARA)) : gh.toolOutput ?? URL + '\n' }))
   on('session.start', async (_$, e) => ({ cwd: e.cwd }))
   on('turn.start', async (_$, e) => ({ turnId: e.turnId }))
   on('turn.complete', async () => ({ text: '' }))
@@ -96,10 +124,10 @@ test('tells Claude where to read a person\'s comments', async () => {
 
 test('stops acting on a PR after the turn cap, except for its merge', async () => {
   const snap = toSnapshot(pr(), 0)
-  const capped = instructions(snap, [{ kind: 'checks', to: 'fail' }], MAX_TURNS_PER_PR + 1)
+  const capped = instructions(snap, [{ kind: 'checks', to: 'fail' }], 6)
   expect(capped.steps).toEqual([])
-  expect(capped.what).toContain(`started ${MAX_TURNS_PER_PR} turns`)
-  expect(instructions(snap, [{ kind: 'merged' }], MAX_TURNS_PER_PR + 1).steps.length).toBe(1)
+  expect(capped.what).toContain('started 5 turns')
+  expect(instructions(snap, [{ kind: 'merged' }], 6).steps.length).toBe(1)
 })
 
 test('watches a PR that gh opens, and starts a turn for Copilot and for a person', async ($, on) => {
@@ -107,7 +135,7 @@ test('watches a PR that gh opens, and starts a turn for Copilot and for a person
   const { clock, submitted } = await startSession($, on, gh)
 
   await $.tool.call({ tool: 'Bash', command: 'gh pr create --fill' })
-  const listed = await $.command.run({ command: 'watch-prs', args: '', ...TYPED })
+  const listed = await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })
   expect(listed.text).toContain('#74 review required · checks pending')
 
   gh.pr = pr({ reviews: [COPILOT] })
@@ -146,12 +174,12 @@ test('watches only the PR a command names, and keeps an unwatched PR unwatched',
   await startSession($, on, gh)
 
   await $.tool.call({ tool: 'Bash', command: 'gh pr list --json url' })
-  expect((await $.command.run({ command: 'watch-prs', args: '', ...TYPED })).text).toContain('No PRs watched')
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
 
   await $.tool.call({ tool: 'Bash', command: `gh pr view ${URL}` })
-  await $.command.run({ command: 'unwatch-prs', args: URL, ...TYPED })
+  await $.command.run({ command: 'unwatch-discussions', args: URL, ...TYPED })
   await $.tool.call({ tool: 'Bash', command: `gh pr view ${URL}` })
-  expect((await $.command.run({ command: 'watch-prs', args: '', ...TYPED })).text).toContain('No PRs watched')
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
 })
 
 test('starts no turn for a merge this session ran, even with no PR named, and still shows a toast', async ($, on) => {
@@ -190,4 +218,101 @@ test('starts a turn when a merge this session asked for lands later, as with --a
   expect(submitted.length).toBe(1)
   expect(submitted[0]).toContain('Remove the merged worktree and its local branch.')
   expect(submitted[0]?.endsWith('If nothing is left to do, reply in one line.')).toBe(true)
+})
+
+test("puts another person's reply into the main loop's next tool result, mid-turn, once", async ($, on) => {
+  const teams: Teams = { replies: [reply('1700000000100', ME)] }
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, teams)
+  await $.turn.start({ text: 'fix the bug', turnId: 't1' })
+  await $.tool.call(READ_ARGS)
+
+  teams.replies = [reply('1700000000200', SARA), ...teams.replies]
+  await clock.advance(60_000)
+  const ran = await $.tool.call({ tool: 'Bash', command: 'ls' })
+  expect(ran.context?.length).toBe(1)
+  const news = ran.context?.[0] ?? ''
+  expect(news).toContain(THREAD)
+  expect(news).toContain('Sara Lind at 2026-10-28T09:15:00Z')
+  expect(news).toContain(`teams_list_channel_messages ${JSON.stringify({ teamId: TEAM, channelId: CHANNEL, parentMessageId: ROOT })}`)
+  expect(news).toContain('read_resource')
+  expect(news).toContain('change course')
+  expect((await $.tool.call({ tool: 'Bash', command: 'ls' })).context ?? []).toEqual([])
+  expect(submitted).toEqual([])
+  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
+})
+
+test("keeps the news out of a subagent's tool result and gives it to the main loop's", async ($, on) => {
+  const teams: Teams = { replies: [] }
+  const { clock } = await startSession($, on, { pr: pr() }, teams)
+  await $.turn.start({ text: 'look into it', turnId: 't1' })
+  await $.tool.call({ ...READ_ARGS, agentId: 'agent-1' })
+
+  teams.replies = [reply('1700000000200', SARA)]
+  await clock.advance(60_000)
+  expect((await $.tool.call({ tool: 'Bash', command: 'ls', agentId: 'agent-1' })).context ?? []).toEqual([])
+  expect((await $.tool.call({ tool: 'Bash', command: 'ls' })).context?.[0]).toContain('Sara Lind')
+  await $.turn.complete({ turnId: 't1', answer: 'done', reason: 'answer', isAborted: false, durationMs: 1 })
+})
+
+test("watches the thread of a reply that read_resource reads, and starts nothing for the user's own reply", async ($, on) => {
+  const teams: Teams = { replies: [] }
+  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
+  await $.tool.call({ tool: 'mcp__claude_ai_Microsoft_365__read_resource', uri: `teams:///teams/${TEAM}/channels/${CHANNEL}/messages/1700000000500` })
+
+  teams.replies = [reply('1700000000600', ME)]
+  await clock.advance(60_000)
+  expect(submitted).toEqual([])
+  expect(toasts).toEqual([])
+
+  teams.replies = [reply('1700000000700', SARA), ...teams.replies]
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('Sara Lind')
+  expect(submitted[0]).not.toContain('Robin Vale')
+})
+
+test('starts a turn on news while idle, and only shows a toast from the sixth turn for one thread', async ($, on) => {
+  const teams: Teams = { replies: [] }
+  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
+  await $.tool.call(READ_ARGS)
+
+  for (let i = 1; i <= 6; i++) {
+    teams.replies = [reply(`17000000010${i}0`, SARA), ...teams.replies]
+    await clock.advance(60_000)
+  }
+  expect(submitted.length).toBe(5)
+  expect(submitted[0]).toContain(THREAD)
+  expect(submitted[0]?.endsWith('If nothing is left to do, reply in one line.')).toBe(true)
+  expect(toasts.length).toBe(6)
+  expect(toasts[5]).toContain('started 5 turns')
+})
+
+test('shows one toast while the connector fails, starts no turn, and resumes once it works', async ($, on) => {
+  const teams: Teams = { replies: [] }
+  const { clock, submitted, toasts } = await startSession($, on, { pr: pr() }, teams)
+  await $.tool.call(READ_ARGS)
+
+  teams.isFailing = true
+  teams.replies = [reply('1700000000200', SARA)]
+  await clock.advance(60_000)
+  await clock.advance(60_000)
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain('could not read')
+  expect(submitted).toEqual([])
+
+  teams.isFailing = false
+  await clock.advance(60_000)
+  expect(submitted.length).toBe(1)
+  expect(submitted[0]).toContain('Sara Lind')
+})
+
+test('watches and unwatches a thread by its Teams link, and watches it again after an unwatch', async ($, on) => {
+  await startSession($, on, { pr: pr() })
+  const plainLink = `https://teams.microsoft.com/l/message/${CHANNEL}/${ROOT}?tenantId=tenant-0001&groupId=${TEAM}&parentMessageId=${ROOT}`
+
+  expect((await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text).toContain(THREAD)
+  await $.command.run({ command: 'unwatch-discussions', args: plainLink, ...TYPED })
+  await $.tool.call(READ_ARGS)
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
+  expect((await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text).toContain(THREAD)
 })
