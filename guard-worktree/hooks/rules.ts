@@ -3,9 +3,20 @@ export function isMainCheckout(gitDir: string, commonDir: string) {
   return gitDir.replace(/\/$/, '') === commonDir.replace(/\/$/, '')
 }
 
-export function worktreeAdvice(top: string, path: string) {
+// `session` is the checkout of the session's folder, only when it is in the edited repo. `EnterWorktree` works only there.
+export function worktreeAdvice(path: string, edited: { top: string; base?: string }, session?: { top: string }) {
+  const { top } = edited
+  const intro = `guard-worktree: ${path} is in the main checkout of ${top}. The user requires that code changes go in a worktree. `
+  if (!session) {
+    const start = edited.base ?? 'origin/<default branch>'
+    return (
+      intro +
+      `Run \`git -C ${top} fetch origin && git -C ${top} worktree add --no-track .worktrees/<branch> -b <branch> ${start}\`. ` +
+      `Then make this edit under ${top}/.worktrees/<branch>/.`
+    )
+  }
   return (
-    `guard-worktree: ${path} is in the main checkout of ${top}. The user requires that code changes go in a worktree. ` +
+    intro +
     `Call the \`EnterWorktree\` tool with a name, then run \`git switch -c <branch> --no-track\` in the worktree, ` +
     `then make this edit under ${top}/.claude/worktrees/<name>/.`
   )
