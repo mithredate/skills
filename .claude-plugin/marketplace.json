@@ -62,7 +62,7 @@
     {
       "name": "watch-discussions",
       "source": "./watch-discussions",
-      "description": "Mod: watches the PRs and Teams channel threads a session touches, adds their live state to each prompt, and starts a turn on Copilot reviews, failed checks, merges, and replies from other people."
+      "description": "Mod: watches the PRs and connector calls that Claude picks with its watch tool, and each PR the session opens. New items reach the session during a turn, and start a turn while it is idle."
     },
     {
       "name": "tidy-transcript",

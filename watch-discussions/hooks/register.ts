@@ -1,16 +1,21 @@
 import type { Register, EngineInterface, McpToolResult } from 'claude-code'
-import { PR_FIELDS, PR_URL, TEAMS, TEAMS_LINK, changes, contextBlock, instructions, line, newActivity, newReplies, parseItems, parsePr, threadInstructions, threadOfCall, threadOfLink, threadUri, toSnapshot } from './state.js'
-import type { Change, Reply, Snapshot, Thread, ThreadId } from './state.js'
+import { MCP, PR_FIELDS, PR_URL, callLabel, callNews, canon, changes, contextBlock, ids, instructions, line, newActivity, newItems, parse, parsePr, toSnapshot } from './state.js'
+import type { Call, Change, Snapshot } from './state.js'
 
 const POLL_MS = 60_000
 const MAX_WATCHED = 20
 // A turn that finds its work already done costs the user one line to read, not a paragraph.
 const NOTHING_LEFT = 'If nothing is left to do, reply in one line.'
+const PLUGIN = 'watch-discussions'
+const WATCH = `mcp__${PLUGIN}__watch`
+const RUN = 'Run'
+const CANCEL = 'Cancel'
+const FULL = `the watch holds ${MAX_WATCHED} items already. The user can stop one with /unwatch-discussions`
 
-// `mergedHere` holds the URLs of the PRs this session merged with `gh pr merge`. Threads are keyed by their `teams:///` URI.
-type Watch = { prs: Record<string, Snapshot>; threads: Record<string, Thread>; turns: Record<string, number>; unwatched: string[]; mergedHere: string[] }
+// `mergedHere` holds the URLs of the PRs this session merged with `gh pr merge`. Calls are keyed by `callKey`.
+type Watch = { prs: Record<string, Snapshot>; calls: Record<string, Call>; turns: Record<string, number>; mergedHere: string[] }
 
-const empty = (): Watch => ({ prs: {}, threads: {}, turns: {}, unwatched: [], mergedHere: [] })
+const empty = (): Watch => ({ prs: {}, calls: {}, turns: {}, mergedHere: [] })
 
 let watch = empty()
 let storeKey = ''
@@ -19,12 +24,16 @@ let self = ''
 // A plugin's prompt waits until Claude is idle, so news found mid-turn can be stale by then.
 // PR polls skip while a turn runs; the first poll after it compares against the last snapshot.
 const runningTurns = new Set<string>()
-// The Microsoft 365 user. Claude can post to Teams as this user, so their replies are not news.
-let me = ''
-// Thread news found during a turn, by thread URI, held for the main loop's next tool result.
-let pending: Record<string, { thread: Thread; replies: Reply[] }> = {}
+// The connector calls the main loop made in this session, by `callKey`: what `watch` can pick, and its baseline.
+let made: Record<string, { args: Record<string, unknown>; seen: string[]; isReadOnly: boolean }> = {}
+// The `id` and `ts` values of Claude's own writes, by MCP server: a post by Claude is not news.
+let own: Record<string, Set<string>> = {}
+// News found during a turn, by call key, held for the main loop's next tool result.
+let pending: Record<string, { call: Call; items: object[] }> = {}
 // A failing connector shows one toast, not one a minute.
-let isTeamsFailing = false
+let isFailing = false
+
+const callKey = (tool: string, args: unknown) => `${tool} ${canon(args ?? {})}`
 
 async function lookUpSelf($: EngineInterface) {
   if (self) return
@@ -35,19 +44,12 @@ async function lookUpSelf($: EngineInterface) {
 }
 
 // A connector call has no timeout of its own. One that outlasts the gh calls' 20 seconds counts as failed.
-function callTeams($: EngineInterface, tool: string, args?: Record<string, unknown>) {
+function callConnector($: EngineInterface, c: Call) {
+  const [, server = '', tool = ''] = c.tool.match(MCP) ?? []
   return new Promise<McpToolResult>((resolve, reject) => {
-    const timer = $.clock.after(20_000, () => reject(new Error(`${tool} timed out`)))
-    $.mcp.call(TEAMS, tool, args).then(resolve, reject).finally(() => timer.cancel())
+    const timer = $.clock.after(20_000, () => reject(new Error(`${c.tool} timed out`)))
+    $.mcp.call(server, tool, c.args).then(resolve, reject).finally(() => timer.cancel())
   })
-}
-
-async function lookUpMe($: EngineInterface) {
-  if (me) return
-  try {
-    const got = await callTeams($, 'get_me')
-    if (!got.isError) me = String(parseItems(got.content.map(b => b.text ?? ''))[0]?.id ?? '')
-  } catch {}
 }
 
 // Loads this session's watch from the store once, whichever hook runs first.
@@ -57,7 +59,10 @@ async function load($: EngineInterface) {
   watch = { ...empty(), ...((await $.store.get(storeKey)) as Partial<Watch> | undefined) }
 }
 
-const watchedCount = () => Object.keys(watch.prs).length + Object.keys(watch.threads).length
+// PRs first, then calls, in the order they joined: the numbers /unwatch-discussions takes.
+const keys = () => [...Object.keys(watch.prs), ...Object.keys(watch.calls)]
+
+const watchedCount = () => keys().length
 
 async function save($: EngineInterface) {
   await $.store.set(storeKey, watch)
@@ -106,74 +111,47 @@ async function noteMergesHere($: EngineInterface) {
   await save($)
 }
 
+// Returns why the PR could not join the watch.
 async function add($: EngineInterface, url: string) {
-  if (watch.prs[url] || watch.unwatched.includes(url) || watchedCount() >= MAX_WATCHED) return
+  if (watch.prs[url]) return undefined
+  if (watchedCount() >= MAX_WATCHED) return FULL
   const pr = await fetchPr($, url)
-  if (!pr) return
+  if (!pr) return `gh could not read ${url}`
   watch.prs[url] = toSnapshot(pr, await $.clock.now())
-  await save($)
-}
-
-// The thread's replies, newest first; one page is enough at one check a minute.
-async function fetchReplies($: EngineInterface, t: ThreadId) {
-  try {
-    const got = await callTeams($, 'teams_list_channel_messages', { teamId: t.teamId, channelId: t.channelId, parentMessageId: t.messageId, limit: 50 })
-    if (got.isError) return undefined
-    return parseItems(got.content.map(b => b.text ?? '')).filter(item => typeof item.id === 'string') as Reply[]
-  } catch {
-    return undefined
-  }
-}
-
-const NO_READ = 'the Microsoft 365 connector could not read the thread'
-
-// Returns why the thread could not join the watch, for /watch-discussions to say.
-async function addThread($: EngineInterface, t: ThreadId) {
-  const uri = threadUri(t)
-  if (watch.threads[uri] || watch.unwatched.includes(uri)) return undefined
-  if (watchedCount() >= MAX_WATCHED) return `the watch holds ${MAX_WATCHED} PRs and threads already`
-  const replies = await fetchReplies($, t)
-  if (!replies) return NO_READ
-  watch.threads[uri] = { ...t, replyIds: replies.map(r => r.id), checkedAt: await $.clock.now() }
   await save($)
   return undefined
 }
 
-// Checks every thread, during a turn too, and adds the replies from other people to `pending`.
-async function checkThreads($: EngineInterface) {
-  const threads = Object.values(watch.threads)
-  if (!threads.length) return
-  await lookUpMe($)
-  let isFailing = !me
+// Repeats every watched call, during a turn too, and adds the items the session has not seen to `pending`.
+async function checkCalls($: EngineInterface) {
+  const calls = Object.entries(watch.calls)
+  if (!calls.length) return
+  let isFailed = false
   const checkedAt = await $.clock.now()
-  if (me)
-    await Promise.all(
-      threads.map(async prev => {
-        const replies = await fetchReplies($, prev)
-        const uri = threadUri(prev)
-        // /unwatch-discussions can run during the fetch.
-        if (!watch.threads[uri]) return
-        if (!replies) {
-          isFailing = true
-          return
-        }
-        const found = newReplies(replies, prev.replyIds, me)
-        const thread = { ...prev, replyIds: replies.map(r => r.id), checkedAt }
-        watch.threads[uri] = thread
-        if (found.length) pending[uri] = { thread, replies: [...(pending[uri]?.replies ?? []), ...found] }
-      }),
-    )
-  noteTeams($, isFailing)
+  await Promise.all(
+    calls.map(async ([key, prev]) => {
+      const got = await callConnector($, prev).catch(() => undefined)
+      // /unwatch-discussions can run during the call.
+      if (!watch.calls[key]) return
+      if (!got || got.isError) {
+        isFailed = true
+        return
+      }
+      const values = parse(got.content.map(b => b.text ?? ''))
+      const mine = own[prev.tool.match(MCP)?.[1] ?? ''] ?? []
+      const found = newItems(values, new Set([...prev.seen, ...mine]))
+      const call = { ...prev, seen: [...ids(values)], checkedAt }
+      watch.calls[key] = call
+      if (found.length) pending[key] = { call, items: [...(pending[key]?.items ?? []), ...found] }
+    }),
+  )
+  if (isFailed && !isFailing) $.ui.toast('watch-discussions could not repeat a watched call. Check the connector in /mcp.')
+  isFailing = isFailed
   await save($)
 }
 
-function noteTeams($: EngineInterface, isFailing: boolean) {
-  if (isFailing && !isTeamsFailing) $.ui.toast('watch-discussions could not read Teams. Check the Microsoft 365 sign-in in /mcp.')
-  isTeamsFailing = isFailing
-}
-
 function takePending() {
-  const news = Object.values(pending)
+  const news = Object.entries(pending)
   pending = {}
   return news
 }
@@ -192,31 +170,47 @@ async function announce($: EngineInterface, key: string, subject: string, label:
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     storeKey = ''
-    me = ''
+    made = {}
+    own = {}
     pending = {}
-    isTeamsFailing = false
+    isFailing = false
     await load($)
     await save($)
 
-    // Threads are checked during a turn too: a reply that corrects the session must reach it before its next push.
+    // Calls are repeated during a turn too: a reply that corrects the session must reach it before its next push.
     $.clock.every(POLL_MS, async () => {
-      await checkThreads($)
+      await checkCalls($)
       if (runningTurns.size) return
-      for (const { thread, replies } of takePending()) {
-        const uri = threadUri(thread)
-        await announce($, uri, `Teams thread ${uri}`, 'Teams thread', threadInstructions(thread, replies, nextTurn(uri)))
-      }
+      for (const [key, { call, items }] of takePending())
+        await announce($, key, `The watched call ${callLabel(call)}`, call.tool.replace(MCP, '$2'), callNews(call, items, nextTurn(key)))
     })
 
-    // A timer of its own: a connector call has no timeout, and a hung one must not hold the PR polls back.
+    // A timer of its own: a hung connector call must not hold the PR polls back.
     $.clock.every(POLL_MS, async () => {
       if (runningTurns.size) return
       for (const { snap, found } of await refresh($))
         await announce($, snap.url, `PR ${snap.url}`, `#${snap.number}`, instructions(snap, found, nextTurn(snap.url), watch.mergedHere.includes(snap.url)))
     })
 
-    await $.command.register({ name: 'watch-discussions', description: 'List watched PRs and Teams threads, or watch the PR URLs and Teams links given', argumentHint: '[pr-url|teams-link...]', immediate: true })
-    await $.command.register({ name: 'unwatch-discussions', description: 'Stop watching a PR or a Teams thread, or all of them', argumentHint: '<pr-url|teams-link|all>', immediate: true })
+    await $.tool.register({
+      name: 'watch',
+      description:
+        'Watches a discussion that the task depends on, such as a thread, an issue, or a PR that the user gave you or that the task acts on, ' +
+        'and tells you when someone adds to it, also while you work. Never watch a page that you read only for reference. ' +
+        'Pass `url` for a GitHub PR. For anything else, read it with a connector tool first, then pass that tool\'s full name as `toolName` ' +
+        'and the exact input you gave it as `input`. The watch repeats that call every minute.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'A GitHub PR URL.' },
+          toolName: { type: 'string', description: 'The full name of a connector tool that you called in this session, such as mcp__<server>__<tool>.' },
+          input: { type: 'object', description: 'The exact input of that call.' },
+        },
+      },
+      isDeferred: false,
+    })
+    await $.command.register({ name: 'watch-discussions', description: 'List the watched PRs and connector calls, by number', immediate: true })
+    await $.command.register({ name: 'unwatch-discussions', description: 'Stop watching an item by its number, or all of them', argumentHint: '<number|all>', immediate: true })
     return next(e)
   })
 
@@ -230,91 +224,112 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // A PR joins the watch when a gh command names it, or when `gh pr create` prints it.
+  // A PR joins the watch when `gh pr create` prints it.
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     const ran = await next(e)
-    if (!/\bgh\s+(pr|api)\b/.test(e.command)) return ran
+    const isCreate = /\bgh\s+pr\s+create\b/.test(e.command)
+    const isMerge = /\bgh\s+pr\s+merge\b/.test(e.command)
+    if (!isCreate && !isMerge) return ran
     await load($)
-    if (/\bgh\s+pr\s+merge\b/.test(e.command)) await noteMergesHere($)
-    const printed = /\bgh\s+pr\s+create\b/.test(e.command) ? (ran.text ?? '').match(PR_URL) ?? [] : []
-    for (const url of new Set([...(e.command.match(PR_URL) ?? []), ...printed])) await add($, url)
+    if (isMerge) await noteMergesHere($)
+    for (const url of new Set(isCreate ? (ran.text ?? '').match(PR_URL) ?? [] : [])) await add($, url)
     return ran
   })
 
-  // A thread joins the watch when the main loop or a subagent reads it with the connector. News found during a turn
-  // goes into the main loop's next tool result: a subagent's would not reach the loop that pushes and opens PRs.
+  // Claude picks what to watch. A subagent cannot: the main loop holds the task.
+  on('tool.call', { tool: WATCH }, async ($, e) => {
+    if (e.agentId) return { deny: `${PLUGIN}: only the main session can watch. Name the discussion in your answer instead.` }
+    await load($)
+    if (typeof e.url === 'string') {
+      const [url] = e.url.match(PR_URL) ?? []
+      const why = url ? await add($, url) : `${e.url} is not a GitHub PR URL`
+      return why ? { deny: `${PLUGIN}: ${why}.` } : { result: `${PLUGIN} watches ${url}.` }
+    }
+    const key = callKey(String(e.toolName), e.input)
+    const read = made[key]
+    if (!read)
+      return {
+        deny: `${PLUGIN}: the main session did not make the call ${e.toolName} ${JSON.stringify(e.input ?? {})} in this session. ` +
+          'Pass a PR URL, or the exact tool name and input of a connector call that you made.',
+      }
+    const call: Call = { tool: String(e.toolName), args: read.args, seen: read.seen, checkedAt: await $.clock.now() }
+    if (watch.calls[key]) return { result: `${PLUGIN} watches ${callLabel(call)} already.` }
+    if (watchedCount() >= MAX_WATCHED) return { deny: `${PLUGIN}: ${FULL}.` }
+    if (!call.seen.length) return { deny: `${PLUGIN}: the result of ${call.tool} holds no id or ts value, so a new item cannot be told from an old one.` }
+    // A repeated write would post every minute.
+    if (!read.isReadOnly) {
+      const answer = await $.ui
+        .ask(`The call is not marked read-only. Repeat it every minute to watch it?\n\n${callLabel(call)}`, { header: 'Watch', options: [RUN, CANCEL] })
+        .catch(() => CANCEL)
+      if (answer !== RUN) return { deny: `${PLUGIN}: the user cancelled the watch of ${callLabel(call)}. Do not ask again. Read it again yourself when the task needs it.` }
+    }
+    watch.calls[key] = call
+    await save($)
+    return { result: `${PLUGIN} repeats ${callLabel(call)} every minute and tells you each new item.` }
+  })
+
+  // Records the connector calls: the main loop's are what `watch` can pick, and a write's IDs are Claude's own.
+  // News found during a turn goes into the main loop's next tool result: a subagent's would not reach the loop that
+  // pushes and opens PRs.
   on('tool.call', async ($, e, next) => {
+    // The mod's own question to the user is no tool result the model reads.
+    if (next.origin.plugin === PLUGIN) return next(e)
     const ran = await next(e)
     if (ran.deny !== undefined) return ran
-    const read = threadOfCall(e as Record<string, unknown>, ran.text ?? '')
-    if (read) {
-      await load($)
-      if ((await addThread($, read)) === NO_READ) noteTeams($, true)
+    const server = e.tool.match(MCP)?.[1]
+    if (server && e.tool !== WATCH && !ran.isError) {
+      const args = Object.fromEntries(Object.entries(e).filter(([k]) => !['tool', 'tool_use_id', 'agentId', 'requestMeta'].includes(k)))
+      const seen = ids(parse([ran.text ?? '']))
+      if (!e.agentId) made[callKey(e.tool, args)] = { args, seen: [...seen], isReadOnly: ran.isReadOnly === true }
+      if (!ran.isReadOnly) own[server] = new Set([...(own[server] ?? []), ...seen])
     }
     if (e.agentId || !Object.keys(pending).length) return ran
-    const news = takePending().map(({ thread, replies }) => {
-      const { what, steps } = threadInstructions(thread, replies, 0)
-      return `While you worked, Teams thread ${threadUri(thread)} ${what}.\n\n${steps.join('\n\n')}`
+    const news = takePending().map(([, { call, items }]) => {
+      const { what, steps } = callNews(call, items, 0)
+      return `While you worked, the watched call ${callLabel(call)} ${what}.\n\n${steps.join('\n\n')}`
     })
     return { ...ran, context: [...(ran.context ?? []), news.join('\n\n')] }
   })
 
-  // The user's prompt carries PR state fetched now, not at the start of the session. Threads keep their last check,
-  // at most a minute old, so the connector sees one call per thread a minute.
+  // The user's prompt carries PR state fetched now, not at the start of the session. Calls keep their last check,
+  // at most a minute old, so a connector sees one repeat of each call a minute.
   on('prompt.submit', async ($, e, next) => {
     await load($)
     if (e.origin.kind === 'plugin' || watchedCount() === 0) return next(e)
     const report = await refresh($)
-    const extra = [contextBlock(Object.values(watch.prs), Object.values(watch.threads), await $.clock.now())]
+    const extra = [contextBlock(Object.values(watch.prs), Object.values(watch.calls), await $.clock.now())]
     for (const { snap, found } of report) {
       const { what, steps } = instructions(snap, found, 0, watch.mergedHere.includes(snap.url))
       extra.push(`Since the last check, PR ${snap.url} ${what}.` + (steps.length ? " After the user's request: " + steps.join(' ') : ''))
     }
-    for (const { thread, replies } of takePending()) {
-      const { what, steps } = threadInstructions(thread, replies, 0)
-      extra.push(`Since the last check, Teams thread ${threadUri(thread)} ${what}. ${steps.join(' ')}`)
+    for (const [, { call, items }] of takePending()) {
+      const { what, steps } = callNews(call, items, 0)
+      extra.push(`Since the last check, the watched call ${callLabel(call)} ${what}. ${steps.join(' ')}`)
     }
     return next({ ...e, context: [...(e.context ?? []), ...extra] })
   })
 
-  on('command.run', { command: 'watch-discussions' }, async ($, e) => {
+  on('command.run', { command: 'watch-discussions' }, async $ => {
     await load($)
-    const urls: string[] = e.args.match(PR_URL) ?? []
-    const links: string[] = e.args.match(TEAMS_LINK) ?? []
-    const threads = links.map(link => ({ link, thread: threadOfLink(link) }))
-    const keys = [...urls, ...threads.flatMap(({ thread }) => (thread ? [threadUri(thread)] : []))]
-    watch.unwatched = watch.unwatched.filter(key => !keys.includes(key))
-    for (const url of urls) await add($, url)
-    const failed: string[] = []
-    for (const { link, thread } of threads) {
-      const why = thread ? await addThread($, thread) : 'the link names no team'
-      if (why) failed.push(`Could not watch ${link}: ${why}.`)
-    }
-    if (!urls.length && !links.length) await refresh($)
-    const rows = [
-      ...Object.values(watch.prs).map(s => `${line(s)}  ${s.url}`),
-      ...Object.values(watch.threads).map(t => `Teams thread · ${t.replyIds.length} replies  ${threadUri(t)}`),
-    ]
-    const listed = rows.length ? rows : ['Nothing watched. Pass a PR URL or a Teams link, or read one with gh or the Microsoft 365 connector.']
-    return { text: [...failed, ...listed].join('\n') }
+    await refresh($)
+    const rows = [...Object.values(watch.prs).map(s => `${line(s)}  ${s.url}`), ...Object.values(watch.calls).map(callLabel)]
+    if (!rows.length) return { text: 'Nothing watched. Claude watches a discussion with its watch tool, and each PR that the session opens with gh pr create.' }
+    return { text: rows.map((row, i) => `${i + 1}. ${row}`).join('\n') }
   })
 
   on('command.run', { command: 'unwatch-discussions' }, async ($, e) => {
     await load($)
     const target = e.args.trim()
-    const keys =
-      target === 'all'
-        ? [...Object.keys(watch.prs), ...Object.keys(watch.threads)]
-        : [...(target.match(PR_URL) ?? []), ...(target.match(TEAMS_LINK) ?? []).map(threadOfLink).filter(t => t !== undefined).map(threadUri)]
-    for (const key of keys) {
+    const picked = target === 'all' ? keys() : [keys()[Number(target) - 1]].filter(key => key !== undefined)
+    if (target !== 'all' && !picked.length) return { text: `No item ${target}. /watch-discussions lists the numbers.` }
+    for (const key of picked) {
       delete watch.prs[key]
-      delete watch.threads[key]
+      delete watch.calls[key]
       delete watch.turns[key]
       delete pending[key]
     }
-    watch.mergedHere = watch.mergedHere.filter(url => !keys.includes(url))
-    watch.unwatched = [...new Set([...watch.unwatched, ...keys])]
+    watch.mergedHere = watch.mergedHere.filter(url => !picked.includes(url))
     await save($)
-    return { text: `Watching ${watchedCount()} PRs and threads. Use /watch-discussions <PR URL or Teams link> to watch one again.` }
+    return { text: `Watching ${watchedCount()} items.` }
   })
 }
