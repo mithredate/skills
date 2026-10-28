@@ -27,7 +27,7 @@ try {
     } else if (/\bcommit\b/.test(input.tool_input?.command ?? '')) {
         const top = marketplaceTop(input.cwd);
         // The margin covers the time between the end of the call and the start of the hook. --all covers every worktree.
-        const since = Math.floor((Date.now() - 2000) / 1000);
+        const since = Math.floor((Date.now() - (input.duration_ms ?? 0) - 2000) / 1000);
         changed = top && spawnSync('git', ['log', '--all', `--since=@${since}`, '--name-only', '--format='], { cwd: top, encoding: 'utf8' }).stdout.split('\n').some((path) => SKILL_OR_AGENT_FILE.test(path));
     }
 

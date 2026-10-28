@@ -227,3 +227,10 @@ test('stays silent after a Bash call from the main checkout that commits other f
 
     assert.equal(bashCall(repo, 'echo x >> .worktrees/feature/README.md && echo x >> .worktrees/feature/dev/skills/README.md && git -C .worktrees/feature add -A && git -C .worktrees/feature commit -qm x').additionalContext, '');
 });
+
+test('counts back the run time of the Bash call from duration_ms', () => {
+    const command = 'echo x >> dev/skills/tdd/SKILL.md && GIT_COMMITTER_DATE="@$(($(date +%s) - 60)) +0000" git commit -qam x';
+
+    assert.equal(bashCall(makeRepo(), command, { duration_ms: 61000 }).additionalContext, LOAD_WRITE_A_SKILL);
+    assert.equal(bashCall(makeRepo(), command, { duration_ms: undefined }).additionalContext, '');
+});
