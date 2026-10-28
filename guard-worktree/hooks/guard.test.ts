@@ -67,6 +67,13 @@ test('refuses an edit in the main checkout of another repo and names git worktre
   expect(refusal(ran)).not.toContain('EnterWorktree')
 })
 
+test('refuses an edit in the main checkout and names git worktree add when the session folder is in no guarded repo', async ($, on) => {
+  fakeGit(on, { cwd: NO_ORIGIN })
+  const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
+  expect(refusal(ran)).toContain('Run `git -C /repo fetch origin && git -C /repo worktree add --no-track .worktrees/<branch> -b <branch> origin/main`.')
+  expect(refusal(ran)).not.toContain('EnterWorktree')
+})
+
 test('names no made-up branch in the refusal for another repo when origin/HEAD is unset', async ($, on) => {
   fakeGit(on, { cwd: OTHER, originHead: '' })
   const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
