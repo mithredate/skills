@@ -36,8 +36,9 @@ function reply(id: string, from: { userId: string; displayName: string }) {
   }
 }
 
-// `isFailing` fails every connector call, `failingTool` only that tool's, and `isHanging` leaves every call unanswered.
-type Teams = { replies: object[]; isFailing?: boolean; failingTool?: string; isHanging?: boolean }
+// `isFailing` fails every connector call, `failingTool` only that tool's, `isHanging` leaves every call unanswered,
+// and `gate` holds every call until it resolves.
+type Teams = { replies: object[]; isFailing?: boolean; failingTool?: string; isHanging?: boolean; gate?: Promise<void> }
 
 // The world beneath the plugin: gh prints `pr` for any PR and `me` for the user; the Microsoft 365 connector lists
 // `teams.replies` for the thread ROOT, one JSON object per block, and `get_me` is Robin; prompts and toasts are recorded.
@@ -53,6 +54,7 @@ async function startSession($: Engine, on: On, gh: { pr: PrJson; toolOutput?: st
       : { value: { exitCode: 0, stdout: JSON.stringify(gh.pr), stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
   on('mcp.call', async (_$, e) => {
     if (teams.isHanging) await new Promise<void>(() => {})
+    if (teams.gate) await teams.gate
     if (teams.isFailing || e.tool === teams.failingTool) return { value: { content: [{ type: 'text', text: 'The sign-in expired.' }], isError: true } }
     const items = e.tool === 'get_me'
       ? [{ id: ME.userId, displayName: ME.displayName, mail: 'robin@example.com', userPrincipalName: 'robin@example.com' }]
@@ -378,4 +380,49 @@ test('says why /watch-discussions could not watch a Teams link', async ($, on) =
   await startSession($, on, { pr: pr() }, { replies: [], isFailing: true })
   const text = (await $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED })).text
   expect(text).toContain(`Could not watch ${LINK}: the Microsoft 365 connector could not read the thread.`)
+})
+
+test("returns Claude's Teams read and /watch-discussions once a hung connector call passes 20 seconds", async ($, on) => {
+  const { clock } = await startSession($, on, { pr: pr() }, { replies: [], isHanging: true })
+  let read: string | undefined
+  void $.tool.call(READ_ARGS).then(ran => (read = ran.text))
+  await clock.advance(19_000)
+  expect(read).toBe(undefined)
+  await clock.advance(1_000)
+  expect(read).toBe(URL + '\n')
+
+  let listed: string | undefined
+  void $.command.run({ command: 'watch-discussions', args: LINK, ...TYPED }).then(ran => (listed = ran.text))
+  await clock.advance(20_000)
+  expect(listed).toContain(`Could not watch ${LINK}: the Microsoft 365 connector could not read the thread.`)
+})
+
+test("shows one toast when the threads Claude reads cannot be fetched, and watches once a read works", async ($, on) => {
+  const teams: Teams = { replies: [], isFailing: true }
+  const { toasts } = await startSession($, on, { pr: pr() }, teams)
+  await $.tool.call(READ_ARGS)
+  await $.tool.call(READ_ARGS)
+  expect(toasts.length).toBe(1)
+  expect(toasts[0]).toContain('could not read Teams')
+
+  teams.isFailing = false
+  await $.tool.call(READ_ARGS)
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain(THREAD)
+})
+
+test('keeps a thread unwatched when /unwatch-discussions runs while its check waits on the connector', async ($, on) => {
+  const teams: Teams = { replies: [] }
+  const { clock, submitted } = await startSession($, on, { pr: pr() }, teams)
+  await $.tool.call(READ_ARGS)
+  await clock.advance(60_000)
+
+  let release = () => {}
+  teams.gate = new Promise<void>(resolve => (release = () => resolve()))
+  teams.replies = [reply('1700000000200', SARA)]
+  await clock.advance(60_000)
+  await $.command.run({ command: 'unwatch-discussions', args: LINK, ...TYPED })
+  release()
+  await clock.advance(60_000)
+  expect(submitted).toEqual([])
+  expect((await $.command.run({ command: 'watch-discussions', args: '', ...TYPED })).text).toContain('Nothing watched')
 })
