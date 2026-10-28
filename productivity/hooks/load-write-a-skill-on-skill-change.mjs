@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 
 let data = '';
 for await (const chunk of process.stdin) data += chunk;
@@ -15,10 +15,12 @@ function git(dir, args) {
     return status === 0 ? stdout : '';
 }
 
-// The path in the repo comes from the prefix, because git resolves symlinks in the top and file_path can hold one.
-function marketplace(dir) {
-    const [top, prefix] = git(dir, ['rev-parse', '--show-toplevel', '--show-prefix']).split('\n');
-    return top && existsSync(join(top, 'productivity/skills/write-a-skill/SKILL.md')) ? { top, prefix } : null;
+// A walk up to .git costs less than a git call, and the hook runs twice for each Bash call.
+function marketplaceTop(dir) {
+    for (; dir !== dirname(dir); dir = dirname(dir)) {
+        if (existsSync(join(dir, '.git'))) return existsSync(join(dir, 'productivity/skills/write-a-skill/SKILL.md')) ? dir : null;
+    }
+    return null;
 }
 
 // A command can commit its change, which leaves git status clean, so the snapshot hashes the file contents.
@@ -43,11 +45,11 @@ try {
 
     if (input.tool_name !== 'Bash') {
         const path = input.tool_input?.file_path ?? input.tool_input?.notebook_path ?? '';
-        const repo = marketplace(dirname(path));
-        changed = repo && SKILL_OR_AGENT_FILE.test(repo.prefix + basename(path));
+        const top = marketplaceTop(dirname(path));
+        changed = top && SKILL_OR_AGENT_FILE.test(relative(top, path));
     } else if (input.hook_event_name === 'PreToolUse') {
-        const repo = marketplace(input.cwd);
-        if (repo) writeFileSync(state, `${repo.top}\0${snapshot(repo.top)}`);
+        const top = marketplaceTop(input.cwd);
+        if (top) writeFileSync(state, `${top}\0${snapshot(top)}`);
     } else if (existsSync(state)) {
         const [top, before] = readFileSync(state, 'utf8').split('\0');
         rmSync(state);
