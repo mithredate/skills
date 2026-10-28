@@ -60,9 +60,9 @@
       "description": "Mod: asks the user to Run or Cancel each aws, kubectl, helm, or terraform apply/destroy call that is not a read, and ships a sandbox config for every other form. A call that stays in the sandbox gets no question."
     },
     {
-      "name": "watch-prs",
-      "source": "./watch-prs",
-      "description": "Mod: watches the PRs a session touches, adds their live state to each prompt, and starts a turn on Copilot reviews, failed checks, and merges."
+      "name": "watch-discussions",
+      "source": "./watch-discussions",
+      "description": "Mod: watches the PRs and connector calls that Claude picks with its watch tool, and each PR the session opens. New items reach the session during a turn, and start a turn while it is idle."
     },
     {
       "name": "tidy-transcript",

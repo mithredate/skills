@@ -1,7 +1,7 @@
 export const PR_FIELDS = 'number,title,url,state,reviewDecision,reviews,comments,statusCheckRollup'
 
-// Caps the automatic turns for one PR, so a bot comment on each push or a flaky check cannot loop.
-export const MAX_TURNS_PER_PR = 5
+// Caps the automatic turns for one PR or call, so a bot comment on each push or a flaky check cannot loop.
+export const MAX_TURNS = 5
 
 export type Checks = 'none' | 'pending' | 'pass' | 'fail'
 
@@ -128,12 +128,12 @@ export function line(s: Snapshot) {
   return `#${s.number} ${decision} · checks ${s.checks}`
 }
 
-export function contextBlock(snaps: Snapshot[], now: number) {
-  const rows = snaps.map(s => {
-    const age = Math.round((now - s.fetchedAt) / 1000)
-    return `- ${s.url} "${s.title}": ${s.state}, review decision ${s.reviewDecision || 'none'}, checks ${s.checks}, ${s.reviewIds.length} reviews (fetched ${age}s ago)`
-  })
-  return ['Live state of the PRs this session watches. It is newer than anything earlier in the conversation:', ...rows].join('\n')
+export function contextBlock(snaps: Snapshot[], calls: Call[], now: number) {
+  const age = (at: number) => Math.round((now - at) / 1000)
+  const rows = snaps.map(s =>
+    `- ${s.url} "${s.title}": ${s.state}, review decision ${s.reviewDecision || 'none'}, checks ${s.checks}, ${s.reviewIds.length} reviews (fetched ${age(s.fetchedAt)}s ago)`)
+  const callRows = calls.map(c => `- ${callLabel(c)} (checked ${age(c.checkedAt)}s ago)`)
+  return ['Live state of the PRs and connector calls this session watches. It is newer than anything earlier in the conversation:', ...rows, ...callRows].join('\n')
 }
 
 // What Claude does about the changes. `turn` is the automatic turn's number for this PR, or 0 inside the user's own turn.
@@ -159,7 +159,91 @@ export function instructions(s: Snapshot, found: Change[], turn: number, isMerge
   const merged = found.some(c => c.kind === 'merged')
   if (merged && !isMergedHere) steps.push('Continue with the steps that come after the merge. Remove the merged worktree and its local branch.')
   // A merge happens once, so it cannot loop; it passes the cap.
-  if (turn > MAX_TURNS_PER_PR && !merged)
-    return { what: `${what} (watch-prs started ${MAX_TURNS_PER_PR} turns for this PR, so it only reports now)`, steps: [] }
+  if (turn > MAX_TURNS && !merged) return { what: `${what} (watch-discussions started ${MAX_TURNS} turns for this PR, so it only reports now)`, steps: [] }
   return { what, steps }
+}
+
+
+// A connector tool's name, `mcp__<server>__<tool>`. `$.mcp.call` takes the server in this spelling too.
+export const MCP = /^mcp__(.+?)__(.+)$/
+
+// A watched connector call: the tool and arguments the main loop called, and the `id` and `ts` values of its last result.
+export type Call = { tool: string; args: Record<string, unknown>; seen: string[]; checkedAt: number }
+
+export const callLabel = (c: Call) => `${c.tool} ${JSON.stringify(c.args)}`
+
+// The model can pass a call's input with its keys in another order.
+export function canon(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canon).join(',')}]`
+  if (v && typeof v === 'object')
+    return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${canon((v as Record<string, unknown>)[k])}`).join(',')}}`
+  return JSON.stringify(v) ?? 'null'
+}
+
+// A result's JSON objects and arrays, in order. The types do not state how `text` joins a result's content blocks,
+// so one value can follow another with no separator, as `}{`. A brace inside a string does not count.
+export function parse(texts: string[]): unknown[] {
+  const values: unknown[] = []
+  for (const text of texts) {
+    let depth = 0
+    let start = 0
+    let isInString = false
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i]
+      if (isInString) {
+        if (ch === '\\') i++
+        else if (ch === '"') isInString = false
+      } else if (ch === '"' && depth > 0) isInString = true
+      else if (ch === '{' || ch === '[') {
+        if (depth++ === 0) start = i
+      } else if ((ch === '}' || ch === ']') && depth > 0 && --depth === 0) {
+        try {
+          values.push(JSON.parse(text.slice(start, i + 1)))
+        } catch {}
+      }
+    }
+  }
+  return values
+}
+
+// The `id` and `ts` values an object holds itself: a reply, a message, or a comment carries one.
+function idsOf(o: object) {
+  return ['id', 'ts'].flatMap(k => {
+    const v = (o as Record<string, unknown>)[k]
+    return typeof v === 'string' || typeof v === 'number' ? [String(v)] : []
+  })
+}
+
+// Every `id` and `ts` value at any depth.
+export function ids(v: unknown, out = new Set<string>()) {
+  if (v && typeof v === 'object') {
+    for (const id of idsOf(v)) out.add(id)
+    for (const x of Object.values(v)) ids(x, out)
+  }
+  return out
+}
+
+// The outermost objects with an `id` or `ts` value that `seen` lacks. An edit keeps its ID, so it is not news.
+export function newItems(v: unknown, seen: Set<string>): object[] {
+  if (!v || typeof v !== 'object') return []
+  if (idsOf(v).some(id => !seen.has(id))) return [v]
+  return Object.values(v).flatMap(x => newItems(x, seen))
+}
+
+const NEWS_CHARS = 2_000
+
+// What Claude does about new items. `turn` is the automatic turn's number for this call, or 0 inside a running turn.
+export function callNews(c: Call, items: object[], turn: number) {
+  const n = items.length
+  const what = `returned ${n} new ${n === 1 ? 'item' : 'items'}`
+  if (turn > MAX_TURNS) return { what: `${what} (watch-discussions started ${MAX_TURNS} turns for this call, so it only reports now)`, steps: [] }
+  const shown = items.map(item => JSON.stringify(item)).join('\n')
+  return {
+    what,
+    steps: [
+      shown.length > NEWS_CHARS ? `${shown.slice(0, NEWS_CHARS)}\n[cut at ${NEWS_CHARS} characters]` : shown,
+      `For the full text, call ${c.tool} with ${JSON.stringify(c.args)}.`,
+      'Check whether the new items change a fact or a decision this session acted on. If they do, tell the user and change course before your next step outside the session, such as a push, a PR, or a message.',
+    ],
+  }
 }

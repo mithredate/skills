@@ -38,7 +38,7 @@ const refusal = (ran: ToolCallResult) => ran.deny ?? (ran.isError ? ran.text : u
 test('refuses an edit in the main checkout', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
-  expect(refusal(ran)).toContain('worktree add .worktrees/<branch> -b <branch> origin/main')
+  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/main')
 })
 
 test('refuses a notebook edit in the main checkout', async ($, on) => {
@@ -50,7 +50,7 @@ test('refuses a notebook edit in the main checkout', async ($, on) => {
 test('names no made-up branch when origin/HEAD is unset', async ($, on) => {
   fakeGit(on, { originHead: '' })
   const ran = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/a.ts', content: 'x' })
-  expect(refusal(ran)).toContain('-b <branch> origin/<default branch>')
+  expect(refusal(ran)).toContain('worktree add --no-track .worktrees/<branch> -b <branch> origin/<default branch>')
 })
 
 test('allows an edit in a linked worktree', async ($, on) => {
@@ -115,13 +115,28 @@ test('fetches, then refuses a new worktree branch from a local base', async ($, 
   const calls: string[][] = []
   fakeGit(on, { calls })
   const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add .worktrees/x -b x main' })
+  expect(refusal(ran)).toContain('with `--no-track`')
   expect(refusal(ran)).toContain('`origin/main` as the start point')
   expect(calls.some(c => c.includes('fetch'))).toBe(true)
+})
+
+// An agent can fetch a PR in one call and add its worktree from FETCH_HEAD in the next.
+test('fetches without overwriting FETCH_HEAD', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls })
+  await $.tool.call({ tool: 'Bash', command: 'git worktree add --detach .worktrees/review-1 FETCH_HEAD' })
+  expect(calls.find(c => c.includes('fetch'))).toContain('--no-write-fetch-head')
 })
 
 test('lets a new worktree branch from origin through', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add .worktrees/x -b x origin/main' })
+  expect(refusal(ran)).toBeUndefined()
+})
+
+test('lets the command of the edit refusal through', async ($, on) => {
+  fakeGit(on)
+  const ran = await $.tool.call({ tool: 'Bash', command: `git -C ${REPO} fetch origin && git -C ${REPO} worktree add --no-track .worktrees/x -b x origin/main` })
   expect(refusal(ran)).toBeUndefined()
 })
 

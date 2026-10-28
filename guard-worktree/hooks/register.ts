@@ -76,13 +76,13 @@ export const register: Register = on => {
     if (!add) return next(e)
     const checkout = await guardedCheckout($, add.dir ?? (await $.session.cwd()))
     if (!checkout) return next(e)
-    await git($, ['-C', checkout.top, 'fetch', 'origin', '--quiet'])
+    await git($, ['-C', checkout.top, 'fetch', 'origin', '--quiet', '--no-write-fetch-head'])
     if (add.createsBranch && !add.startPoint?.startsWith('origin/')) {
       const base = checkout.base ?? 'origin/<default branch>'
       return {
         deny:
           `guard-worktree: a new worktree branch starts from ${base}, which I just fetched. ` +
-          `Run the same command with \`${base}\` as the start point (the last argument).`,
+          `Run the same command with \`--no-track\`, and with \`${base}\` as the start point (the last argument).`,
       }
     }
     return next(e)
