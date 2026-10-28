@@ -120,6 +120,14 @@ test('fetches, then refuses a new worktree branch from a local base', async ($, 
   expect(calls.some(c => c.includes('fetch'))).toBe(true)
 })
 
+// An agent can fetch a PR in one call and add its worktree from FETCH_HEAD in the next.
+test('fetches without overwriting FETCH_HEAD', async ($, on) => {
+  const calls: string[][] = []
+  fakeGit(on, { calls })
+  await $.tool.call({ tool: 'Bash', command: 'git worktree add --detach .worktrees/review-1 FETCH_HEAD' })
+  expect(calls.find(c => c.includes('fetch'))).toContain('--no-write-fetch-head')
+})
+
 test('lets a new worktree branch from origin through', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Bash', command: 'git worktree add .worktrees/x -b x origin/main' })
