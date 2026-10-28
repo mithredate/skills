@@ -48,6 +48,14 @@ test('refuses an edit in the main checkout and names EnterWorktree, not git work
   expect(refusal(ran)).not.toContain('.worktrees/')
 })
 
+test('refuses an edit in the main checkout while the session is in a worktree of that repo, and points to that worktree', async ($, on) => {
+  fakeGit(on, { cwd: REPO + '/.claude/worktrees/wt' })
+  const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
+  expect(refusal(ran)).toContain('This session is in the worktree /repo/.claude/worktrees/wt. Make this edit there.')
+  expect(refusal(ran)).not.toContain('EnterWorktree')
+  expect(refusal(ran)).not.toContain('worktree add')
+})
+
 // EnterWorktree makes a worktree only in the repo of the session's folder.
 test('refuses an edit in the main checkout of another repo and names git worktree add, not EnterWorktree', async ($, on) => {
   fakeGit(on, { cwd: OTHER })
