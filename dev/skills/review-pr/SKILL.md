@@ -31,7 +31,7 @@ Apply both lenses of the checklist to the diff yourself. Read outside the diff o
 Spawn both agents in parallel with the Agent tool. Set `subagent_type` to the scoped names below. Wait for both agents to finish.
 
 - `dev:pr-reviewer` (Sonnet, 20 turns, no shell). Give it the diff file path, the brief text, and the PR title and body. Also give it the ticket context that you gathered, and the repo root. Its input is the diff, not the repo. It can use Context7 for one library-documentation check.
-- `dev:verifier` (Haiku, 12 turns). Give it the directory that holds the branch under review. If the branch is not checked out, spawn the verifier with `isolation: "worktree"`, so that it works in its own worktree. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first.
+- `dev:verifier` (Haiku, 12 turns). If the branch under review is checked out, give it the directory that holds the branch. If the branch is not checked out, spawn the verifier with `isolation: "worktree"`. Then its working directory is a new worktree, and the prompt names no directory. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first.
 
 A red verifier verdict is a `blocking` finding. Report a `could_not_run` verdict as such. Do not report it as green.
 
