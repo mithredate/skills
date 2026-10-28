@@ -117,13 +117,16 @@ async function fetchReplies($: EngineInterface, t: ThreadId) {
   }
 }
 
+// Returns why the thread could not join the watch, for /watch-discussions to say.
 async function addThread($: EngineInterface, t: ThreadId) {
   const uri = threadUri(t)
-  if (watch.threads[uri] || watch.unwatched.includes(uri) || watchedCount() >= MAX_WATCHED) return
+  if (watch.threads[uri] || watch.unwatched.includes(uri)) return undefined
+  if (watchedCount() >= MAX_WATCHED) return `the watch holds ${MAX_WATCHED} PRs and threads already`
   const replies = await fetchReplies($, t)
-  if (!replies) return
+  if (!replies) return 'the Microsoft 365 connector could not read the thread'
   watch.threads[uri] = { ...t, replyIds: replies.map(r => r.id), checkedAt: await $.clock.now() }
   await save($)
+  return undefined
 }
 
 // Checks every thread, during a turn too, and adds the replies from other people to `pending`.
@@ -158,6 +161,8 @@ function takePending() {
   return news
 }
 
+const nextTurn = (key: string) => (watch.turns[key] ?? 0) + 1
+
 // Shows the news, and below the turn cap starts a turn on it.
 async function announce($: EngineInterface, key: string, subject: string, label: string, { what, steps }: { what: string; steps: string[] }) {
   $.ui.toast(`${label} ${what}`)
@@ -180,13 +185,17 @@ export const register: Register = on => {
     $.clock.every(POLL_MS, async () => {
       await checkThreads($)
       if (runningTurns.size) return
-      const turn = (key: string) => (watch.turns[key] ?? 0) + 1
       for (const { thread, replies } of takePending()) {
         const uri = threadUri(thread)
-        await announce($, uri, `Teams thread ${uri}`, 'Teams thread', threadInstructions(thread, replies, turn(uri)))
+        await announce($, uri, `Teams thread ${uri}`, 'Teams thread', threadInstructions(thread, replies, nextTurn(uri)))
       }
+    })
+
+    // A timer of its own: a connector call has no timeout, and a hung one must not hold the PR polls back.
+    $.clock.every(POLL_MS, async () => {
+      if (runningTurns.size) return
       for (const { snap, found } of await refresh($))
-        await announce($, snap.url, `PR ${snap.url}`, `#${snap.number}`, instructions(snap, found, turn(snap.url), watch.mergedHere.includes(snap.url)))
+        await announce($, snap.url, `PR ${snap.url}`, `#${snap.number}`, instructions(snap, found, nextTurn(snap.url), watch.mergedHere.includes(snap.url)))
     })
 
     await $.command.register({ name: 'watch-discussions', description: 'List watched PRs and Teams threads, or watch the PR URLs and Teams links given', argumentHint: '[pr-url|teams-link...]', immediate: true })
@@ -254,17 +263,23 @@ export const register: Register = on => {
   on('command.run', { command: 'watch-discussions' }, async ($, e) => {
     await load($)
     const urls: string[] = e.args.match(PR_URL) ?? []
-    const threads = (e.args.match(TEAMS_LINK) ?? []).map(threadOfLink).filter(t => t !== undefined)
-    const keys = [...urls, ...threads.map(threadUri)]
+    const links: string[] = e.args.match(TEAMS_LINK) ?? []
+    const threads = links.map(link => ({ link, thread: threadOfLink(link) }))
+    const keys = [...urls, ...threads.flatMap(({ thread }) => (thread ? [threadUri(thread)] : []))]
     watch.unwatched = watch.unwatched.filter(key => !keys.includes(key))
     for (const url of urls) await add($, url)
-    for (const t of threads) await addThread($, t)
-    if (!keys.length) await refresh($)
+    const failed: string[] = []
+    for (const { link, thread } of threads) {
+      const why = thread ? await addThread($, thread) : 'the link names no team'
+      if (why) failed.push(`Could not watch ${link}: ${why}.`)
+    }
+    if (!urls.length && !links.length) await refresh($)
     const rows = [
       ...Object.values(watch.prs).map(s => `${line(s)}  ${s.url}`),
       ...Object.values(watch.threads).map(t => `Teams thread · ${t.replyIds.length} replies  ${threadUri(t)}`),
     ]
-    return { text: rows.length ? rows.join('\n') : 'Nothing watched. Pass a PR URL or a Teams link, or read one with gh or the Microsoft 365 connector.' }
+    const listed = rows.length ? rows : ['Nothing watched. Pass a PR URL or a Teams link, or read one with gh or the Microsoft 365 connector.']
+    return { text: [...failed, ...listed].join('\n') }
   })
 
   on('command.run', { command: 'unwatch-discussions' }, async ($, e) => {
