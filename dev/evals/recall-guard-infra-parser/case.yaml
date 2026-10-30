@@ -1,0 +1,31 @@
+schema_version: "1.1"
+name: recall-guard-infra-parser
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:pr-reviewer` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Review one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title, and the brief or the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, at the head commit of the change.
+    - Repo rules: `CLAUDE.md` at the repo root.
+
+    Return your structured finding list.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: finds-the-class
+    type: llm
+    criteria: |
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
+
+      PASS if one entry says, as a general flaw, that the guard's shell parser lets a privileged command run with no question when the command sits in a shell form that the parser does not handle. Examples of such forms are a heredoc or a pipe into a shell, `find -exec`, `${X:-$(...)}`, `$'...'`, and a shell function. An entry about one single input, with no general statement, does not count.
+
+      FAIL otherwise.
