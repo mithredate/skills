@@ -1,0 +1,38 @@
+schema_version: "1.1"
+name: recall-sweep-claims
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:pr-reviewer` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Review one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title, and the brief or the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, at the head commit of the change.
+    - Repo rules: `AGENTS.md` at the repo root.
+
+    Return your structured finding list.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: finds-the-class
+    type: llm
+    criteria: |
+      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+
+      The bug class: a sorted claim keeps counting as new. No date or file that `sweep` reads records that the claim was sorted, so the next `sweep` gives the same claim again.
+
+      The instances:
+      - No record date advances when a claim is sorted (`productivity/skills/sweep/SKILL.md:50`).
+      - A claim on a link that only the index row holds has no ticket for its record.
+      - A claim on a PR that `gh search prs` found has no ticket for its record.
+
+      PASS if one entry names the bug class. An entry names the class when it states that `sweep` keeps no record of a sorted claim, so the claim comes back as new.
+      PASS if the entries together name every instance. An entry names an instance when it points at the same gap for the same kind of link.
+      FAIL in every other case. FAIL also if the reply holds no finding list.

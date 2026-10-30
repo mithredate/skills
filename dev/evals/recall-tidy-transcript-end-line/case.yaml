@@ -1,0 +1,38 @@
+schema_version: "1.1"
+name: recall-tidy-transcript-end-line
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:pr-reviewer` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Review one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title, and the brief or the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, at the head commit of the change.
+    - Repo rules: `AGENTS.md` at the repo root.
+
+    Return your structured finding list.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: finds-the-class
+    type: llm
+    criteria: |
+      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+
+      The bug class: in `tidy-transcript`, the end line of an unfolded run comes only from the hook of a ToolResult row. A call with no ToolResult row, or with two, draws the end line wrong.
+
+      The instance:
+      - The process-wide `grouped` set is never cleared. In the ctrl+o transcript, the ToolUse row and the ToolResult row of one call both draw the end line, so it shows twice.
+
+      A finished call always gets a ToolResult row, also when it errored, was rejected, or was interrupted. An entry that says such a call gets no end line names no instance and not the class.
+
+      PASS if one entry names the bug class. An entry names the class when it states that more than one row of a call can draw the end line, so it draws twice.
+      PASS if an entry names the instance. An entry names the instance when it points at the same code path and the same failure.
+      FAIL in every other case. FAIL also if the reply holds no finding list.
