@@ -26,7 +26,7 @@ graders:
     criteria: |
       The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
 
-      The bug class: in `tidy-transcript`, the end line of an unfolded run comes only from the hook of a ToolResult row. A call with no ToolResult row, or with two, draws the end line wrong.
+      The bug class: in `tidy-transcript`, more than one row of one call can draw the end line of an unfolded run, so the end line shows twice.
 
       The instance:
       - The process-wide `grouped` set is never cleared. In the ctrl+o transcript, the ToolUse row and the ToolResult row of one call both draw the end line, so it shows twice.
