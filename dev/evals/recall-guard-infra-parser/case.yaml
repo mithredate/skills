@@ -1,0 +1,46 @@
+schema_version: "1.1"
+name: recall-guard-infra-parser
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:pr-reviewer` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Review one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title, and the brief or the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, at the head commit of the change.
+    - Repo rules: `AGENTS.md` at the repo root.
+
+    Return your structured finding list.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: finds-the-class
+    type: llm
+    criteria: |
+      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+
+      The bug class: the shell parser in `guard-infra/hooks/commands.ts` fails open on a shell form that it does not model. A privileged call, such as `kubectl delete pod web-1`, then runs with no question.
+
+      The instances:
+      - A heredoc, a here-string, or a pipe into a shell with no `-c`, such as `sh <<< 'kubectl delete pod web-1'` or `echo 'kubectl delete pod web-1' | sh`.
+      - A `$(...)` in the body of an unquoted heredoc, such as `cat <<EOF` with the line `$(kubectl delete pod web-1)`.
+      - A wrapper that the allow-list does not hold, such as `find . -exec kubectl delete pod {} \;`, `parallel`, `setsid`, `fish -c`, `watch '...'`, `env -S`, or `sudo -s`.
+      - A long flag of a wrapper, such as `sudo --user root kubectl delete pod web-1`.
+      - A `$(...)` inside `${...}`, such as `echo ${X:-$(kubectl delete pod web-1)}`.
+      - An ANSI-C quote, such as `$'kubectl' delete pod web-1`.
+      - The body of `function f { kubectl delete pod web-1; }; f`.
+      - A redirect target with a substitution, such as `echo hi > "$(kubectl delete pod web-1)"`, or a `<<\EOF` delimiter that hides the rest of the script.
+      - A git alias, such as `git -c alias.x='!kubectl delete pod web-1' x`.
+      - A pipe into a shell behind `sudo`, such as `echo 'kubectl delete pod web-1' | sudo bash`.
+      - A tool name in another case, such as `Kubectl delete pod web-1`.
+
+      PASS if one entry names the bug class. An entry names the class when it states that the parser lets a privileged call run with no question for shell forms that it does not model, as a general flaw and not only for one input.
+      PASS if the entries together name every instance. An entry names an instance when it gives that input, or an input of the same form.
+      FAIL in every other case. FAIL also if the reply holds no finding list.

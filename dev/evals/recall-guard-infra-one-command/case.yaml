@@ -1,0 +1,40 @@
+schema_version: "1.1"
+name: recall-guard-infra-one-command
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:pr-reviewer` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Review one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title, and the brief or the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, at the head commit of the change.
+    - Repo rules: `AGENTS.md` at the repo root.
+
+    Return your structured finding list.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: finds-the-class
+    type: llm
+    criteria: |
+      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+
+      The bug class: a script word that runs several commands passes the guard as one plain command. The check of a simple line in `guard-infra/hooks/commands.ts` counts only the top-level commands, and does not look inside the script of `bash -c`, `sh -c`, or `ssh`.
+
+      The instances:
+      - `bash -c 'kubectl delete pod a; kubectl delete pod b'`
+      - `ssh host kubectl get pods \; kubectl delete pod web-1`
+      - `bash -c '{kubectl,delete,pod,a};{kubectl,delete,pod,b}'`
+      - `sh -c 'kubectl;aws'`
+      - `ssh host 'kubectl&&aws'`
+
+      PASS if one entry names the bug class. An entry names the class when it states that a script word can hold several commands and still passes as one command.
+      PASS if the entries together name every instance. An entry names an instance when it gives that input, or an input of the same form.
+      FAIL in every other case. FAIL also if the reply holds no finding list.
