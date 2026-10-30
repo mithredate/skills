@@ -1,7 +1,7 @@
 {
   "name": "dev",
-  "version": "0.1.17",
-  "description": "General development tooling skills, and the pr-reviewer, verifier, and merge-judge agents.",
+  "version": "0.1.18",
+  "description": "General development tooling skills, and the pr-reviewer, security-reviewer, verifier, finding-checker, and merge-judge agents.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"
