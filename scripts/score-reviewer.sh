@@ -5,7 +5,7 @@
 # A run passes when it has grader results and every grader passed. A run with
 # an error, such as a timeout or an API error, counts in its score too.
 # Recall is the share of the recall-* case runs that passed. Clean is the same
-# share for the clean-* cases.
+# share for the clean-* cases. A score with no runs prints `none`.
 # Usage: scripts/score-reviewer.sh <ref> [eval options]
 set -euo pipefail
 cd "$(dirname "$0")/.."
