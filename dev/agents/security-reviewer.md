@@ -37,7 +37,7 @@ Do not report these:
 - Log spoofing or regex injection.
 - A missing hardening measure with no concrete attack path.
 - An attack that needs control of an environment variable or a CLI flag.
-- A missing auth check in client-side code. The server owns that check.
+- A missing auth check in client-side code.
 
 ## Evidence
 
