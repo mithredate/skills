@@ -4,7 +4,7 @@
 # `origin/main:` line and a `HEAD:` line. A PR that changes other files under
 # dev/evals/ needs a `HEAD:` line. A score line starts a line of the body, as
 # scripts/score-reviewer.sh prints it. A `none` score counts. The check does
-# not compare the scores. The body is untrusted, so it is only read as data.
+# not compare the scores. The body is untrusted, so the script only greps it.
 # Usage: <changed paths, one per line> | BODY=<PR body> scripts/check-score-lines.sh
 set -euo pipefail
 
