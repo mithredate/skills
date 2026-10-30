@@ -18,7 +18,7 @@ The session does not edit code or a target system. Agents build, review, and ver
 
 The step is done when each git target has its branch checked out in a known directory.
 
-The agents `dev:pr-reviewer`, `dev:verifier`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
+The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
 
 ## Build
 
@@ -29,7 +29,7 @@ Start one agent with the Agent tool, on Opus. Give it:
 - the kind
 - each target: the directory and the base commit of a git repo, or the name of a system
 - a diff file path in the scratchpad
-- in a patch round, the findings and the red checks of the prior round
+- in a patch round, the open findings and the red checks of the prior round
 
 The step is done when the agent returns its JSON. If the outcome is `plan_broken` or `setup_blocked`, stop with the status `blocked` and its evidence.
 
@@ -37,25 +37,31 @@ The step is done when the agent returns its JSON. If the outcome is `plan_broken
 
 Start these agents in parallel, and wait for all of them:
 
-- `dev:pr-reviewer`, when a git target changed. Give it the diff file, the brief, the path of the ticket or the brief file, and the root and the AGENTS.md or CLAUDE.md of each changed repo.
-- `dev:verifier`, once for each git target, with its directory and its AGENTS.md or CLAUDE.md.
-- `dev:verifier`, once, for the brief's Verification checks of the git targets that the declared commands do not cover. Tell it to run each check and report it as a command.
+- `dev:pr-reviewer` and `dev:security-reviewer`, when a git target changed. Give each the diff file, the brief, the path of the ticket or the brief file, and the root and the AGENTS.md or CLAUDE.md of each changed repo.
+- `dev:verifier`, once for each git target, with its directory, its base commit, and its AGENTS.md or CLAUDE.md.
+- `dev:verifier`, once, for the brief's Verification checks of the git targets that the declared commands do not cover. Tell it to run each check and report it as a command. Give it no base commit.
 - One `general-purpose` agent for the Verification checks of each target that is not a git repo. That agent has the tools of the system, which `dev:verifier` does not have. Tell it to change nothing, and to return the JSON of `dev:verifier`.
+
+In rounds 2 and 3, also give the reviewers and the verifiers the `pre_existing` results of the earlier rounds.
+
+If a reviewer returns a `blocking` or `discrepancy` finding, start `dev:finding-checker` once. Give it these findings of all reviewers, the diff file, the brief, and the base commit. Also give it the root and the AGENTS.md or CLAUDE.md of each changed repo. If it returns no JSON, treat each finding as confirmed.
+
+An **open** finding is a finding that `dev:finding-checker` did not refute. A `pre_existing` item is not a finding. A `pre_existing` item and a refuted finding start nothing. Keep each one for the PR body.
 
 Then decide:
 
 | Result | Next |
 |---|---|
-| a `discrepancy` | stop, status `blocked`. The plan is wrong, and a patch cannot fix it |
-| a `blocking` finding, or a red or `could_not_run` verifier | next round patches |
+| an open `discrepancy` | stop, status `blocked`. The plan is wrong, and a patch cannot fix it |
+| an open `blocking` finding, or a red or `could_not_run` verifier | next round patches |
 | `quality_note` only | next round patches. On the last round, `pass` |
-| `nit` only, or nothing | `pass` |
+| `nit` only, or nothing open | `pass` |
 
 The first build is round 1. The run has at most 3 rounds. If round 3 does not pass, the status is `rounds_spent`.
 
 ## Hand back
 
-1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence.
+1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
@@ -72,10 +78,10 @@ Merge runs only when each condition below holds. Otherwise, skip it, and the PR 
 
 Name the PR by its URL in each `gh` command. Without it, `gh` acts on the PR of the current branch.
 
-1. Start `dev:merge-judge`. Give it the diff file and the brief. Also give it the verifier results and the open findings of the last round, and the AGENTS.md or CLAUDE.md of the base branch. The step is done when it returns its JSON.
+1. Run `git rev-parse HEAD` on the PR branch. The output is the judged head. Start `dev:merge-judge`. Give it the diff file and the brief. Also give it the verifier results and the open findings of the last round, and the AGENTS.md or CLAUDE.md of the base branch. The step is done when it returns its JSON.
 2. Treat the verdict as `human` if it is not `auto`, if an item applies, or if there is no JSON. For `human`, put the reasons at the top of the PR body, and stop. Without reasons, write "No verdict from merge-judge."
-3. Run `gh pr ready`, then `gh pr merge --auto --squash`. If a command fails, run `gh pr ready --undo`. Put the error at the top of the PR body, and stop.
-4. Run `gh pr checks --watch --required`. If the shell stops it at its time limit, run it again. Then read the state with `gh pr view --json state` every 10 seconds, for at most 2 minutes. The step is done when the state is `MERGED`.
-5. If the PR does not merge, run `gh pr merge --disable-auto` and `gh pr ready --undo`. Put the failed check or the open requirement at the top of the PR body.
+3. Run `gh pr ready`, then `gh pr merge --auto --squash --match-head-commit <judged head>`. If a command fails, run `gh pr ready --undo`. Put the error at the top of the PR body, and stop.
+4. Run `gh pr checks --watch --required`. If the shell stops it at its time limit, run it again. Then read the state with `gh pr view --json state,headRefOid` every 10 seconds, for at most 2 minutes. If `headRefOid` is not the judged head, the PR does not merge. The step is done when the state is `MERGED`.
+5. If the PR does not merge, run `gh pr merge --disable-auto` and `gh pr ready --undo`. Put the failed check, the open requirement, or the new head at the top of the PR body.
 
 `gh pr merge --auto` waits for the checks and the reviews that the repo requires. In a repo with no required check, it merges at once.
