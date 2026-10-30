@@ -14,7 +14,7 @@ execution:
     - Diff file: `<workdir>/pr.diff`
     - Brief file: `<workdir>/brief.md`. It holds the PR title, and the brief or the PR body. Read it whole.
     - Repo root: `<workdir>/repo`, at the head commit of the change.
-    - Repo rules: `AGENTS.md` at the repo root.
+    - Repo rules: `CLAUDE.md` at the repo root.
 
     Return your structured finding list.
     ---
