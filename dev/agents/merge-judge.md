@@ -27,7 +27,7 @@ The verdict is also `human` when one of these holds:
 
 - The diff changes a file that controls review or merge. Examples are AGENTS.md, CLAUDE.md, a CI workflow, CODEOWNERS, and deploy config.
 - The AGENTS.md or CLAUDE.md names a path or a topic that always needs a human review, and the diff touches it.
-- The last review left a `discrepancy`, `blocking`, or `quality_note` finding open.
+- The last review left a `discrepancy`, `blocking`, or `quality_note` finding open. A `pre_existing` item is not open. A finding that `dev:finding-checker` refuted is not open.
 
 ## Evidence
 

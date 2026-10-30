@@ -18,6 +18,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 ## Workflows
 
 - **Validate before committing** — `./scripts/validate.sh`. CI runs the same script and gates PRs / pushes to main.
+- **fire can auto-merge.** `fire` merges its PR when `dev:merge-judge` returns `auto`.
 - **Vendor a new skill from an upstream repo** — invoke `/import-skill`. Defined in `meta/skills/import-skill/SKILL.md`. Gathers upstream coords, picks target plugin, runs the import script, validates.
 - **Refresh vendored skills against upstream** — invoke `/refresh-vendored`. Defined in `meta/skills/refresh-vendored/SKILL.md`. Delegates each per-skill reconciliation to `merge-skill`.
 - **Reconcile two skill versions** — invoke `/merge-skill`. Defined in `meta/skills/merge-skill/SKILL.md`. Used by both above; can also be invoked standalone.
