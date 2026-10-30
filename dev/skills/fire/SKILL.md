@@ -29,7 +29,9 @@ Start one agent with the Agent tool, on Opus. Give it:
 - the kind
 - each target: the directory and the base commit of a git repo, or the name of a system
 - a diff file path in the scratchpad
-- in a patch round, the red checks and the open findings of the prior round, without the `refuted_instances` of `dev:finding-checker`
+- in a patch round, the red checks and the open findings of the prior round
+
+A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`.
 
 The step is done when the agent returns its JSON. If the outcome is `plan_broken` or `setup_blocked`, stop with the status `blocked` and its evidence.
 
@@ -44,7 +46,7 @@ Start these agents in parallel, and wait for all of them:
 
 Do not give an agent a Verification check that the brief puts after the merge.
 
-In rounds 2 and 3, also give the reviewers and the verifiers the `pre_existing` results of the earlier rounds. These results include each finding that `dev:finding-checker` refuted as `pre_existing`.
+In rounds 2 and 3, also give the reviewers and the verifiers the `pre_existing` results of the earlier rounds. These results include the `pre_existing` list of `dev:finding-checker`.
 
 If a reviewer returns a `blocking` or `discrepancy` finding, start `dev:finding-checker` once. Give it these findings of all reviewers, the diff file, and the brief. Also give it the root, the base commit, and the AGENTS.md or CLAUDE.md of each changed repo. If it returns no JSON, treat each finding as confirmed.
 
