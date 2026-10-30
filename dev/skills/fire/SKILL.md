@@ -82,8 +82,6 @@ Name the PR by its URL in each `gh` command. Without it, `gh` acts on the PR of 
 
 1. Run `git rev-parse HEAD` on the PR branch. The output is the judged head. Start `dev:merge-judge`. Give it the diff file and the brief. Also give it the verifier results and the open findings of the last round, and the AGENTS.md or CLAUDE.md of the base branch. The step is done when it returns its JSON.
 2. Treat the verdict as `human` if it is not `auto`, if an item applies, or if there is no JSON. For `human`, put the reasons at the top of the PR body, and stop. Without reasons, write "No verdict from merge-judge."
-3. Run `gh pr ready`, then `gh pr merge --auto --squash --match-head-commit <judged head>`. If a command fails, run `gh pr ready --undo`. Put the error at the top of the PR body, and stop.
-4. Run `gh pr checks --watch --required`. If the shell stops it at its time limit, run it again. Then read the state with `gh pr view --json state,headRefOid` every 10 seconds, for at most 2 minutes. If `headRefOid` is not the judged head, the PR does not merge. The step is done when the state is `MERGED`.
-5. If the PR does not merge, run `gh pr merge --disable-auto` and `gh pr ready --undo`. Put the failed check, the open requirement, or the new head at the top of the PR body.
-
-`gh pr merge --auto` waits for the checks and the reviews that the repo requires. In a repo with no required check, it merges at once.
+3. Run `gh pr ready`. Then run `gh pr checks --watch --required`. If the shell stops it at its time limit, run it again. The error `no checks reported` or `no required checks reported` means that the repo has no required check. The step is done when the command exits 0 or shows one of these errors.
+4. Run `gh pr merge --squash --match-head-commit <judged head>`. Do not add `--auto`. GitHub refuses the merge when the PR head is not the judged head. The step is done when the command exits 0.
+5. If `gh pr ready` fails, a required check fails, or step 4 fails, the PR does not merge. Run `gh pr ready --undo`. Put the failed check or the error at the top of the PR body.
