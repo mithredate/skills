@@ -23,17 +23,31 @@ claude plugin eval "$work/dev" --trust-plugin --scaffold --ablation none --no-pu
   --threshold 0 --model claude-haiku-5-5 --judge-model claude-sonnet-5-5 \
   --output-dir "$work/results" "$@" || status=$?
 
+# A trust refusal or a load failure stops the eval before it writes a result.
+result=$work/results/aggregate-result.json
+if [[ ! -f $result ]]; then
+  echo "$ref: no score, because the eval wrote no $result" >&2
+  exit "$status"
+fi
+
 # The folder stays, so that the report and the per-case results of a low
 # score can be read.
 echo "Results: $work/results"
 
-# A run that fails its scaffold, or ends on an API error, scores 0 with no
-# grading. The count of runs with an error shows such a run.
+# Recall is the mean score of the recall cases. Each recall case has one
+# grader. Clean is the share of clean-case runs in which every grader passed.
+# A mean case score does not work for clean, because a clean case has two
+# graders. A run that fails its scaffold, or ends on an API error, has no
+# grader results. Clean is then none, and the count of runs with an error
+# shows such a run.
 jq -r --arg ref "$ref" '
   def mean(prefix): [.cases[] | select(.name | startswith(prefix)) | .aggregates.score]
     | if length == 0 then "none" else add / length * 100 | round / 100 end;
+  def clean: [.cases[] | select(.name | startswith("clean-")) | .arms.with[]? | [.graders[]?.passed]]
+    | if length == 0 or any(.[]; length == 0 or any(.[]; type != "boolean")) then "none"
+      else (map(select(all(.[]; .))) | length) / length * 100 | round / 100 end;
   def errors: [.cases[].arms.with[]? | select(.error != null)] | length;
-  "\($ref): recall \(mean("recall-")), clean \(mean("clean-")), runs with an error \(errors)"
+  "\($ref): recall \(mean("recall-")), clean \(clean), runs with an error \(errors)"
     + if .partial then " (partial: \(.partialReason))" else "" end
-' "$work/results/aggregate-result.json"
+' "$result"
 exit "$status"
