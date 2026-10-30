@@ -42,6 +42,8 @@ Start these agents in parallel, and wait for all of them:
 - `dev:verifier`, once, for the brief's Verification checks of the git targets that the declared commands do not cover. Tell it to run each check and report it as a command. Give it no base commit.
 - One `general-purpose` agent for the Verification checks of each target that is not a git repo. That agent has the tools of the system, which `dev:verifier` does not have. Tell it to change nothing, and to return the JSON of `dev:verifier`.
 
+Do not give an agent a Verification check that the brief puts after the merge.
+
 In rounds 2 and 3, also give the reviewers and the verifiers the `pre_existing` results of the earlier rounds.
 
 If a reviewer returns a `blocking` or `discrepancy` finding, start `dev:finding-checker` once. Give it these findings of all reviewers, the diff file, the brief, and the base commit. Also give it the root and the AGENTS.md or CLAUDE.md of each changed repo. If it returns no JSON, treat each finding as confirmed.
