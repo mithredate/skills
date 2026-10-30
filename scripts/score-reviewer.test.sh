@@ -69,6 +69,14 @@ cat > "$tmp/partial-no-recall-results.json" <<'EOF'
  {"name": "clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null}]}}
 ]}
 EOF
+# The cost ceiling stops the eval early, but each score has a run with grader
+# results. The script prints the score and exits 2, as the eval does.
+cat > "$tmp/partial.json" <<'EOF'
+{"partial": true, "partialReason": "cost_ceiling", "cases": [
+ {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}},
+ {"name": "clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null}]}}
+]}
+EOF
 cat > "$tmp/clean-only.json" <<'EOF'
 {"partial": false, "cases": [
  {"name": "clean-pr74", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null},
@@ -100,6 +108,8 @@ check "one recall run failed its scaffold, eval exits 0" "$tmp/one-scaffold-fail
   "HEAD: recall 0.5 (1 of 2 runs), clean 1 (1 of 1 runs), runs with an error 1"
 check "no recall run has grader results, eval exits 2" "$tmp/partial-no-recall-results.json" 2 2 \
   "HEAD: a score has runs, but no run with grader results"
+check "cost ceiling, eval exits 2" "$tmp/partial.json" 2 2 \
+  "HEAD: recall 1 (1 of 1 runs), clean 1 (1 of 1 runs), runs with an error 0 (partial: cost_ceiling)"
 check "only clean cases, recall 0 of 0" "$tmp/clean-only.json" 0 0 \
   "HEAD: recall none (0 of 0 runs), clean 0.5 (1 of 2 runs), runs with an error 0"
 check "eval exits 0, no result" "" 0 1 "HEAD: no score"
