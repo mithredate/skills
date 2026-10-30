@@ -2,6 +2,10 @@
 # Score dev:pr-reviewer on the cases in dev/evals/. Runs the cases of this
 # checkout with the dev/agents/pr-reviewer.md of <ref>, and prints recall and
 # clean. Extra arguments go to `claude plugin eval`, for example -j 4.
+# A run passes when it has grader results and every grader passed. A run with
+# an error, such as a timeout or an API error, counts in its score too.
+# Recall is the share of the recall-* case runs that passed. Clean is the same
+# share for the clean-* cases.
 # Usage: scripts/score-reviewer.sh <ref> [eval options]
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -35,26 +39,21 @@ fi
 # score can be read.
 echo "Results: $work/results"
 
-# Recall is the share of graded recall-case runs in which every grader passed.
-# Clean is the same share for the clean cases. A run is graded when it has
-# grader results and no error. In claude 2.1.314, a run that ended on an API
-# error has no grader results. A run that is not graded does not lower a score.
-# Each score prints its count of graded runs.
-# A score with runs but no graded run is a failure. A score with no runs is
-# not, because --case can leave a score with no runs.
+# A score with runs but no run with grader results is a failure, because a
+# broken scaffold then gives 0 on both refs. A score with no runs is not a
+# failure, because --case can leave a score with no runs.
 jq -r --arg ref "$ref" '
-  def graded: (.graders | length) > 0 and .error == null;
+  def passed: (.graders | length) > 0 and all(.graders[]; .passed == true);
   def runs(prefix): [.cases[] | select(.name | startswith(prefix)) | .arms.with[]?];
   def score(prefix): runs(prefix) as $runs
-    | [$runs[] | select(graded)] as $graded
-    | (if ($graded | length) == 0 then "none"
-       else ([$graded[] | select(all(.graders[]; .passed == true))] | length) / ($graded | length)
-         * 100 | round / 100 end) as $score
-    | "\($score) (\($graded | length) of \($runs | length) runs graded)";
-  def errors: [.cases[].arms.with[]? | select(graded | not)] | length;
+    | ([$runs[] | select(passed)] | length) as $passed
+    | (if ($runs | length) == 0 then "none"
+       else $passed / ($runs | length) * 100 | round / 100 end) as $share
+    | "\($share) (\($passed) of \($runs | length) runs)";
+  def errors: [.cases[].arms.with[]? | select(.error != null)] | length;
   "\($ref): recall \(score("recall-")), clean \(score("clean-")), runs with an error \(errors)"
     + if .partial then " (partial: \(.partialReason))" else "" end,
-  if any(runs("recall-"), runs("clean-"); length > 0 and all(.[]; graded | not))
-  then "\($ref): a score has runs, but no graded run\n" | halt_error(1) else empty end
+  if any(runs("recall-"), runs("clean-"); length > 0 and all(.[]; .graders | length == 0))
+  then "\($ref): a score has runs, but no run with grader results\n" | halt_error(1) else empty end
 ' "$result" || exit $((status == 0 ? 1 : status))
 exit "$status"

@@ -19,28 +19,41 @@ exit "$FAKE_STATUS"
 EOF
 chmod +x "$tmp/bin/claude"
 
-# A run with no error key and no ended_on_api_error key is a normal run.
-cat > "$tmp/mixed.json" <<'EOF'
+# A timed-out run can still have grader results, and it counts in its score.
+# With --threshold 0, a timeout alone does not fail the eval.
+cat > "$tmp/timeouts.json" <<'EOF'
 {"partial": false, "cases": [
- {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}]}, {"graders": [{"passed": false}]}]}},
- {"name": "recall-b", "arms": {"with": [{"graders": [{"passed": true}]},
-   {"graders": [], "error": null, "ended_on_api_error": true}]}},
- {"name": "clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}]},
-   {"graders": [{"passed": false}, {"passed": true}]}, {"graders": [{"passed": false}, {"passed": true}]},
-   {"graders": [], "error": "timed out after 300s"}]}}
+ {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}], "error": null},
+   {"graders": [{"passed": false}], "error": "timed out after 300s"}]}},
+ {"name": "clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null},
+   {"graders": [{"passed": true}, {"passed": true}], "error": null},
+   {"graders": [{"passed": false}, {"passed": true}], "error": null},
+   {"graders": [{"passed": true}, {"passed": true}], "error": "timed out after 300s"},
+   {"graders": [{"passed": false}, {"passed": true}], "error": "timed out after 300s"}]}}
 ]}
 EOF
-cat > "$tmp/clean-ungraded.json" <<'EOF'
+# A run that ended on an API error has no grader results, and the eval exits 1.
+cat > "$tmp/api-error.json" <<'EOF'
 {"partial": false, "cases": [
- {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}]}]}},
- {"name": "clean-x", "arms": {"with": [{"graders": [], "error": "timed out after 300s"},
-   {"graders": [], "error": null, "ended_on_api_error": true}]}}
+ {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}], "error": null},
+   {"graders": [], "error": "API Error: 429 rate_limit_error"}]}},
+ {"name": "recall-b", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}},
+ {"name": "clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null},
+   {"graders": [{"passed": false}, {"passed": true}], "error": null}]}}
+]}
+EOF
+# A broken scaffold gives runs with no grader results.
+cat > "$tmp/no-grader-results.json" <<'EOF'
+{"partial": false, "cases": [
+ {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}},
+ {"name": "clean-x", "arms": {"with": [{"graders": [], "error": "scaffold failed"},
+   {"graders": [], "error": "scaffold failed"}]}}
 ]}
 EOF
 cat > "$tmp/clean-only.json" <<'EOF'
 {"partial": false, "cases": [
- {"name": "clean-pr74", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}]},
-   {"graders": [{"passed": false}, {"passed": true}]}]}}
+ {"name": "clean-pr74", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null},
+   {"graders": [{"passed": false}, {"passed": true}], "error": null}]}}
 ]}
 EOF
 
@@ -58,14 +71,14 @@ check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted
   fi
 }
 
-check "mixed runs" "$tmp/mixed.json" 0 0 \
-  "HEAD: recall 0.67 (3 of 4 runs graded), clean 0.33 (3 of 4 runs graded), runs with an error 2"
-check "every clean run ungraded, eval exits 0" "$tmp/clean-ungraded.json" 0 1 \
-  "HEAD: recall 1 (1 of 1 runs graded), clean none (0 of 2 runs graded), runs with an error 2"
-check "every clean run ungraded, eval exits 3" "$tmp/clean-ungraded.json" 3 3 \
-  "HEAD: recall 1 (1 of 1 runs graded), clean none (0 of 2 runs graded), runs with an error 2"
+check "timed-out runs count" "$tmp/timeouts.json" 0 0 \
+  "HEAD: recall 0.5 (1 of 2 runs), clean 0.6 (3 of 5 runs), runs with an error 3"
+check "a run with an API error does not pass" "$tmp/api-error.json" 1 1 \
+  "HEAD: recall 0.67 (2 of 3 runs), clean 0.5 (1 of 2 runs), runs with an error 1"
+check "no clean run has grader results" "$tmp/no-grader-results.json" 0 1 \
+  "HEAD: a score has runs, but no run with grader results"
 check "only clean cases, recall 0 of 0" "$tmp/clean-only.json" 0 0 \
-  "HEAD: recall none (0 of 0 runs graded), clean 0.5 (2 of 2 runs graded), runs with an error 0"
+  "HEAD: recall none (0 of 0 runs), clean 0.5 (1 of 2 runs), runs with an error 0"
 check "eval exits 0, no result" "" 0 1 "HEAD: no score"
 check "eval exits 1, no result" "" 1 1 "HEAD: no score"
 check "eval exits 3, no result" "" 3 3 "HEAD: no score"
