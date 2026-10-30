@@ -1,4 +1,4 @@
-PR title: fix(tidy-transcript): skip a group call with no id, as an older desktop host sends
+PR title: feat(show-session, tidy-transcript): open commands and agents from the pane, fold a run from its end, keep long notes bright
 
 ## Brief
 

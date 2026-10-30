@@ -1,4 +1,4 @@
-PR title: fix(watch-discussions): watch only what Claude passes to a watch tool, and repeat any connector call
+PR title: feat(watch-discussions): rename watch-prs and watch only the discussions Claude picks
 
 ## Brief
 

@@ -1,4 +1,4 @@
-PR title: fix(sweep, sup, settle-decisions, orchestrate): read new comments for claims, count them, and sort them before work
+PR title: feat(settle-decisions, sweep, sup, orchestrate): check each claim from a source before the human sees it
 
 ## Brief
 
