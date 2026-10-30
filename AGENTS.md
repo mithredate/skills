@@ -14,6 +14,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 - **No parallel skills.** When concepts conflict, merge or abort — never run two forks of the same idea side by side.
 - **A Skill call that every run needs goes in a "First actions" line at the top of the body.** A Skill call that depends on a fact found later gets a hook on the event that reveals the fact. A Skill call inside a numbered step, or a skill list in a file the agent reads, is skipped about half the time (cakeclub discovery, 2026-10: 18 of 35 ticket sessions never loaded `grilling`, now `settle-decisions`).
 - **A change under a plugin directory ships with a patch bump of that plugin's `plugin.json` version.** An installer updates a plugin only when the version changes. A skill listed in `marketplace.json` but absent from the installed copy fails the whole plugin at load. The `import-skill` script bumps automatically. `write-a-skill`, `merge-skill`, and `refresh-vendored` bump by hand.
+- **A PR that changes `dev/agents/pr-reviewer.md` or a case in `dev/evals/` shows the reviewer score for `main` and for the branch.** The PR body gives recall and clean for each. If a score of the branch is lower than the score of `main`, or a score is missing, a human reviews the PR.
 
 ## Workflows
 
@@ -22,6 +23,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 - **Vendor a new skill from an upstream repo** — invoke `/import-skill`. Defined in `meta/skills/import-skill/SKILL.md`. Gathers upstream coords, picks target plugin, runs the import script, validates.
 - **Refresh vendored skills against upstream** — invoke `/refresh-vendored`. Defined in `meta/skills/refresh-vendored/SKILL.md`. Delegates each per-skill reconciliation to `merge-skill`.
 - **Reconcile two skill versions** — invoke `/merge-skill`. Defined in `meta/skills/merge-skill/SKILL.md`. Used by both above; can also be invoked standalone.
+- **Score the reviewer** — on the branch, run `scripts/score-reviewer.sh main` and `scripts/score-reviewer.sh HEAD` on the same day. Each run uses the cases in `dev/evals/` of the checkout and the `dev/agents/pr-reviewer.md` of the ref. It prints **recall**, the mean score of the `recall-*` cases, and **clean**, the mean score of the `clean-*` cases. A score goes stale when the `sonnet` alias of the reviewer moves. Run it in your terminal, because the Claude Code sandbox blocks the eval's run folders in `/tmp`.
 - **Author from scratch** — a new `SKILL.md` goes into the plugin it belongs to. `in-progress/` is for a vendored skill that is still being drifted toward the local opinion. Lifecycle is one-way; no demotion.
 
 ## Worktree workflow (imports and refreshes)
