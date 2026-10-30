@@ -24,15 +24,8 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
 
-      The bug class: a sorted claim keeps counting as new. No date or file that `sweep` reads records that the claim was sorted, so the next `sweep` gives the same claim again.
+      PASS if one entry says that nothing records that a claim was sorted, so `sweep` counts the same claim as new again. Examples: no record date advances when a claim is sorted, or a claim from a link that only the index row holds, or from a `gh search prs` result, has no ticket to hold its record.
 
-      The instances:
-      - No record date advances when a claim is sorted (`productivity/skills/sweep/SKILL.md:50`).
-      - A claim on a link that only the index row holds has no ticket for its record.
-      - A claim on a PR that `gh search prs` found has no ticket for its record.
-
-      PASS if one entry names the bug class. An entry names the class when it states that `sweep` keeps no record of a sorted claim, so the claim comes back as new.
-      PASS if the entries together name every instance. An entry names an instance when it points at the same gap for the same kind of link.
-      FAIL in every other case. FAIL also if the reply holds no finding list.
+      FAIL otherwise.

@@ -24,14 +24,8 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
 
-      The bug class: the filter for Claude's own posts in `watch-discussions/hooks/register.ts` is wrong in time or in scope. The IDs in `own[server]` come in too late, or they come from calls that are not Claude's own writes.
+      PASS if one entry says that the filter for Claude's own posts takes its IDs at the wrong time or from the wrong calls. Examples: `own[server]` gets the IDs of a write only after the `tool.call` hook returns, or `own[server]` takes the IDs of calls that are not Claude's own writes, such as a read by a subagent.
 
-      The instances:
-      - `own[server]` gets the IDs of a write only after `next(e)` returns. A check that runs between the post and the end of its `tool.call` hook reports Claude's own post as news.
-      - `own[server]` takes the IDs of every call that core does not mark read-only, also a read by a subagent. A reply from another person in that result is then dropped.
-
-      PASS if one entry names the bug class. An entry names the class when it states that the own-post filter takes its IDs at the wrong time or from the wrong calls.
-      PASS if the entries together name every instance. An entry names an instance when it points at the same code path and the same failure.
-      FAIL in every other case. FAIL also if the reply holds no finding list.
+      FAIL otherwise.

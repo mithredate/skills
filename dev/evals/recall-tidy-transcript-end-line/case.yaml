@@ -24,15 +24,8 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
 
-      The bug class: in `tidy-transcript`, more than one row of one call can draw the end line of an unfolded run, so the end line shows twice.
+      PASS if one entry says that the end line of an unfolded run can show twice for one call, because more than one row of the call draws it, or because the `grouped` set is never cleared. An entry that says a call gets no end line does not count.
 
-      The instance:
-      - The process-wide `grouped` set is never cleared. In the ctrl+o transcript, the ToolUse row and the ToolResult row of one call both draw the end line, so it shows twice.
-
-      A finished call always gets a ToolResult row, also when it errored, was rejected, or was interrupted. An entry that says such a call gets no end line names no instance and not the class.
-
-      PASS if one entry names the bug class. An entry names the class when it states that more than one row of a call can draw the end line, so it draws twice.
-      PASS if an entry names the instance. An entry names the instance when it points at the same code path and the same failure.
-      FAIL in every other case. FAIL also if the reply holds no finding list.
+      FAIL otherwise.

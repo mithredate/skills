@@ -24,23 +24,8 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only the entries of its `blocking`, `discrepancy`, and `quality_note` arrays. An entry can be a string or an object. Ignore all other keys and arrays, such as `nit` and `pre_existing`.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
 
-      The bug class: the shell parser in `guard-infra/hooks/commands.ts` fails open on a shell form that it does not model. A privileged call, such as `kubectl delete pod web-1`, then runs with no question.
+      PASS if one entry says, as a general flaw, that the guard's shell parser lets a privileged command run with no question when the command sits in a shell form that the parser does not handle. Examples of such forms are a heredoc or a pipe into a shell, `find -exec`, `${X:-$(...)}`, `$'...'`, and a shell function. An entry about one single input, with no general statement, does not count.
 
-      The instances:
-      - A heredoc, a here-string, or a pipe into a shell with no `-c`, such as `sh <<< 'kubectl delete pod web-1'` or `echo 'kubectl delete pod web-1' | sh`.
-      - A `$(...)` in the body of an unquoted heredoc, such as `cat <<EOF` with the line `$(kubectl delete pod web-1)`.
-      - A wrapper that the allow-list does not hold, such as `find . -exec kubectl delete pod {} \;`, `parallel`, `setsid`, `fish -c`, `watch '...'`, `env -S`, or `sudo -s`.
-      - A long flag of a wrapper, such as `sudo --user root kubectl delete pod web-1`.
-      - A `$(...)` inside `${...}`, such as `echo ${X:-$(kubectl delete pod web-1)}`.
-      - An ANSI-C quote, such as `$'kubectl' delete pod web-1`.
-      - The body of `function f { kubectl delete pod web-1; }; f`.
-      - A redirect target with a substitution, such as `echo hi > "$(kubectl delete pod web-1)"`, or a `<<\EOF` delimiter that hides the rest of the script.
-      - A git alias, such as `git -c alias.x='!kubectl delete pod web-1' x`.
-      - A pipe into a shell behind `sudo`, such as `echo 'kubectl delete pod web-1' | sudo bash`.
-      - A tool name in another case, such as `Kubectl delete pod web-1`.
-
-      PASS if one entry names the bug class. An entry names the class when it states that the parser lets a privileged call run with no question for shell forms that it does not model, as a general flaw and not only for one input.
-      PASS if the entries together name every instance. An entry names an instance when it gives that input, or an input of the same form.
-      FAIL in every other case. FAIL also if the reply holds no finding list.
+      FAIL otherwise.
