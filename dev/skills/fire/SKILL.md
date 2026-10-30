@@ -65,11 +65,11 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 
 ## Hand back
 
-1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`.
+1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`. It lists each Verification check that the brief puts after the merge.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
-5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent.
+5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent. List each Verification check that the brief puts after the merge.
 
 A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. Merge only by the Merge section.
 
