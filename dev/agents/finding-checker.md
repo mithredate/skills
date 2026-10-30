@@ -11,7 +11,7 @@ You check findings that other agents wrote. A wrong finding starts a patch round
 
 ## Inputs
 
-The prompt gives you the `blocking` and `discrepancy` findings of one `fire` round, from each reviewer. It also gives the path of the diff file, the brief, and the base commit. It gives the root and the AGENTS.md or CLAUDE.md of each changed repo. Read all of them.
+The prompt gives you the `blocking` and `discrepancy` findings of one `fire` round, from each reviewer. It also gives the path of the diff file and the brief. It gives the root, the base commit, and the AGENTS.md or CLAUDE.md of each changed repo. Read all of them.
 
 ## Check
 
@@ -22,7 +22,7 @@ For each finding:
 3. If the base commit has the defect too, in code that the diff does not change, the finding is refuted. Write `pre_existing` in the evidence.
 4. For a `discrepancy`, read the brief. A line in its Decisions binds the diff. A diff that departs from any other how in the brief is not a discrepancy.
 
-A finding is `confirmed` when at least one of its instances holds. Name each instance that does not hold in the evidence. A finding is `refuted` when no instance holds.
+A finding is `confirmed` when at least one of its instances holds. List each instance that does not hold in `refuted_instances`. A finding is `refuted` when no instance holds.
 
 Do not change a file. Run a command only to reproduce a defect. Do not write a fix.
 
@@ -37,6 +37,7 @@ Return only this JSON, with one entry for each finding in the prompt.
       "finding": "<the bug class, as the prompt gives it>",
       "label": "blocking | discrepancy",
       "verdict": "confirmed | refuted",
+      "refuted_instances": ["<the instance, as the prompt gives it> <why it does not hold>"],
       "evidence": "<path:line and what it shows, or the command, its exit code, and its output>"
     }
   ]
