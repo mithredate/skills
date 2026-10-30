@@ -12,9 +12,10 @@ Review stance, order of findings, and the verify-don't-trust rule come from `per
 
 ## Gather
 
-1. Run `gh pr view <n> --json title,body,author,baseRefName,baseRefOid,headRefName`. Write the diff to a file with `gh pr diff <n> > <scratch>/pr-<n>.diff`. When there is no PR for the branch, use `git diff main...<branch>` instead. A reviewer reads this file.
-2. The brief is the `## Brief` section of the `orchestrate` ticket that the PR body names, or of the PR body itself. When there is no brief, the intent comes from the PR body and the Jira ticket named in the title or branch. Use the Atlassian MCP to get the Jira ticket.
-3. Check the kind of PR. A `fix` prefix or a bug ticket makes it a **bugfix**. If the PR is a bugfix, write down the root cause that the diff implies before you judge the fix. A fix that only addresses a symptom is a `discrepancy`.
+1. Run `gh pr view <n> --json title,body,author,baseRefName,headRefName,headRefOid`. Write the diff to a file with `gh pr diff <n> > <scratch>/pr-<n>.diff`. When there is no PR for the branch, use `git diff main...<branch>` instead. A reviewer reads this file.
+2. Get the **base commit**, the merge base of the PR head and the base branch. Run `gh api 'repos/{owner}/{repo}/compare/<baseRefName>...<headRefOid>' --jq .merge_base_commit.sha`. When there is no PR, run `git merge-base main <branch>`.
+3. The brief is the `## Brief` section of the `orchestrate` ticket that the PR body names, or of the PR body itself. When there is no brief, the intent comes from the PR body and the Jira ticket named in the title or branch. Use the Atlassian MCP to get the Jira ticket.
+4. Check the kind of PR. A `fix` prefix or a bug ticket makes it a **bugfix**. If the PR is a bugfix, write down the root cause that the diff implies before you judge the fix. A fix that only addresses a symptom is a `discrepancy`.
 
 ## Choose the mode
 
@@ -24,7 +25,7 @@ Review stance, order of findings, and the verify-don't-trust rule come from `per
 
 ## Inline: the main session reviews
 
-Apply both lenses of `pr-reviewer.md` to the diff yourself. Then apply `security-reviewer.md` as a second checklist. Read outside the diff only for the reasons that the checklists name. Use `grep` for this, not whole-file reads. If the branch is checked out, run the declared commands yourself. For a command that fails, follow the Base run section of [../../agents/verifier.md](../../agents/verifier.md). If the branch is not checked out, state that verification did not run.
+Apply both lenses of `pr-reviewer.md` to the diff yourself. Then apply `security-reviewer.md` as a second checklist. Read outside the diff only for the reasons that the checklists name. Use `grep` for this, not whole-file reads. If the branch is checked out, run the declared commands yourself. For a command that fails, follow the Base run section of [../../agents/verifier.md](../../agents/verifier.md) with the base commit. If the branch is not checked out, state that verification did not run.
 
 ## Fresh: two reviewers, one verifier
 
@@ -32,7 +33,7 @@ Spawn the three agents in parallel with the Agent tool. Set `subagent_type` to t
 
 - `dev:pr-reviewer` (Sonnet, 20 turns, no shell). Give it the diff file path, the brief text, and the PR title and body. Also give it the ticket context that you gathered, and the repo root. Its input is the diff, not the repo. It can use Context7 for one library-documentation check.
 - `dev:security-reviewer` (Sonnet, 20 turns, no shell). Give it the same inputs as `dev:pr-reviewer`.
-- `dev:verifier` (Haiku, 16 turns). Give it the base commit. This is `baseRefOid`, or `git merge-base main <branch>` when there is no PR. If the branch under review is checked out, give it the directory that holds the branch. If the branch is not checked out, spawn the verifier with `isolation: "worktree"`. Then its working directory is a new worktree, and the prompt names no directory. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first. If the PR changes a file that the sandbox denies, such as `.claude/settings.json`, the switch fails. Then the verdict is `could_not_run`.
+- `dev:verifier` (Haiku, 16 turns). Give it the base commit. If the branch under review is checked out, give it the directory that holds the branch. If the branch is not checked out, spawn the verifier with `isolation: "worktree"`. Then its working directory is a new worktree, and the prompt names no directory. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first. If the PR changes a file that the sandbox denies, such as `.claude/settings.json`, the switch fails. Then the verdict is `could_not_run`.
 
 A red verifier verdict is a `blocking` finding. Report a `could_not_run` verdict as such. Do not report it as green.
 
