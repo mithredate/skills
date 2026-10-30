@@ -13,10 +13,10 @@ The session does not edit code or a target system. Agents build, review, and ver
 ## Read the brief
 
 1. Read the ticket or the brief file. If the input is not a file with a `## Brief` section, stop. For a ticket, tell the user that the Hand-off of `orchestrate` writes its brief. Otherwise, tell the user to write one with `productivity:prep`. If a ticket in its `blocked-by` is open, stop and name it.
-2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<slug>` from the base branch that the brief names, or `fix/<slug>` for a bugfix. The slug is the ticket slug, or a short slug of the Goal line. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it.
+2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<slug>` from the base branch that the brief names, or `fix/<slug>` for a bugfix. The slug is the ticket slug, or a short slug of the Goal line. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it. Get the **base commit**, the merge base of the branch and the base branch. Run `git merge-base origin/<base branch> HEAD` on the branch.
 3. Set the kind to `bugfix` when the brief is a bugfix, or when its Verification line asks for the failing test first. Otherwise set it to `change`.
 
-The step is done when each git target has its branch checked out in a known directory.
+The step is done when each git target has its branch checked out in a known directory, and has its base commit.
 
 The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
 
