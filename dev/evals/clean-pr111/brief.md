@@ -1,61 +1,5 @@
 PR title: feat(productivity): remind to load write-a-skill when a skill or agent file changes
 
-## Why
-
-Nothing loads `productivity:write-a-skill` when an agent changes a skill. On 2026-10-28 a `fire` implementer edited `dev/skills/review-pr/SKILL.md` without it, and wrote git commands into the skill that the session can work out by itself. `write-a-skill` already says "Delete a sentence that the agent obeys without it". The gap is that nothing loads it. AGENTS.md says a Skill call that depends on a fact found later gets a hook on the event that shows the fact.
-
-## What
-
-- The new hook `productivity/hooks/load-write-a-skill-on-skill-change.mjs` adds a reminder after the tool call. The reminder tells the agent to load `write-a-skill` if it is not loaded, and to check each changed file against it.
-  - An Edit, Write, MultiEdit, or NotebookEdit call on a skill file or an agent file gets the reminder. A skill file is any file under `<plugin>/skills/<skill>/`, so `references/` and `scripts/` count. An agent file is `<plugin>/agents/<name>.md`.
-  - A Bash call that commits a skill file or an agent file gets the reminder. `hooks.json` sets `"if": "Bash(git *)"`, so Claude Code starts no hook for a Bash call without a git subcommand. On a command with the word `commit`, one `git log --all --since=<call start>` lists the files of the new commits in every worktree.
-- The hook acts only in a repo that holds `productivity/skills/write-a-skill/SKILL.md`.
-- Version bump: `productivity` 0.1.20 to 0.1.21.
-
-Decisions:
-
-- Decided: check a Bash call only when it commits. Because: the first design compared a snapshot of every skill file before and after each Bash call. It cost 166 ms per Bash call over 10 worktrees, inside and outside the sandbox, and the user rejected any walk on each Bash call. Revisit if: a skill change made through Bash reaches a PR and no session got the reminder.
-- Decided: no git pre-commit hook. Because: the sandbox denies writes to `.git/hooks` and `.git/config`, so each clone needs an install by hand. A tracked hook script that a sandboxed agent edits runs outside the sandbox at the user's next commit. Revisit if: Claude Code can run a git hook inside the sandbox.
-- Decided: the window starts at the call start minus 2 seconds. Because: `duration_ms` leaves out the time between the end of the call and the start of the hook. Without `duration_ms`, the 2 seconds still cover a commit at the end of the command. Revisit if: a commit at the end of a call gets no reminder.
-- Decided: no once-per-session state. Because: the reminder is conditional, so a repeated reminder is harmless. Revisit if: agents start to ignore the reminder because it repeats.
-- Decided: rely on the `if` field and on `duration_ms` as the [hooks docs](https://code.claude.com/docs/en/hooks) describe them. Hypothesis: in a session started after the plugin update, a Bash call with no git subcommand starts no hook process, and a Bash commit of a skill file gets the reminder. Check: in the first session after the update, commit a skill change through Bash and look for the reminder.
-
-Limits:
-
-- A Bash call is checked only in the repo of its cwd. A `git -C <marketplace> commit` from another repo gets no reminder.
-- A commit that another process makes during the call also gets the reminder.
-- A skill change made through Bash that nobody commits gets no reminder.
-- A merge commit lists no files, so a skill change that lands only in a merge commit gets no reminder.
-- With rename detection, a skill folder moved out of `skills/` lists only its new paths, so it gets no reminder.
-
-## Verified
-
-Each check ran in a session sandboxed by `guard-infra/sandbox.json`, on `ea9c11c`. The branch was then rebased on `4163680` (#108), which changes no file of this PR.
-
-- `./scripts/validate.sh` exits 0, and 34 node tests pass, on `ea9c11c` and again on the rebased head. It skips the mod type check in the sandbox. This PR changes no mod.
-- The tests run each FR case in a temporary git repo. Each silent commit test checks that its commit landed. One test reads `hooks.json` and checks that each Bash handler of the hook has `"if": "Bash(git *)"`, and that no PreToolUse entry runs it.
-- Each new check fails on a broken change: a mistyped pathspec in a silent commit test, an `if` deleted from `hooks.json`, and a PreToolUse entry added to `hooks.json`.
-- Clone checks in `$TMPDIR/wask-check`, with the hook fed the PostToolUse input of each call and its measured `duration_ms`:
-  - An Edit of `dev/skills/review-pr/SKILL.md` gives the reminder.
-  - An Edit of `README.md` gives nothing.
-  - `echo x >> README.md && git -c … commit -qam x` gives nothing.
-  - `echo x >> dev/skills/tdd/SKILL.md` gives nothing.
-  - `echo x >> dev/skills/tdd/references/mocking.md && git -c … commit -qam x` gives the reminder.
-  - `cat dev/skills/tdd/SKILL.md` gives nothing.
-- The hook takes 42 ms for a commit call and 26 ms for an Edit call, as a mean over 20 runs.
-
-Review nits that this PR does not fix:
-
-- One long line in the hook runs git and matches the paths.
-- The stdin read sits outside the `try` block, as in `load-fire-on-brief.mjs`.
-- The `hooks.json` test finds Bash entries by the word `Bash` in the matcher. An entry with the matcher `*` and no `if` would pass it. The file has no such entry.
-
-## Links
-
-- [Claude Code hooks docs](https://code.claude.com/docs/en/hooks)
-
-<details><summary>Brief</summary>
-
 ## Brief
 
 - Why: Nothing loads `productivity:write-a-skill` when an agent changes a skill. On 2026-10-28 a `fire` implementer edited `dev/skills/review-pr/SKILL.md` without it, and wrote git commands that the session can work out by itself. AGENTS.md says a Skill call that depends on a fact found later gets a hook on the event that shows the fact.
@@ -95,8 +39,3 @@ Review nits that this PR does not fix:
      - A Bash call `cat dev/skills/tdd/SKILL.md` gives nothing.
   3. Time the hook for a commit call and for an Edit call in the clone, 20 times each. Report the means.
   4. Then delete `$TMPDIR/wask-check`.
-
-</details>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
