@@ -39,6 +39,9 @@ check "case change, a score line inside a sentence" "$cases" "Mehrdad ran $head"
 # A body edited on github.com ends its lines with CRLF.
 check "case change, a none score from a web edit" "$cases" \
   $'Scores:\r\nHEAD: recall none (0 of 0 runs), clean 0.5 (1 of 2 runs), runs with an error 0 (partial: cost_ceiling)\r\n' 0 ""
+# git diff prints a path with a non-ASCII byte in double quotes, with octal escapes.
+check "case change, a path that git quotes" 'AGENTS.md
+"dev/evals/recall-caf\303\251/case.yaml"' "## Why" 1 "no score line for: HEAD."
 check "no reviewer or case change" $'AGENTS.md\ndev/skills/fire/SKILL.md' "" 0 ""
 
 # The body is untrusted. A command in it runs nothing.

@@ -5,13 +5,15 @@
 # dev/evals/ needs a `HEAD:` line. A score line starts a line of the body, as
 # scripts/score-reviewer.sh prints it. A `none` score counts. The check does
 # not compare the scores. The body is untrusted, so the script only greps it.
+# The paths come as git diff prints them. git puts a path with a special byte
+# in double quotes, and the prefix dev/evals/ stays as it is after the quote.
 # Usage: <changed paths, one per line> | BODY=<PR body> scripts/check-score-lines.sh
 set -euo pipefail
 
 paths=$(cat)
 if grep -qx 'dev/agents/pr-reviewer.md' <<<"$paths"; then
   refs='origin/main HEAD' changed=dev/agents/pr-reviewer.md
-elif grep -q '^dev/evals/' <<<"$paths"; then
+elif grep -Eq '^"?dev/evals/' <<<"$paths"; then
   refs=HEAD changed='files under dev/evals/'
 else
   exit 0
