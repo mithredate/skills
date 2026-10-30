@@ -37,13 +37,13 @@ echo "Results: $work/results"
 
 # Recall is the share of graded recall-case runs in which every grader passed.
 # Clean is the same share for the clean cases. A run is graded when it has
-# grader results, no error, and did not end on an API error. A run that is not
-# graded does not lower a score. Each score prints its count of graded runs.
-# ended_on_api_error is in the run results of claude 2.1.314, not in the plugin-evals docs.
+# grader results and no error. In claude 2.1.314, a run that ended on an API
+# error has no grader results. A run that is not graded does not lower a score.
+# Each score prints its count of graded runs.
 # A score with runs but no graded run is a failure. A score with no runs is
 # not, because --case can leave a score with no runs.
 jq -r --arg ref "$ref" '
-  def graded: (.graders | length) > 0 and .error == null and .ended_on_api_error != true;
+  def graded: (.graders | length) > 0 and .error == null;
   def runs(prefix): [.cases[] | select(.name | startswith(prefix)) | .arms.with[]?];
   def score(prefix): runs(prefix) as $runs
     | [$runs[] | select(graded)] as $graded
