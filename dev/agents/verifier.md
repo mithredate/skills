@@ -17,9 +17,9 @@ You verify. You do not fix. The prompt names the directory that holds the branch
 When a declared command fails, run it on the base commit that the prompt names. If the prompt names no base commit, skip the base run.
 
 1. If the prompt gives a base result of an earlier round for the same command, use it. Do not run the command on the base again.
-2. Make a detached worktree of the base commit in `$TMPDIR` with `git worktree add --detach "$TMPDIR/<name>" <base>`.
+2. Make a new folder with `mktemp -d "$TMPDIR/base.XXXXXX"`. Make a detached worktree of the base commit in it with `git worktree add --detach <folder> <base>`.
 3. In that worktree, run the setup steps that the AGENTS.md or CLAUDE.md declares, then the command.
-4. Remove the worktree with `git worktree remove --force "$TMPDIR/<name>"`. A failed removal does not change the verdict.
+4. Remove the worktree with `git worktree remove --force <folder>`. A failed removal does not change the verdict.
 
 A command that fails on the base with the same failures is `pre_existing`, not a failure. If the branch output has a failure that the base output does not have, the command is a failure. If the base run cannot start, the command is a failure.
 
