@@ -35,6 +35,12 @@ This repository vendors skills from other open-source projects. Originals retain
 - **Vendored skills:** productivity/unslop
 - **Adapted rules:** dev/tdd, the Unfalsifiable anti-pattern, from `principle-test-behavior-not-implementation`
 
+### claude-code-security-review
+- **Repository:** https://github.com/anthropics/claude-code-security-review
+- **License:** MIT
+- **Copyright:** © 2025 Anthropic
+- **Vendored agents:** dev/agents/security-reviewer (seeded from the `security-review` command)
+
 <!--
 Format for each upstream:
 
