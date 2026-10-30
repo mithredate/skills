@@ -35,20 +35,20 @@ fi
 # score can be read.
 echo "Results: $work/results"
 
-# Recall is the mean score of the recall cases. Each recall case has one
-# grader. Clean is the share of clean-case runs in which every grader passed.
-# A mean case score does not work for clean, because a clean case has two
-# graders. A run that fails its scaffold, or ends on an API error, has no
-# grader results. Clean is then none, and the count of runs with an error
-# shows such a run.
+# Recall is the share of graded recall-case runs in which every grader passed.
+# Clean is the same share for the clean cases. A run is graded when it has
+# grader results, no error, and did not end on an API error. A run that is not
+# graded does not lower a score. Each score prints its count of graded runs.
 jq -r --arg ref "$ref" '
-  def mean(prefix): [.cases[] | select(.name | startswith(prefix)) | .aggregates.score]
-    | if length == 0 then "none" else add / length * 100 | round / 100 end;
-  def clean: [.cases[] | select(.name | startswith("clean-")) | .arms.with[]? | [.graders[]?.passed]]
-    | if length == 0 or any(.[]; length == 0 or any(.[]; type != "boolean")) then "none"
-      else (map(select(all(.[]; .))) | length) / length * 100 | round / 100 end;
-  def errors: [.cases[].arms.with[]? | select(.error != null)] | length;
-  "\($ref): recall \(mean("recall-")), clean \(clean), runs with an error \(errors)"
+  def graded: (.graders | length) > 0 and .error == null and .ended_on_api_error != true;
+  def score(prefix): [.cases[] | select(.name | startswith(prefix)) | .arms.with[]?] as $runs
+    | [$runs[] | select(graded)] as $graded
+    | (if ($graded | length) == 0 then "none"
+       else ([$graded[] | select(all(.graders[]; .passed == true))] | length) / ($graded | length)
+         * 100 | round / 100 end) as $score
+    | "\($score) (\($graded | length) of \($runs | length) runs graded)";
+  def errors: [.cases[].arms.with[]? | select(graded | not)] | length;
+  "\($ref): recall \(score("recall-")), clean \(score("clean-")), runs with an error \(errors)"
     + if .partial then " (partial: \(.partialReason))" else "" end
 ' "$result"
 exit "$status"
