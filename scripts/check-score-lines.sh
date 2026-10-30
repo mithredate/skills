@@ -34,5 +34,7 @@ for ref in $missing; do echo "    scripts/score-reviewer.sh $ref"; done
 echo "  Paste these lines of their output into the PR body, each on a line of its own,"
 echo "  as the script prints it:"
 for ref in $missing; do echo "    $ref: recall ..., clean ..., runs with an error ..."; done
+echo "  If the run of a ref prints no score line, paste its none line instead:"
+for ref in $missing; do echo "    $ref: recall none (0 of 0 runs), clean none (0 of 0 runs), runs with an error 0"; done
 echo "  The rule is in AGENTS.md. An edit of the PR body runs this check again."
 exit 1

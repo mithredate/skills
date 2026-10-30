@@ -31,6 +31,8 @@ check "reviewer change, no score line" "$reviewer" "## Why" 1 \
 check "reviewer change, both score lines" "$reviewer" $'## Verified\n\n```\n'"$main"$'\n'"$head"$'\n```' 0 ""
 check "reviewer change, only the HEAD line" "$reviewer" "$head" 1 \
   "no score line for: origin/main."
+check "the message names the none line of a run with no score" "$reviewer" "$head" 1 \
+  $'\n    origin/main: recall none (0 of 0 runs), clean none (0 of 0 runs), runs with an error 0\n'
 check "case change, scores in a table" "$cases" \
   '| `HEAD`, the reviewer after #117 | 0.78 (14 of 18 runs) | 0.6 (9 of 15 runs) | $10.33 |' 1 \
   $'    scripts/score-reviewer.sh HEAD\n'
