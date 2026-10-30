@@ -39,9 +39,12 @@ echo "Results: $work/results"
 # Clean is the same share for the clean cases. A run is graded when it has
 # grader results, no error, and did not end on an API error. A run that is not
 # graded does not lower a score. Each score prints its count of graded runs.
+# A score with runs but no graded run is a failure. A score with no runs is
+# not, because --case can leave a score with no runs.
 jq -r --arg ref "$ref" '
   def graded: (.graders | length) > 0 and .error == null and .ended_on_api_error != true;
-  def score(prefix): [.cases[] | select(.name | startswith(prefix)) | .arms.with[]?] as $runs
+  def runs(prefix): [.cases[] | select(.name | startswith(prefix)) | .arms.with[]?];
+  def score(prefix): runs(prefix) as $runs
     | [$runs[] | select(graded)] as $graded
     | (if ($graded | length) == 0 then "none"
        else ([$graded[] | select(all(.graders[]; .passed == true))] | length) / ($graded | length)
@@ -49,6 +52,8 @@ jq -r --arg ref "$ref" '
     | "\($score) (\($graded | length) of \($runs | length) runs graded)";
   def errors: [.cases[].arms.with[]? | select(graded | not)] | length;
   "\($ref): recall \(score("recall-")), clean \(score("clean-")), runs with an error \(errors)"
-    + if .partial then " (partial: \(.partialReason))" else "" end
-' "$result"
+    + if .partial then " (partial: \(.partialReason))" else "" end,
+  if any(runs("recall-"), runs("clean-"); length > 0 and all(.[]; graded | not))
+  then "\($ref): a score has runs, but no graded run\n" | halt_error(1) else empty end
+' "$result" || exit $((status == 0 ? 1 : status))
 exit "$status"
