@@ -33,7 +33,7 @@ check "reviewer change, only the HEAD line" "$reviewer" "$head" 1 \
   "no score line for: origin/main."
 check "case change, scores in a table" "$cases" \
   '| `HEAD`, the reviewer after #117 | 0.78 (14 of 18 runs) | 0.6 (9 of 15 runs) | $10.33 |' 1 \
-  "no score line for: HEAD."
+  $'    scripts/score-reviewer.sh HEAD\n'
 check "case change, a score line inside a sentence" "$cases" "Mehrdad ran $head" 1 \
   "no score line for: HEAD."
 # A body edited on github.com ends its lines with CRLF.
@@ -43,7 +43,7 @@ check "no reviewer or case change" $'AGENTS.md\ndev/skills/fire/SKILL.md' "" 0 "
 
 # The body is untrusted. A command in it runs nothing.
 check "a command in the body" "$cases" "\$(touch \"$tmp/pwned\") \`touch \"$tmp/pwned\"\`" 1 \
-  "no score line for: HEAD."
+  "    HEAD: recall ..., clean ..., runs with an error ..."
 if [[ -e $tmp/pwned ]]; then
   echo "  ✘ a command in the body: it ran and wrote $tmp/pwned"
   failed=1

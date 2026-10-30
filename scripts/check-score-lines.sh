@@ -29,8 +29,8 @@ echo "✘ This PR changes $changed, and its body has no score line for:$missing.
 echo "  Run these commands on the branch, in your terminal:"
 echo "    git fetch"
 for ref in $missing; do echo "    scripts/score-reviewer.sh $ref"; done
-echo "  Paste each line that starts with the ref and a colon into the PR body, as the"
-echo "  script prints it, on a line of its own. For example:"
-echo "    HEAD: recall 0.78 (14 of 18 runs), clean 0.6 (9 of 15 runs), runs with an error 0"
+echo "  Paste these lines of their output into the PR body, each on a line of its own,"
+echo "  as the script prints it:"
+for ref in $missing; do echo "    $ref: recall ..., clean ..., runs with an error ..."; done
 echo "  The rule is in AGENTS.md. An edit of the PR body runs this check again."
 exit 1
