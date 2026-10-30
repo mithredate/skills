@@ -24,3 +24,7 @@ graders:
   - name: no-blocking-or-discrepancy
     type: regex
     pattern: '^(?=[\s\S]*"blocking"\s*:\s*\[\s*\])(?=[\s\S]*"discrepancy"\s*:\s*\[\s*\])'
+  - name: reviewer-ran
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type"\s*:\s*"dev:pr-reviewer"'
