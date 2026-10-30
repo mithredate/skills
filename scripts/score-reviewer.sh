@@ -20,13 +20,20 @@ git show "$ref:dev/agents/pr-reviewer.md" > "$work/dev/agents/pr-reviewer.md"
 # its frontmatter. Threshold 0 keeps a low score from failing the eval.
 status=0
 claude plugin eval "$work/dev" --trust-plugin --scaffold --ablation none --no-publish \
-  --threshold 0 --model claude-haiku-4-5 --judge-model claude-sonnet-5-5 \
+  --threshold 0 --model claude-haiku-5-5 --judge-model claude-sonnet-5-5 \
   --output-dir "$work/results" "$@" || status=$?
 
+# The folder stays, so that the report and the per-case results of a low
+# score can be read.
+echo "Results: $work/results"
+
+# A run that fails its scaffold, or ends on an API error, scores 0 with no
+# grading. The count of runs with an error shows such a run.
 jq -r --arg ref "$ref" '
   def mean(prefix): [.cases[] | select(.name | startswith(prefix)) | .aggregates.score]
     | if length == 0 then "none" else add / length * 100 | round / 100 end;
-  "\($ref): recall \(mean("recall-")), clean \(mean("clean-"))"
+  def errors: [.cases[].arms.with[]? | select(.error != null)] | length;
+  "\($ref): recall \(mean("recall-")), clean \(mean("clean-")), runs with an error \(errors)"
     + if .partial then " (partial: \(.partialReason))" else "" end
 ' "$work/results/aggregate-result.json"
 exit "$status"
