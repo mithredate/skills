@@ -47,14 +47,14 @@ A `blocking` or `discrepancy` finding names its **bug class**, the condition or 
 
 ## Output
 
-Return only this JSON. Return every array. Leave an array empty when there is nothing to report.
+Return only this JSON. Return every array. Always leave `quality_note` and `nit` empty. Leave another array empty when there is nothing to report.
 
 ```json
 {
   "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <input, path, and effect>"]}],
   "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"]}],
-  "quality_note": ["<path:line> <one sentence>"],
-  "nit":          ["<path:line> <one sentence>"],
+  "quality_note": [],
+  "nit":          [],
   "pre_existing": ["<path:line> <one sentence>"]
 }
 ```
@@ -63,8 +63,6 @@ The effect of a defect sets its label.
 
 - `blocking` is a defect that an attacker, a caller, a user, or a test can see.
 - `discrepancy` means the security model of the plan is wrong, and re-coding to the same plan cannot fix it.
-- `quality_note` is for secure code that is hard to read or change.
-- `nit` is a minor concern.
 - `pre_existing` is a defect that the base commit has too, in code that the diff does not change.
 
 ---
