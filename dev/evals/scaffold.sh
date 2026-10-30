@@ -22,5 +22,7 @@ case_dir=$1 base=$2 head=$3
 git clone -q --no-checkout "$(dirname "$0")/repo.bundle" repo
 git -C repo checkout -q --detach "$head"
 git -C repo diff "$base" "$head" > pr.diff
-rm -rf repo/.git
+# A head after this suite holds the PASS condition of each case in dev/evals/.
+# The reviewer can read repo/, so the scaffold deletes repo/dev/evals.
+rm -rf repo/.git repo/dev/evals
 cp "$case_dir/brief.md" brief.md
