@@ -39,6 +39,7 @@ echo "Results: $work/results"
 # Clean is the same share for the clean cases. A run is graded when it has
 # grader results, no error, and did not end on an API error. A run that is not
 # graded does not lower a score. Each score prints its count of graded runs.
+# ended_on_api_error is in the run results of claude 2.1.314, not in the plugin-evals docs.
 # A score with runs but no graded run is a failure. A score with no runs is
 # not, because --case can leave a score with no runs.
 jq -r --arg ref "$ref" '
