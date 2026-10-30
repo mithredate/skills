@@ -14,7 +14,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 - **No parallel skills.** When concepts conflict, merge or abort — never run two forks of the same idea side by side.
 - **A Skill call that every run needs goes in a "First actions" line at the top of the body.** A Skill call that depends on a fact found later gets a hook on the event that reveals the fact. A Skill call inside a numbered step, or a skill list in a file the agent reads, is skipped about half the time (cakeclub discovery, 2026-10: 18 of 35 ticket sessions never loaded `grilling`, now `settle-decisions`).
 - **A change under a plugin directory ships with a patch bump of that plugin's `plugin.json` version.** An installer updates a plugin only when the version changes. A skill listed in `marketplace.json` but absent from the installed copy fails the whole plugin at load. The `import-skill` script bumps automatically. `write-a-skill`, `merge-skill`, and `refresh-vendored` bump by hand.
-- **A PR that changes `dev/agents/pr-reviewer.md` or a case in `dev/evals/` shows the reviewer score for `main` and for the branch.** The PR body gives recall and clean for each. If a score of the branch is lower than the score of `main`, or a score is missing, a human reviews the PR.
+- **A PR that changes `dev/agents/pr-reviewer.md` or a case in `dev/evals/` shows the reviewer score for `main` and for the branch.** The PR body gives recall and clean for each. If a score of the branch is lower than the score of `main`, or a score is missing, a human reviews the PR. If a score of the branch has fewer graded runs than the same score of `main`, a human also reviews the PR.
 
 ## Workflows
 
