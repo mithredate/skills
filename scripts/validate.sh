@@ -56,6 +56,11 @@ echo
 echo "→ hook tests"
 node --test */hooks/*.test.mjs || failed=1
 
+# Script tests run a script against a fake `claude`, with no network.
+echo
+echo "→ script tests"
+scripts/score-reviewer.test.sh || failed=1
+
 # Mod tests run the hooks module against the engine's test kit. Some builds,
 # such as npm's latest in CI, have no `claude plugin test` yet.
 echo
