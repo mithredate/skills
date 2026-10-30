@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Test scripts/score-reviewer.sh against a fake `claude` that writes a fixed
-# aggregate-result.json and exits with a fixed code. The test needs no network
-# and no real claude. Every file goes to a temp folder that the test deletes.
+# aggregate-result.json and exits with a fixed code. Test dev/evals/scaffold.sh
+# against a bundle of a small git repo. The test needs no network and no real
+# claude. Every file goes to a temp folder that the test deletes.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -105,7 +106,33 @@ check "eval exits 0, no result" "" 0 1 "HEAD: no score"
 check "eval exits 1, no result" "" 1 1 "HEAD: no score"
 check "eval exits 3, no result" "" 3 3 "HEAD: no score"
 
+# The scaffold of a head that holds dev/evals/ writes a repo/ with no
+# dev/evals/. The pr.diff still holds the full diff.
+src=$tmp/scaffold/src
+mkdir -p "$src/dev/agents" "$src/dev/evals/recall-a" "$tmp/scaffold/case" "$tmp/scaffold/run"
+git -C "$src" init -q
+echo "# Repo" > "$src/README.md"
+git -C "$src" add -A
+git -C "$src" -c user.name=test -c user.email=test@example.com commit -q -m base
+base=$(git -C "$src" rev-parse HEAD)
+echo "The reviewer." > "$src/dev/agents/pr-reviewer.md"
+echo "PASS when the reviewer names the bug." > "$src/dev/evals/recall-a/case.yaml"
+git -C "$src" add -A
+git -C "$src" -c user.name=test -c user.email=test@example.com commit -q -m head
+head=$(git -C "$src" rev-parse HEAD)
+git -C "$src" bundle create -q "$tmp/scaffold/repo.bundle" --all
+cp dev/evals/scaffold.sh "$tmp/scaffold/scaffold.sh"
+echo "The brief." > "$tmp/scaffold/case/brief.md"
+if (cd "$tmp/scaffold/run" && ../scaffold.sh "$tmp/scaffold/case" "$base" "$head") \
+  && [[ ! -e $tmp/scaffold/run/repo/dev/evals && -f $tmp/scaffold/run/repo/dev/agents/pr-reviewer.md ]] \
+  && git -C "$src" diff "$base" "$head" | cmp -s - "$tmp/scaffold/run/pr.diff"; then
+  echo "  ✓ scaffold of a head with dev/evals/"
+else
+  echo "  ✘ scaffold of a head with dev/evals/: want repo/ with dev/agents/ and no dev/evals/, and the full pr.diff"
+  failed=1
+fi
+
 if [ "$failed" -ne 0 ]; then
-  echo "✘ score-reviewer.sh failed one or more checks."
+  echo "✘ score-reviewer.sh or scaffold.sh failed one or more checks."
   exit 1
 fi
