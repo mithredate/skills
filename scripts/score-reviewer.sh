@@ -24,10 +24,11 @@ claude plugin eval "$work/dev" --trust-plugin --scaffold --ablation none --no-pu
   --output-dir "$work/results" "$@" || status=$?
 
 # A trust refusal or a load failure stops the eval before it writes a result.
+# A missing score is a failure, also when the eval exits 0.
 result=$work/results/aggregate-result.json
 if [[ ! -f $result ]]; then
   echo "$ref: no score, because the eval wrote no $result" >&2
-  exit "$status"
+  exit $((status == 0 ? 1 : status))
 fi
 
 # The folder stays, so that the report and the per-case results of a low
