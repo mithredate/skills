@@ -271,7 +271,7 @@ test('record rebases and pushes when another clone pushes during the build', asy
     const q = setup({
         'wayfinder/briefs/2026-10-30-0900-a.md': brief(),
     });
-    await queue(q, q.target, 'take', q.one);
+    const taken = await queue(q, q.target, 'take', q.one);
     // The other session pushes after record reads the remote and before its push lands.
     const hook = join(q.one, '.git/hooks/pre-push');
     writeFileSync(hook, [
@@ -286,7 +286,7 @@ test('record rebases and pushes when another clone pushes during the build', asy
     const resultFile = join(q.dir, 'result.txt');
     writeFileSync(resultFile, 'https://github.com/CakeClub-Inc/CakeClub/pull/42 merged');
 
-    const result = await queue(q, q.target, 'record', q.one, '2026-10-30-0900-a.md', 'done', resultFile);
+    const result = await queue(q, q.target, 'record', q.one, taken.brief, 'done', resultFile);
 
     assert.equal(result.outcome, 'saved');
     assert.ok(existsSync(join(q.dir, 'mark')));
@@ -337,7 +337,11 @@ test('list shows a status that another clone pushed, with no pull in the reading
     pushFromTwo(q, { 'wayfinder/briefs/2026-10-30-0900-a.md': brief({ status: 'stuck', extra: ['result: "blocked"'] }) });
 
     const result = await queue(q, q.one, 'list', q.one);
+    const single = await queue(q, q.one, 'list', q.one, 'wayfinder/briefs/2026-10-30-0900-a.md');
 
+    assert.equal(single.briefs[0].status, 'stuck');
+    assert.match(single.briefs[0].body, /^- Goal: the booking page shows the return date$/m);
+    assert.equal(result.briefs[0].body, undefined);
     assert.equal(result.briefs.length, 1);
     assert.equal(result.briefs[0].path, 'wayfinder/briefs/2026-10-30-0900-a.md');
     assert.equal(result.briefs[0].status, 'stuck');

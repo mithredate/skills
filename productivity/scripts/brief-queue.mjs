@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // brief-queue does every git and frontmatter step of the orchestrate brief queue.
-//   list   <tracker repo>
-//   write  <tracker repo> <brief file> [<brief name>]
-//   ready  <tracker repo> <brief name>
+//   list   <tracker repo> [<brief>]               with <brief>, only that brief and its body
+//   write  <tracker repo> <brief file> [<brief>]
+//   ready  <tracker repo> <brief>
 //   take   <tracker repo>                      run it in the target repo
-//   record <tracker repo> <brief name> done|stuck <result file>
+//   record <tracker repo> <brief> done|stuck <result file>
+// <brief> is the file name of a brief, or its path.
 //   close  <tracker repo> <map directory>
 // It reads only the pushed state, and writes only in a checkout of its own.
 // Each command prints one JSON line. A refusal or a failure exits 1.
@@ -93,7 +94,7 @@ async function briefs(q) {
 }
 
 async function brief(q, name) {
-    if (!NAME.test(name ?? '')) refuse('bad brief name');
+    if (!NAME.test(name)) refuse('bad brief name');
     const text = await read(q, `briefs/${name}`);
     return text === null ? null : parseBrief(name, text);
 }
@@ -161,14 +162,18 @@ async function save(q, changes, message, retries = 3) {
 }
 
 const commands = {
-    async list(q) {
+    async list(q, path) {
+        const one = path?.split('/').pop();
         return {
             outcome: 'listed',
-            briefs: (await briefs(q)).map(({ body, name, ...rest }) => ({ path: `${q.tracker}/briefs/${name}`, ...rest, overdue: rest.status === 'in-progress' && overdue(rest) })),
+            briefs: (await briefs(q)).filter((b) => !one || b.name === one).map(({ body, name, ...rest }) => ({
+                path: `${q.tracker}/briefs/${name}`, ...rest, overdue: rest.status === 'in-progress' && overdue(rest), ...one && { body },
+            })),
         };
     },
 
-    async write(q, file, existing) {
+    async write(q, file, path) {
+        const existing = path?.split('/').pop();
         const input = parseBrief(existing ?? '0000-00-00-0000-new.md', readFileSync(file, 'utf8'));
         if (input.bad || !input.title) refuse('bad frontmatter');
         const slug = clean(input.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50).replace(/^-+|-+$/g, '') || 'brief';
@@ -188,14 +193,16 @@ const commands = {
         return { outcome: 'saved', brief: `${q.tracker}/briefs/${name}`, status: 'draft' };
     },
 
-    async ready(q, name) {
+    async ready(q, path) {
+        const name = path.split('/').pop();
         const current = await brief(q, name);
         if (current?.bad !== false || current.status !== 'draft') refuse(`the brief is ${current?.status ?? 'missing'}, not draft`);
         await save(q, { [`briefs/${name}`]: render({ ...current, status: 'ready' }) }, `brief-queue: ready ${name}`);
         return { outcome: 'saved', brief: `${q.tracker}/briefs/${name}`, status: 'ready' };
     },
 
-    async record(q, name, status, file) {
+    async record(q, path, status, file) {
+        const name = path.split('/').pop();
         if (!['done', 'stuck'].includes(status)) refuse('status must be done or stuck');
         const current = await brief(q, name) ?? refuse('no such brief');
         await save(q, { [`briefs/${name}`]: render({ ...current, status, result: readFileSync(file, 'utf8') }) }, `brief-queue: ${status} ${name}`);
