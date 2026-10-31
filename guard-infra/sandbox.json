@@ -21,7 +21,7 @@
     "filesystem": {
       "allowWrite": [
         "~/.npm", "~/Library/pnpm", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
-        "~/.cache/uv", "~/Library/Caches/pip", "~/.gradle", "~/projects", "/private/var/folders/*/*/T/**/*",
+        "~/.cache/uv", "~/Library/Caches/pip", "~/projects", "/private/var/folders/*/*/T/**/*",
         "~/Library/Developer/MobileBuildMCP/workspaces", "~/Library/Developer/Xcode/DerivedData",
         "/private/tmp/e-*", "/private/tmp/e-*/**/*"
       ],
@@ -36,11 +36,7 @@
         "~/projects/**/.claude/hooks",
         "~/projects/**/.mcp.json",
         "~/projects/**/.vscode",
-        "~/projects/**/.idea",
-        "~/.gradle/init.d",
-        "~/.gradle/init.gradle",
-        "~/.gradle/init.gradle.kts",
-        "~/.gradle/gradle.properties"
+        "~/projects/**/.idea"
       ]
     },
     "network": {
@@ -49,8 +45,6 @@
       "allowedDomains": [
         "github.com", "*.github.com", "*.githubusercontent.com", "registry.npmjs.org",
         "proxy.golang.org", "sum.golang.org", "repo.packagist.org", "pypi.org", "files.pythonhosted.org",
-        "services.gradle.org", "downloads.gradle.org", "plugins.gradle.org", "plugins-artifacts.gradle.org",
-        "repo.maven.apache.org", "repo1.maven.org", "repo.spring.io",
         "api.anthropic.com"
       ],
       "deniedDomains": ["*.amazonaws.com", "*.amazonaws.com.cn", "*.api.aws", "*.api.amazonwebservices.com.cn", "*.amazonaws.eu", "*.api.amazonwebservices.eu"]
