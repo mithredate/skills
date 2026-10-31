@@ -1,5 +1,5 @@
 schema_version: "1.1"
-name: clean-pr95
+name: recall-manage-agents-md-symlink
 context:
   scaffold_script: scaffold.sh
 execution:
@@ -21,10 +21,11 @@ execution:
 
     When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
 graders:
-  - name: no-blocking-or-discrepancy
-    type: regex
-    pattern: '^(?=[\s\S]*"blocking"\s*:\s*\[\s*\])(?=[\s\S]*"discrepancy"\s*:\s*\[\s*\])'
-  - name: reviewer-ran
-    type: tool_used
-    tool: Agent
-    input_match: '"subagent_type"\s*:\s*"dev:pr-reviewer"'
+  - name: finds-the-class
+    type: llm
+    criteria: |
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking` and `discrepancy` entries. An entry can be a string or an object. A `quality_note` entry does not count.
+
+      PASS if one entry says that a Claude-only line that `AGENTS.md` already holds stays in `AGENTS.md`. The main example is a symlinked `AGENTS.md`. Step 1 replaces it with a copy of `CLAUDE.md`. `AGENTS.md` then holds every line, so step 1 moves no Claude-only line to `.claude/rules/claude-code.md`.
+
+      FAIL otherwise.

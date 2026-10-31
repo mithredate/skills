@@ -24,7 +24,7 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking` and `discrepancy` entries. An entry can be a string or an object. A `quality_note` entry does not count.
 
       PASS if one entry says that a connector call (`$.mcp.call`) has no timeout, so a hung call holds back the code that waits for it. Examples of such code are the PR refresh, the `tool.call` hook, and the `/watch-discussions` command.
 

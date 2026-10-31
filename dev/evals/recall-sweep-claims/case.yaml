@@ -24,7 +24,7 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking` and `discrepancy` entries. An entry can be a string or an object. A `quality_note` entry does not count.
 
       PASS if one entry says that nothing records that a claim was sorted, so `sweep` counts the same claim as new again. Examples: no record date advances when a claim is sorted, or a claim from a link that only the index row holds, or from a `gh search prs` result, has no ticket to hold its record.
 
