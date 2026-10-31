@@ -97,7 +97,7 @@ result: <for done or stuck>
 ```
 
 - `draft`: the user did not say yes to the current text in the session that wrote it.
-- `ready`: the user said yes to the current text, and no session took the brief.
+- `ready`: the user said yes to the current text after the last `draft` write, and no session took the brief after that yes.
 - `in-progress`: an `orchestrate fire` session took the brief at `updated`. The brief is **overdue** when `updated` is 4 hours ago or more, because a session that stops on a permission prompt cannot write its status.
 - `done`: the build passed. `result` holds each PR link with `merged` or `not merged`.
 - `stuck`: the build stopped. `result` holds the `dev:fire` status or the reason, and the blocker.
