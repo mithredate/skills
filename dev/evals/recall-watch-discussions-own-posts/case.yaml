@@ -24,7 +24,7 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking` and `discrepancy` entries. An entry can be a string or an object. A `quality_note` entry does not count.
 
       PASS if one entry says that the filter for Claude's own posts takes its IDs at the wrong time or from the wrong calls. Examples: `own[server]` gets the IDs of a write only after the `tool.call` hook returns, or `own[server]` takes the IDs of calls that are not Claude's own writes, such as a read by a subagent.
 

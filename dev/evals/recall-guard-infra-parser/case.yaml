@@ -24,7 +24,7 @@ graders:
   - name: finds-the-class
     type: llm
     criteria: |
-      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking`, `discrepancy`, and `quality_note` entries. An entry can be a string or an object.
+      The reply holds the JSON finding list of a code reviewer. Judge only its `blocking` and `discrepancy` entries. An entry can be a string or an object. A `quality_note` entry does not count.
 
       PASS if one entry says, as a general flaw, that the guard's shell parser lets a privileged command run with no question when the command sits in a shell form that the parser does not handle. Examples of such forms are a heredoc or a pipe into a shell, `find -exec`, `${X:-$(...)}`, `$'...'`, and a shell function. An entry about one single input, with no general statement, does not count.
 
