@@ -16,6 +16,8 @@ This file holds the file shapes of an orchestrator repo. It uses plain files und
     assets/                  research, specs, digests, linked from tickets
 ```
 
+Only a `<YYYY-MM-DD>-<slug>/` directory is a **map directory**. `briefs/` and `reports/` are not map directories.
+
 ## Index
 
 ```

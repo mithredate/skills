@@ -18,7 +18,7 @@ The file shapes of the index, the map, the tickets, and the gate are in [referen
 **The index** is the file `.wayfinder/README.md`, with one row for each initiative.
 
 - Every session except a `fire` session reads the index before any other step. This rule applies also when the user names a map.
-- If the index is missing, build it. If a map directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
+- If the index is missing, build it. If a [map directory](references/format.md#layout) has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
 - Then run sweep in write mode. Give it the map of this session and each `waiting` row. Sweep also adds each new host to `.wayfinder/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the map.
 - The row order is the priority. The first row is the most important initiative.
@@ -111,7 +111,7 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
    - where the work landed, with links to the PRs, documents, or systems
    - what was ruled out of scope, and why
    - each open ticket, with the initiative it moves to, or the reason it is not done. Quote into the report any asset it needs. Keep the rest in git history.
-2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory with `git rm`. Git history keeps every ticket.
+2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory, and each `done` brief whose `ticket` is in it, with `git rm`. Git history keeps every ticket and brief.
 3. Commit and push.
 
 ## Hand-off: build and gate tickets

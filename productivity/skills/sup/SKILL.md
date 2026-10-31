@@ -38,7 +38,7 @@ Write one line per row, in index order. A table is also correct. Each line holds
 - for a `waiting` row, who it waits on and since when
 - the number of claims from sweep
 
-Mark each map that has no `Closes when` sentence. Put no prose between the rows. After the rows, give the number of open tickets across all maps. If directories have no row, give their number and say that orchestrate repairs the index. Then print the sweep result table.
+Mark each map that has no `Closes when` sentence. Put no prose between the rows. After the rows, give the number of open tickets across all maps. If [map directories](../orchestrate/references/format.md#layout) have no row, give their number and say that orchestrate repairs the index. Then print the sweep result table.
 
 ## Propose
 
