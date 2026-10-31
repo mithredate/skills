@@ -204,7 +204,6 @@ test('runs a read and a command with no privileged call without a question', asy
 const SANDBOX = {
   enabled: true,
   failIfUnavailable: true,
-  allowUnsandboxedCommands: false,
   excludedCommands: ['aws *', 'kubectl *', 'helm *', 'terraform *', 'grep *', 'head *', 'tail *', 'jq *'],
   network: { deniedDomains: ['*.amazonaws.com', '*.amazonaws.com.cn', '*.api.aws', '*.api.amazonwebservices.com.cn', '*.amazonaws.eu', '*.api.amazonwebservices.eu'] },
   credentials: {
@@ -233,7 +232,13 @@ test('with the sandbox on, runs a privileged call that stays in the sandbox with
   ]) {
     expect(refusal(await $.tool.call({ tool: 'Bash', command }))).toBeUndefined()
   }
-  // With `allowUnsandboxedCommands: false`, Claude Code ignores the request to leave.
+  expect(questions).toEqual([])
+})
+
+test('with allowUnsandboxedCommands false, runs a sandboxed write that asks to leave without a question', async ($, on) => {
+  const questions: string[] = []
+  claudeCode(on, 'Cancel', { questions, sandbox: { ...SANDBOX, allowUnsandboxedCommands: false } })
+  // Claude Code ignores the request to leave, so the call stays without credentials.
   expect(refusal(await $.tool.call({ tool: 'Bash', command: SANDBOXED_WRITE, dangerouslyDisableSandbox: true }))).toBeUndefined()
   expect(questions).toEqual([])
 })
@@ -282,7 +287,7 @@ const UNTRUSTED: [when: string, sandbox: object | Error, call?: { allowed_domain
   ['the sandbox does not deny *.api.amazonwebservices.eu', { ...SANDBOX, network: { deniedDomains: ['*.amazonaws.com', '*.amazonaws.com.cn', '*.api.aws', '*.api.amazonwebservices.com.cn', '*.amazonaws.eu'] } }],
   ['the settings read fails', new Error('no settings')],
   ['the call asks for another host', SANDBOX, { allowed_domains: ['sts.amazonaws.com'] }],
-  ['the call asks to leave and allowUnsandboxedCommands is unset', { ...SANDBOX, allowUnsandboxedCommands: undefined }, { dangerouslyDisableSandbox: true }],
+  ['the call asks to leave the sandbox', SANDBOX, { dangerouslyDisableSandbox: true }],
 ]
 
 for (const [when, sandbox, call] of UNTRUSTED) {
