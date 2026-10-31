@@ -89,19 +89,21 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 
 `orchestrate fire <orchestrator repo path>` builds one queued brief. It runs in a session in a target repo, because `EnterWorktree` reaches only the repo of the session. It runs no sweep, and it edits no map and no ticket.
 
-The session reads and writes the tracker only in a checkout of its own, made from the pushed state. It never reads or commits the working tree at `<orchestrator repo path>`, because an interactive session edits that tree. In the steps, `<checkout>` is that checkout, and `<branch>` is the default branch of the orchestrator repo.
+The session reads and writes the tracker only in a checkout of its own, made from the pushed state. It never reads or commits the working tree at `<orchestrator repo path>`, because an interactive session edits that tree. In the steps, `<checkout>` is that checkout. `<branch>` is the output of `git -C <orchestrator repo path> symbolic-ref --short refs/remotes/origin/HEAD`, without `origin/`.
 
-To push in steps 3 and 7, run `git -C <checkout> push origin HEAD:<branch>`. If the push is rejected, run `git -C <checkout> pull --rebase origin <branch>`, and push again. If the rebase stops on a conflict, run `git -C <checkout> rebase --abort`. After a conflict or a third rejected push, send a `PushNotification` and stop.
+To record a change in steps 3, 5, and 7, use these commands. If the step changed no file, skip the commit and the push. Run `git -C <checkout> commit -m "<message>" -- <files>`, with each brief file that the step changed. Then run `git -C <checkout> status --porcelain`. If it shows a change, send a `PushNotification` and stop. Then run `git -C <checkout> push origin HEAD:<branch>`.
+
+In steps 3 and 7, if the push is rejected, run `git -C <checkout> pull --rebase origin <branch>`, and push again. If the rebase stops on a conflict, run `git -C <checkout> rebase --abort`. After a conflict or a third rejected push, send a `PushNotification` with the `result`, and stop.
 
 1. Run `git -C <orchestrator repo path> fetch origin`. Then run `git -C <orchestrator repo path> worktree add --detach <checkout> origin/<branch>`, with a new directory under `$TMPDIR` as `<checkout>`. Read the AGENTS.md or CLAUDE.md in `<checkout>` before the next step.
 2. If a brief is `in-progress` and not overdue, stop and report `busy`.
-3. Set each overdue brief to `stuck`, with the result "no update since <updated>". Set each `ready` brief whose `ticket` path does not exist to `stuck`, with the result "ticket missing". Set `updated` in each. Run `git -C <checkout> commit`, and push. Send a `PushNotification` for each.
-4. Take the oldest `ready` brief whose Targets line names the repo of this session. That repo is the last part of the URL of the session's `origin` remote, without `.git`. The name must match exactly, so `CakeClub` does not match `CakeClubBackend`. Its blockers must be closed. The blockers are the `blocked-by` of its `ticket`, and its own `blocked-by`. If no brief is left, stop and report `nothing ready`.
-5. With the Edit tool, change `status: ready` to `status: in-progress`, and set `updated` to the time now. Before any other work, run `git -C <checkout> commit -- <brief file>` and `git -C <checkout> push origin HEAD:<branch>`. If this push is rejected, drop the claim with `git -C <checkout> fetch origin` and `git -C <checkout> checkout --detach origin/<branch>`. Then go back to step 2. After the third rejected claim, send a `PushNotification` and stop.
+3. Set each overdue brief to `stuck`, with the result "no update since <updated>". Set each `ready` brief whose `ticket` is set and does not exist to `stuck`, with the result "ticket missing". Set `updated` in each. Record the change. Send a `PushNotification` for each.
+4. Take the first `ready` brief in file name order whose Targets line names the repo of this session. That repo is the last part of the URL of the session's `origin` remote, without `.git`. The name must match exactly, so `CakeClub` does not match `CakeClubBackend`. Its blockers must be closed. The blockers are the `blocked-by` of its `ticket`, and its own `blocked-by`. If no brief is left, stop and report `nothing ready`.
+5. With the Edit tool, change `status: ready` to `status: in-progress`, and set `updated` to the time now. Before any other work, record the change. If this push is rejected, drop the claim with `git -C <checkout> fetch origin` and `git -C <checkout> checkout --detach origin/<branch>`. Then go back to step 2. After the third rejected claim, send a `PushNotification` and stop.
 6. When the push succeeds, a hook tells you to call the Skill tool with `dev:fire`. Call it with the path of the brief file in `<checkout>`.
-7. If `dev:fire` returns `pass`, set the brief to `done`. Otherwise, set it to `stuck`. Write `result` and `updated`. If a `done` brief has no `ticket`, run `git -C <checkout> rm <brief file>` instead, and put the result in the commit message. Run `git -C <checkout> commit`, and push. For `stuck`, send a `PushNotification`.
+7. If `dev:fire` returns `pass`, set the brief to `done`. Otherwise, set it to `stuck`. Write `result` and `updated`. If a `done` brief has no `ticket`, run `git -C <checkout> rm <brief file>` instead, and put the result in the commit message. Record the change. For `stuck`, send a `PushNotification`.
 
-When the run stops, at any step, run `git -C <orchestrator repo path> worktree remove --force <checkout>`.
+When the run stops, at any step, run `git -C <orchestrator repo path> worktree remove --force <checkout>`. If the command fails, report the path of `<checkout>`.
 
 ## init
 
