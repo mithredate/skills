@@ -1,19 +1,19 @@
 ---
 name: fire
-description: Use when a session claims an `orchestrate` ticket with a `## Brief`, when `prep` writes a brief file, or on `/fire`.
+description: Use when `orchestrate fire` takes a brief, when `prep` writes `brief.md` in the scratchpad, or on `/fire`.
 argument-hint: "<ticket path | brief file>"
 ---
 
 # Fire
 
-**Arguments:** $ARGUMENTS. The argument is the path of an `orchestrate` build ticket, or of a brief file that `productivity:prep` wrote. If there is no argument, use the build ticket that this session claimed, or the brief file that `prep` wrote in this session.
+**Arguments:** $ARGUMENTS. The argument is the path of an `orchestrate` build ticket, or of a brief file that `productivity:prep` wrote. If there is no argument, use the brief that this session took, or the brief file that `prep` wrote in this session.
 
 The session does not edit code or a target system. Agents build, review, and verify. The session routes their results and hands back.
 
 ## Read the brief
 
 1. Read the ticket or the brief file. If the input is not a file with a `## Brief` section, stop. For a ticket, tell the user that the Hand-off of `orchestrate` writes its brief. Otherwise, tell the user to write one with `productivity:prep`. If a ticket in its `blocked-by` is open, stop and name it.
-2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<slug>` from the base branch that the brief names, or `fix/<slug>` for a bugfix. The slug is the ticket slug, or a short slug of the Goal line. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it. Get the **base commit**, the merge base of the branch and the base branch. Run `git merge-base origin/<base branch> HEAD` on the branch.
+2. For each git repo in the Targets line, run `git fetch origin`. An older brief has a Repos line instead. Read it as the Targets line. Make a branch `feat/<slug>` from the base branch that the brief names, or `fix/<slug>` for a bugfix. The slug is the ticket slug, the slug of a queued brief, or a short slug of the Goal line. Follow the repo's AGENTS.md or CLAUDE.md for the branch name and for a worktree. If the branch exists from an earlier run, keep its work and continue on it. Get the **base commit**, the merge base of the branch and the base branch. Run `git merge-base origin/<base branch> HEAD` on the branch.
 3. Set the kind to `bugfix` when the brief is a bugfix, or when its Verification line asks for the failing test first. Otherwise set it to `change`.
 
 The step is done when each git target has its branch checked out in a known directory, and has its base commit.
@@ -65,7 +65,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 
 ## Hand back
 
-1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`. It lists each Verification check that the brief puts after the merge.
+1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket or the queued brief by title and path, because `productivity:sweep` finds the PR by that path. For a brief in the scratchpad, the body holds the brief. The body lists the verifier evidence and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`. It lists each Verification check that the brief puts after the merge.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
