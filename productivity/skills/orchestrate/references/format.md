@@ -67,6 +67,7 @@ type: decision | prototype | research | task | gate
 status: open | closed
 assignee: <empty if unclaimed>
 blocked-by: [<id>, ...]
+brief: <path of its brief in `.wayfinder/`, for a build task>
 ---
 
 <the question>
@@ -80,7 +81,7 @@ A ticket is on the frontier when `status: open`, `assignee` is empty, and every 
 
 ## Brief
 
-`productivity:prep` queues each brief as one file in `briefs/`. The name starts with the UTC time of the write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md). A build `task` ticket links to its brief.
+`productivity:prep` queues each brief as one file in `briefs/`. The name starts with the UTC time of the write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md).
 
 ```markdown
 ---
@@ -88,7 +89,7 @@ title: <title>
 status: ready | in-progress | done | stuck
 updated: <UTC time of the last status change, YYYY-MM-DDTHH:MMZ>
 ticket: <path of the build ticket in `.wayfinder/`, or empty>
-blocked-by: [<ticket path in `.wayfinder/`>, ...]
+blocked-by: [<id>, ...] only when `ticket` is empty
 result: <for done, each PR link with merged or not merged. For stuck, the dev:fire status or the reason, and the blocker>
 ---
 ```

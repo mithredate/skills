@@ -73,11 +73,11 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. A ticket with a brief waits for `fire`.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Close each build ticket whose brief is `done`, by step 4. Then claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Commit and push the claims before any other work. If every frontier ticket is a `gate` or has a brief, give the user the first gate's checklist. Then go to step 7.
+2. Close each build ticket whose brief is `done`, by step 4. Then claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Commit and push the closes, their review gates, and the claims before any other work. If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. Write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
-   - When a decision ticket closes, queue the brief of each build ticket that has it in `blocked-by`, by the Hand-off rules.
-   - If a `done` brief records a PR as `not merged`, and its build has no review gate, write a review `gate` ticket for the PR. Add the gate to the `blocked-by` of each open ticket and each `ready` brief that has the build ticket in its `blocked-by`.
+   - When a decision ticket closes, follow the Hand-off rules for each build ticket that has it in `blocked-by`.
+   - If a `done` brief records a PR as `not merged`, and its build has no review gate, write a review `gate` ticket for the PR. Add the gate to each `blocked-by` that holds the build ticket.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
@@ -92,7 +92,7 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 1. Read the AGENTS.md or CLAUDE.md of the orchestrator repo. Then pull it.
 2. If a brief is `in-progress` and its `updated` time is less than 4 hours ago, stop and report `busy`.
 3. Set each `in-progress` brief to `stuck`, with the result "no update since <updated>". Commit and push.
-4. Take the oldest `ready` brief that targets the repo of this session and has no open ticket in `blocked-by`. If there is none, stop and report `nothing ready`.
+4. Take the oldest `ready` brief whose Targets line names the repo of this session. The name must match exactly, so `CakeClub` does not match `CakeClubBackend`. Its blockers must be closed. The blockers are the `blocked-by` of its `ticket`, and its own `blocked-by`. If no brief is left, stop and report `nothing ready`.
 5. With the Edit tool, set `status: in-progress` and set `updated` to the time now. Before any other work, commit only the brief file and push. If the push fails, run `git revert --no-edit HEAD` and `git pull --no-rebase`. Then go back to step 2. A revert keeps the commits of other sessions.
 6. When the push succeeds, a hook tells you to call the Skill tool with `dev:fire`. Call it with the path of the brief file.
 7. If `dev:fire` returns `pass`, set the brief to `done`, and record each PR link with `merged` or `not merged`. Otherwise, set it to `stuck`, and record the status and the blocker. Set `updated`, then commit and push. For `stuck`, send a `PushNotification`.
@@ -116,9 +116,9 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 
 ## Hand-off: build and gate tickets
 
-When the decisions for a change are made, write the build as `task` tickets, and each human step as a `gate` ticket. Connect them with `blocked-by` edges. Queue the brief of each build ticket with `productivity:prep` as soon as no decision ticket in its `blocked-by` is open. The brief gets the `blocked-by` of the build ticket.
+When the decisions for a change are made, write the build as `task` tickets, and each human step as a `gate` ticket. Connect them with `blocked-by` edges. When no decision ticket in the `blocked-by` of a build ticket is open, queue its brief with `productivity:prep`. A build ticket has one brief at most. If it has one, change that brief with `prep`.
 
-- A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed. Its targets can be git repos or other systems, for example an n8n instance.
+- A brief holds no human step, so one session runs it from start to end. Its targets can be git repos or other systems, for example an n8n instance.
 - Split the build only at a gate. Write the fewest build tickets.
 - The human review of a PR is a `gate` ticket. If a build has one target, and it is a git repo whose AGENTS.md or CLAUDE.md has the line `**fire can auto-merge.**`, write no review gate. `cook` writes the gate when the brief records `not merged`.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
