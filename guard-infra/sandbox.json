@@ -7,20 +7,6 @@
     "enabled": true,
     "failIfUnavailable": true,
     "enableWeakerNetworkIsolation": true,
-    "excludedCommands": [
-      "aws *", "kubectl *", "helm *", "terraform *",
-      "grep *", "head *", "tail *", "wc *", "jq *", "cut *", "tr *",
-      "docker ps *", "docker logs *", "docker inspect *", "docker images *", "docker image *", "docker version *", "docker info *",
-      "docker exec *", "docker build *", "docker buildx *", "docker pull *", "docker push *", "docker tag *",
-      "docker start *", "docker stop *", "docker restart *", "docker kill *", "docker rm *", "docker rmi *",
-      "docker network *", "docker volume *", "docker system *", "docker stats *", "docker top *", "docker port *",
-      "docker compose up *", "docker compose down *", "docker compose exec *", "docker compose ps *", "docker compose logs *",
-      "docker compose build *", "docker compose pull *", "docker compose restart *", "docker compose stop *",
-      "docker compose start *", "docker compose config *", "docker compose ls *",
-      "xcrun simctl list *", "xcrun simctl boot *", "xcrun simctl shutdown *", "xcrun simctl erase *",
-      "xcrun simctl io *", "xcrun simctl openurl *", "xcrun simctl push *", "xcrun simctl status_bar *",
-      "maestro test *", "maestro hierarchy", "maestro --version"
-    ],
     "filesystem": {
       "allowWrite": [
         "~/.npm", "~/Library/pnpm", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
