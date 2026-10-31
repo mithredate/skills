@@ -193,6 +193,26 @@ test('take skips a brief whose ticket waits on an open gate, and claims it when 
     assert.equal(unblocked.brief, 'wayfinder/briefs/2026-10-30-0900-d.md');
 });
 
+test('take refuses to run when the repo name of origin is empty', async () => {
+    const q = setup({ 'wayfinder/briefs/2026-10-30-0900-a.md': brief() });
+    git(q.target, 'remote', 'set-url', 'origin', 'https://github.com/CakeClub-Inc/CakeClub/');
+
+    const result = await queue(q, q.target, 'take', q.one);
+
+    assert.equal(result.outcome, 'refused');
+    assert.match(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md'), /^status: ready$/m);
+});
+
+test('take skips a brief whose Targets line names two repos', async () => {
+    const q = setup({
+        'wayfinder/briefs/2026-10-30-0900-a.md': brief({ targets: '`CakeClub`, `CakeClubBackend`, base branch `main`' }),
+    });
+
+    const result = await queue(q, q.target, 'take', q.one);
+
+    assert.equal(result.outcome, 'nothing ready');
+});
+
 test('take keeps each brief whose blockers it cannot read, and claims the brief whose blockers are readable and closed', async () => {
     const ticket = (id, blockedBy, eol = '\n') => ['---', `id: ${id}`, 'title: Fix', 'type: task', 'status: open', 'assignee:', ...blockedBy, '---', ''].join(eol);
     const q = setup({

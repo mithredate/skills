@@ -241,37 +241,39 @@ const commands = {
 
     async take(q) {
         const origin = (await git(process.cwd(), 'remote', 'get-url', 'origin')).trim();
-        const repo = origin.replace(/\.git$/, '').split(/[/:]/).pop().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // The Targets line names the repo exactly, so `CakeClub` does not match `CakeClubBackend`.
-        const targets = new RegExp(`^- (Targets|Repos):(.*[^\\w.-])?${repo}([^\\w.-]|$)`, 'm');
-        const all = await briefs(q);
+        const repo = origin.replace(/\.git$/, '').split(/[/:]/).pop() || refuse(`origin has no repo name: ${origin}`);
+        const all = (await briefs(q)).filter((b) => !b.bad || b.status !== 'stuck');
+
+        // 1. Set each bad or overdue brief to stuck, and delete each done brief whose PRs merged.
         const changes = {};
-        const stuck = [];
         for (const b of all) {
-            if (b.bad && b.status !== 'stuck') changes[`briefs/${b.name}`] = render({ ...b, status: 'stuck', result: 'bad frontmatter' });
-            else if (!b.bad && b.status === 'in-progress' && overdue(b)) changes[`briefs/${b.name}`] = render({ ...b, status: 'stuck', result: `no update since ${b.updated}` });
-            else if (!b.bad && b.status === 'done' && await merged(b)) changes[`briefs/${b.name}`] = null;
-            if (changes[`briefs/${b.name}`]) stuck.push(`${q.tracker}/briefs/${b.name}`);
+            const path = `briefs/${b.name}`;
+            if (b.bad) changes[path] = render({ ...b, status: 'stuck', result: 'bad frontmatter' });
+            else if (b.status === 'in-progress' && overdue(b)) changes[path] = render({ ...b, status: 'stuck', result: `no update since ${b.updated}` });
+            else if (b.status === 'done' && await merged(b)) changes[path] = null;
         }
-        const busy = all.some((b) => !b.bad && b.status === 'in-progress' && !overdue(b));
+        const stuck = Object.keys(changes).filter((path) => changes[path]).map((path) => `${q.tracker}/${path}`);
         const deleted = Object.keys(changes).filter((path) => changes[path] === null);
+
+        // 2. Claim the oldest ready brief for this repo whose blockers are closed, unless a fresh brief is in progress.
+        const busy = all.some((b) => !b.bad && b.status === 'in-progress' && !overdue(b));
         let claim;
         for (const b of busy ? [] : all) {
-            if (!b.bad && b.status === 'ready' && targets.test(b.body) && !await blocked(q, b, deleted)) {
-                claim = b;
-                break;
-            }
+            if (b.bad || b.status !== 'ready' || target(b.body) !== repo || await blocked(q, b, deleted)) continue;
+            claim = b;
+            changes[`briefs/${b.name}`] = render({ ...b, status: 'in-progress' });
+            break;
         }
-        if (claim) changes[`briefs/${claim.name}`] = render({ ...claim, status: 'in-progress' });
+
+        // 3. Push. A lost claim race is not retried. The race is lost when the remote moved.
         if (Object.keys(changes).length) {
             try {
                 await save(q, changes, claim ? `brief-queue: take ${claim.name}` : 'brief-queue: tidy', claim ? 0 : 3);
             } catch (error) {
-                // A lost claim race is not retried. The race is lost when the remote moved.
-                await git(q.repo, 'fetch', '-q', 'origin').catch(() => {});
-                const moved = (await git(q.repo, 'rev-parse', `origin/${q.branch}`)).trim() !== q.sha;
-                if (claim && moved && !(error instanceof Refusal)) return { outcome: 'busy', stuck: [] };
-                throw error;
+                if (!claim || error instanceof Refusal) throw error;
+                await git(q.repo, 'fetch', '-q', 'origin');
+                if ((await git(q.repo, 'rev-parse', `origin/${q.branch}`)).trim() === q.sha) throw error;
+                return { outcome: 'busy', stuck: [] };
             }
         }
         if (!claim) return { outcome: busy ? 'busy' : 'nothing ready', stuck };
