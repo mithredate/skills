@@ -52,19 +52,19 @@ Return only this JSON. Return every array. Leave an array empty when there is no
 
 ```json
 {
-  "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <what the code shows>"]}],
-  "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"]}],
+  "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <what the code shows>"], "blast_radius": "<who hits the bad case, how often in normal use, and what it costs>"}],
+  "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"], "blast_radius": "<who hits the bad case, how often in normal use, and what it costs>"}],
   "quality_note": ["<path:line> <one sentence>"],
   "nit":          ["<path:line> <one sentence>"],
   "pre_existing": ["<path:line> <one sentence>"]
 }
 ```
 
-The effect of a defect sets its label, whatever lens found it. A label that a lens item names is the default.
+The **blast radius** of a finding is who hits the bad case, how often in normal use, and what it costs. The blast radius sets the label of every finding, also when a lens item names a label. If you cannot prove a wrong result, the finding keeps the label of its blast radius.
 
-- `blocking` is a defect that a caller, a user, or a test can see. A test that can pass while the behavior is broken is `blocking`.
-- `discrepancy` means the plan itself is wrong, and re-coding to the same plan cannot fix it.
-- `quality_note` is for code that works but is hard to read or change.
+- `blocking` is a finding with a real chance and a real cost.
+- `discrepancy` is a finding with a real chance and a real cost, when the plan itself is wrong. New code to the same plan cannot fix it.
+- `quality_note` is a finding with a low chance or a low cost, such as code that works but is hard to read or change.
 - `nit` is a minor concern.
 - `pre_existing` is a defect that the base commit has too, in code that the diff does not change. An un-updated call site of a changed symbol is not `pre_existing`.
 
