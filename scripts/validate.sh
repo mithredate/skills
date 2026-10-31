@@ -51,10 +51,10 @@ while read -r skill_path; do
   fi
 done < <(jq -r '.plugins[] | .source as $s | (.skills // [])[] | "\($s)/\(.)"' "$manifest" | sed 's#^\./##; s#/\./#/#')
 
-# Hook tests run the real hook with node:test.
+# Hook and plugin script tests run the real file with node:test.
 echo
-echo "→ hook tests"
-node --test */hooks/*.test.mjs || failed=1
+echo "→ hook and plugin script tests"
+node --test */hooks/*.test.mjs */scripts/*.test.mjs || failed=1
 
 # Script tests run a script against a fake `claude` or fixed input, with no network.
 echo
