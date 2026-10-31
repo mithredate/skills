@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 Call the Skill tool with `productivity:sweep` first.
 
-Sup works in an orchestrator repo, on the local-markdown tracker of `productivity:orchestrate`. The index, map, destination, frontier, and ticket are the terms of orchestrate. Each index row is `| Map | Status | Destination |`, and the Status cell holds the status, then the one-line state. A frontier ticket has `status: open`, an empty `assignee`, and every `blocked-by` id closed. Sup never writes a file and never commits, because orchestrate owns every write to the index.
+Sup works in an orchestrator repo, on the local-markdown tracker of `productivity:orchestrate`. The index, map, destination, frontier, and ticket are the terms of orchestrate. Each index row is `| Map | Status | Destination |`, and the Status cell holds the status, then the one-line state. The [frontier](../orchestrate/references/format.md#ticket) rule is in the format file of orchestrate. Sup never writes a file and never commits, because orchestrate owns every write to the index.
 
 If the user gives an initiative, report only that row in the same shape. Then skip Propose.
 

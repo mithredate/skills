@@ -79,7 +79,7 @@ brief: <path of its brief relative to `.wayfinder/`, for a build task>
 <appended on close: for a decision ticket, one record of `productivity:settle-decisions` for each decision. For another ticket, what was done and the facts that later tickets need>
 ```
 
-A ticket is on the frontier when `status: open`, `assignee` is empty, and every `blocked-by` id is closed. Assets are files under `assets/`, linked from the ticket.
+A ticket is on the frontier when `status: open`, `assignee` and `brief` are empty, and every `blocked-by` id is closed. A ticket with a brief waits until its brief is `done`. Assets are files under `assets/`, linked from the ticket.
 
 ## Brief
 

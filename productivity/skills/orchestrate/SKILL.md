@@ -70,15 +70,15 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 
 ## cook
 
-A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. A ticket with a brief waits for `fire`.
+A session that names no map works the `active` row. One session takes every frontier ticket of the map, so the human answers one round, not one session for each ticket.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Close each build ticket whose brief is `done`, by step 4. Delete that brief with `git rm` in the same commit. Only `prep` changes the status of a `stuck` brief. Then claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work. If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
+2. Close each build ticket whose brief is `done`, by step 4. Delete that brief with `git rm` in the same commit. Only `prep` changes the status of a `stuck` brief. Then claim every frontier ticket that is not a `gate`, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work. If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. Write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, follow the Hand-off rules for each build ticket that has it in `blocked-by`.
    - If a `done` brief records a PR as `not merged`, and its build has no review gate, write a review `gate` ticket for the PR. Add the gate to each `blocked-by` that holds the build ticket.
-5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2.
+5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket that is not a `gate`, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
 8. Commit and push the tickets, the map, and the index. The task is done when each claimed ticket is closed, and the sweep table is in your final message.
