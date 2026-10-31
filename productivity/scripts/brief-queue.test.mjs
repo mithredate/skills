@@ -622,6 +622,7 @@ test('write and ready refuse an in-progress brief', async () => {
 
 test('close deletes each brief of the map that is not done, and refuses while one is in progress', async () => {
     const q = setup({
+        'wayfinder/bugs/map.md': '## Destination\n',
         'wayfinder/briefs/2026-10-30-0900-r.md': brief({ extra: ['ticket: bugs/tickets/01-a.md'] }),
         'wayfinder/briefs/2026-10-30-0901-d.md': brief({ status: 'done', extra: ['ticket: bugs/tickets/02-b.md'] }),
         'wayfinder/briefs/2026-10-30-0902-p.md': brief({ status: 'in-progress', extra: ['ticket: bugs/tickets/03-c.md'] }),
@@ -638,4 +639,21 @@ test('close deletes each brief of the map that is not done, and refuses while on
     assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0902-p.md'), null);
     assert.notEqual(onRemote(q, 'wayfinder/briefs/2026-10-30-0901-d.md'), null);
     assert.notEqual(onRemote(q, 'wayfinder/briefs/2026-10-30-0903-o.md'), null);
+});
+
+test('close refuses a map directory that does not exist, and a map whose brief blocks a brief of another map', async () => {
+    const q = setup({
+        'wayfinder/bugs/map.md': '## Destination\n',
+        'wayfinder/briefs/2026-10-30-0900-r.md': brief({ extra: ['ticket: bugs/tickets/01-a.md'] }),
+        'wayfinder/briefs/2026-10-30-0901-w.md': brief({ extra: ['blocked-by: [briefs/2026-10-30-0900-r.md]'] }),
+    });
+    const before = git(q.remote, 'rev-parse', 'main');
+
+    const unknown = await queue(q, q.one, 'close', q.one, 'bug');
+    const blocking = await queue(q, q.one, 'close', q.one, 'bugs');
+
+    assert.equal(unknown.outcome, 'refused');
+    assert.equal(blocking.outcome, 'refused');
+    assert.match(blocking.reason, /2026-10-30-0901-w\.md/);
+    assert.equal(git(q.remote, 'rev-parse', 'main'), before);
 });

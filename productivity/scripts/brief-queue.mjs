@@ -237,10 +237,17 @@ const commands = {
     },
 
     async close(q, map) {
-        const mine = (await briefs(q)).filter((b) => b.ticket?.startsWith(`${map.replace(/\/+$/, '')}/`));
+        const dir = map.replace(/\/+$/, '');
+        if (![...q.files].some((file) => file.startsWith(`${q.tracker}/${dir}/`))) refuse(`no map directory ${dir}`);
+        const all = await briefs(q);
+        const mine = all.filter((b) => b.ticket?.startsWith(`${dir}/`));
         const busy = mine.filter((b) => b.status === 'in-progress').map((b) => b.name);
         if (busy.length) refuse(`in-progress: ${busy.join(', ')}`);
         const gone = mine.filter((b) => b.status !== 'done').map((b) => b.name);
+        // A deleted brief counts as closed, so a brief that waits on one of them would start too early.
+        const paths = gone.map((name) => `briefs/${name}`);
+        const waiting = all.filter((b) => !gone.includes(b.name) && b['blocked-by']?.some((path) => paths.includes(path))).map((b) => b.name);
+        if (waiting.length) refuse(`blocked by a brief of the map: ${waiting.join(', ')}`);
         if (gone.length) await save(q, Object.fromEntries(gone.map((name) => [`briefs/${name}`, null])), `brief-queue: close ${map}`);
         return { outcome: 'saved', deleted: gone.map((name) => `${q.tracker}/briefs/${name}`) };
     },
