@@ -122,8 +122,8 @@ async function blocked(q, brief, deleted) {
         const dir = posix.dirname(brief.ticket);
         const found = new Set();
         for (const name of ids.length ? list(q, dir) : []) {
-            const { fields, bad } = frontmatter(await read(q, `${dir}/${name}`));
-            if (!bad && ids.includes(fields.id)) found.add(fields.id), paths.push(`${dir}/${name}`);
+            const { fields } = frontmatter(await read(q, `${dir}/${name}`));
+            if (ids.includes(fields.id)) found.add(fields.id), paths.push(`${dir}/${name}`);
         }
         if (ids.some((id) => !found.has(id))) return true;
     }

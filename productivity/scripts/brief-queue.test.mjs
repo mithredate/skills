@@ -218,6 +218,7 @@ test('take keeps each brief whose blockers it cannot read, and claims the brief 
     const q = setup({
         'wayfinder/bugs/tickets/07-gate.md': ['---', 'id: bug-07', 'type: gate', 'status: closed', '---', ''].join('\n'),
         'wayfinder/bugs/tickets/08-crlf-gate.md': ['---', 'id: bug-08', 'type: gate', 'status: closed', '---', ''].join('\r\n'),
+        'wayfinder/bugs/tickets/09-status-twice-gate.md': ['---', 'id: bug-09', 'type: gate', 'status: closed', 'status: open', '---', ''].join('\n'),
         'wayfinder/bugs/tickets/11-typo.md': ticket('bug-11', ['blocked-by: [bug-7]']),
         'wayfinder/bugs/tickets/12-quoted.md': ticket('bug-12', ['blocked-by: ["bug-07"]']),
         'wayfinder/bugs/tickets/13-block-list.md': ticket('bug-13', ['blocked-by:', '  - bug-07']),
@@ -225,6 +226,7 @@ test('take keeps each brief whose blockers it cannot read, and claims the brief 
         'wayfinder/bugs/tickets/15-twice.md': ticket('bug-15', ['blocked-by: []', 'blocked-by: [bug-07]']),
         'wayfinder/bugs/tickets/16-crlf.md': ticket('bug-16', ['blocked-by: []'], '\r\n'),
         'wayfinder/bugs/tickets/17-on-crlf-gate.md': ticket('bug-17', ['blocked-by: [bug-08]']),
+        'wayfinder/bugs/tickets/18-on-status-twice-gate.md': ticket('bug-18', ['blocked-by: [bug-09]']),
         'wayfinder/bugs/tickets/20-good.md': ticket('bug-20', ['blocked-by: [bug-07]']),
         'wayfinder/briefs/2026-10-30-0911-typo.md': brief({ extra: ['ticket: bugs/tickets/11-typo.md'] }),
         'wayfinder/briefs/2026-10-30-0912-quoted.md': brief({ extra: ['ticket: bugs/tickets/12-quoted.md'] }),
@@ -234,6 +236,7 @@ test('take keeps each brief whose blockers it cannot read, and claims the brief 
         'wayfinder/briefs/2026-10-30-0916-crlf.md': brief({ extra: ['ticket: bugs/tickets/16-crlf.md'] }),
         'wayfinder/briefs/2026-10-30-0917-on-crlf-gate.md': brief({ extra: ['ticket: bugs/tickets/17-on-crlf-gate.md'] }),
         'wayfinder/briefs/2026-10-30-0918-never-existed.md': brief({ extra: ['blocked-by: [briefs/2026-10-30-0800-typo.md]'] }),
+        'wayfinder/briefs/2026-10-30-0919-on-status-twice-gate.md': brief({ extra: ['ticket: bugs/tickets/18-on-status-twice-gate.md'] }),
         'wayfinder/briefs/2026-10-30-1000-good.md': brief({ extra: ['ticket: bugs/tickets/20-good.md'] }),
     });
 
@@ -247,12 +250,12 @@ test('take and list report failed when a git read fails, never claimed or an emp
     const q = setup({ 'wayfinder/briefs/2026-10-30-0900-a.md': brief() });
     const shim = join(q.dir, 'shim');
     mkdirSync(shim);
-    writeFileSync(join(shim, 'git'), `#!/bin/sh\n[ "$1" = "$FAIL_GIT" ] && exit 1\nexec "${REAL_GIT}" "$@"\n`);
+    writeFileSync(join(shim, 'git'), `#!/bin/sh\ncase "$*" in *"$FAIL_GIT"*) exit 1 ;; esac\nexec "${REAL_GIT}" "$@"\n`);
     chmodSync(join(shim, 'git'), 0o755);
     const failing = (command) => ({ ...q, env: { ...q.env, PATH: `${shim}:${q.env.PATH}`, FAIL_GIT: command } });
 
     const taken = await queue(failing('cat-file'), q.target, 'take', q.one);
-    const listed = await queue(failing('ls-tree'), q.one, 'list', q.one);
+    const listed = await queue(failing('ls-tree -r'), q.one, 'list', q.one);
 
     assert.equal(taken.outcome, 'failed');
     assert.equal(listed.outcome, 'failed');
@@ -302,12 +305,13 @@ test('take refuses a title with a line break, a second status line, or an unknow
         'wayfinder/briefs/2026-10-30-0901-ls.md': raw('title: Fix\u2028status: ready'),
         'wayfinder/briefs/2026-10-30-0902-twice.md': raw('title: Fix\nstatus: ready'),
         'wayfinder/briefs/2026-10-30-0903-proto.md': raw('title: Fix\n__proto__: ready'),
+        'wayfinder/briefs/2026-10-30-0904-nel.md': raw('title: Fix\u0085status: ready'),
     });
 
     const result = await queue(q, q.target, 'take', q.one);
 
     assert.equal(result.outcome, 'nothing ready');
-    for (const name of ['2026-10-30-0900-cr.md', '2026-10-30-0901-ls.md', '2026-10-30-0902-twice.md', '2026-10-30-0903-proto.md']) {
+    for (const name of ['2026-10-30-0900-cr.md', '2026-10-30-0901-ls.md', '2026-10-30-0902-twice.md', '2026-10-30-0903-proto.md', '2026-10-30-0904-nel.md']) {
         const text = onRemote(q, `wayfinder/briefs/${name}`);
         assert.deepEqual(text.match(/^status:.*$/gmu), ['status: stuck'], name);
         assert.match(text, /^result: "bad frontmatter"$/m, name);
@@ -345,6 +349,7 @@ test('write refuses a title with a line break or a second status line, and an un
     const inputs = {
         cr: ['title: Fix\rstatus: ready', 'status: draft'],
         ls: ['title: Fix status: ready', 'status: draft'],
+        nel: ['title: Fix\u0085status: ready', 'status: draft'],
         twice: ['title: Fix\nstatus: ready', 'status: draft'],
         unknown: ['title: Fix', 'owner: me'],
         ok: ['title: Fix', 'status: draft'],
@@ -356,7 +361,7 @@ test('write refuses a title with a line break or a second status line, and an un
         outcomes[name] = (await queue(q, q.one, 'write', q.one, join(q.dir, `${name}.md`))).outcome;
     }
 
-    assert.deepEqual(outcomes, { cr: 'refused', ls: 'refused', twice: 'refused', unknown: 'refused', ok: 'saved' });
+    assert.deepEqual(outcomes, { cr: 'refused', ls: 'refused', nel: 'refused', twice: 'refused', unknown: 'refused', ok: 'saved' });
     assert.equal(git(q.remote, 'ls-tree', '--name-only', 'main', 'wayfinder/briefs/').trim().split('\n').length, 2);
 });
 
