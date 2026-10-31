@@ -92,9 +92,11 @@ status: draft | ready | in-progress | done | stuck
 updated: <UTC time of the last status change, YYYY-MM-DDTHH:MMZ>
 ticket: <path of the build ticket relative to `.wayfinder/`, or empty>
 blocked-by: [<ticket path relative to `.wayfinder/`>, ...] only when `ticket` is empty
-result: <for done or stuck>
+result: "<for done or stuck>"
 ---
 ```
+
+`result` is one line in double quotes, at most 300 characters. Replace each newline in it with a space, and each `"` with `'`.
 
 - `draft`: the user did not say yes to the current text in the session that wrote it.
 - `ready`: the user said yes to the current text after the last `draft` write, and no session took the brief after that yes.
