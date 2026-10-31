@@ -509,7 +509,7 @@ test('write pushes a draft brief and the brief field of its ticket in one commit
     const draft = onRemote(q, written.brief);
     const commitFiles = git(q.remote, 'show', '--name-only', '--format=', 'main').trim().split('\n').sort();
     const name = written.brief.split('/').pop();
-    const ready = await queue(q, q.one, 'ready', q.one, name);
+    const ready = await queue(q, q.one, 'ready', q.one, name, written.hash);
 
     assert.match(written.brief, /^\.wayfinder\/briefs\/\d{4}-\d\d-\d\d-\d{4}-fix-the-sync\.md$/);
     assert.match(draft, /^status: draft$/m);
@@ -518,6 +518,26 @@ test('write pushes a draft brief and the brief field of its ticket in one commit
     assert.match(onRemote(q, '.wayfinder/bugs/tickets/05-fix.md'), new RegExp(`^brief: briefs/${name}$`, 'm'));
     assert.equal(ready.outcome, 'saved');
     assert.match(onRemote(q, written.brief), /^status: ready$/m);
+});
+
+test('ready refuses the hash of a text that a second write replaced, and takes the hash of the new text', async () => {
+    const q = setup({ 'wayfinder/briefs/.gitkeep': '' });
+    const input = join(q.dir, 'queued-brief.md');
+    writeFileSync(input, queued(['title: Show the return date']));
+    const first = await queue(q, q.one, 'write', q.one, input);
+    writeFileSync(input, queued(['title: Show the return date and time']));
+    const second = await queue(q, q.one, 'write', q.one, input, first.brief);
+
+    const stale = await queue(q, q.one, 'ready', q.one, first.brief, first.hash);
+    const afterStale = onRemote(q, first.brief);
+    const fresh = await queue(q, q.one, 'ready', q.one, first.brief, second.hash);
+
+    assert.equal(stale.outcome, 'refused');
+    assert.match(afterStale, /^status: draft$/m);
+    assert.equal(fresh.outcome, 'saved');
+    const readied = onRemote(q, first.brief);
+    assert.match(readied, /^status: ready$/m);
+    assert.match(readied, /^title: "Show the return date and time"$/m);
 });
 
 test('write and ready refuse an in-progress brief', async () => {

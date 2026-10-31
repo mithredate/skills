@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // brief-queue does every git and frontmatter step of the orchestrate brief queue.
 //   list   <tracker repo> [<brief>]               with <brief>, only that brief and its body
-//   write  <tracker repo> <brief file> [<brief>]
-//   ready  <tracker repo> <brief>
-//   take   <tracker repo>                      run it in the target repo
+//   write  <tracker repo> <brief file> [<brief>]  prints the hash of the pushed text
+//   ready  <tracker repo> <brief> <hash>
+//   take   <tracker repo>                         run it in the target repo
 //   record <tracker repo> <brief> done|stuck <result file>
-// <brief> is the file name of a brief, or its path.
 //   close  <tracker repo> <map directory>
+// <brief> is the file name of a brief, or its path.
 // It reads only the pushed state, and writes only in a checkout of its own.
 // Each command prints one JSON line. A refusal or a failure exits 1.
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, posix } from 'node:path';
@@ -52,7 +53,7 @@ function frontmatter(text) {
 
 function parseBrief(name, text) {
     const { fields, bad, body } = frontmatter(text);
-    const brief = { name, body, bad: bad || !NAME.test(name) };
+    const brief = { name, body, hash: createHash('sha256').update(text ?? '').digest('hex').slice(0, 12), bad: bad || !NAME.test(name) };
     for (const [key, value] of Object.entries(fields)) {
         if (!KEYS.includes(key)) brief.bad = true;
         else if (key === 'blocked-by') brief[key] = items(value) ?? (brief.bad = true, []);
@@ -201,7 +202,8 @@ const commands = {
         const current = await brief(q, name);
         if (current && !existing) refuse(`the brief ${name} exists`);
         if (['in-progress', 'done'].includes(current?.status)) refuse(`the brief is ${current.status}`);
-        const changes = { [`briefs/${name}`]: render({ ...input, status: 'draft', result: '' }) };
+        const text = render({ ...input, status: 'draft', result: '' });
+        const changes = { [`briefs/${name}`]: text };
         if (input.ticket) {
             const ticket = await read(q, input.ticket) ?? refuse('ticket missing');
             const linked = frontmatter(ticket).fields.brief;
@@ -211,13 +213,15 @@ const commands = {
             changes[input.ticket] = (/^brief:.*\n/m.test(head) ? head.replace(/^brief:.*\n/m, field) : head + field) + ticket.slice(head.length);
         }
         await save(q, changes, `brief-queue: draft ${name}`);
-        return { outcome: 'saved', brief: `${q.tracker}/briefs/${name}`, status: 'draft' };
+        return { outcome: 'saved', brief: `${q.tracker}/briefs/${name}`, status: 'draft', hash: parseBrief(name, text).hash };
     },
 
-    async ready(q, path) {
+    // The yes binds to the text: `hash` is the hash that `write` printed for the text that the user read.
+    async ready(q, path, hash) {
         const name = path.split('/').pop();
         const current = await brief(q, name);
         if (current?.bad !== false || current.status !== 'draft') refuse(`the brief is ${current?.status ?? 'missing'}, not draft`);
+        if (current.hash !== hash) refuse('the pushed text is not the text of this hash');
         await save(q, { [`briefs/${name}`]: render({ ...current, status: 'ready' }) }, `brief-queue: ready ${name}`);
         return { outcome: 'saved', brief: `${q.tracker}/briefs/${name}`, status: 'ready' };
     },
