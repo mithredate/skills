@@ -69,7 +69,7 @@ type: decision | prototype | research | task | gate
 status: open | closed
 assignee: <empty if unclaimed>
 blocked-by: [<id>, ...]
-brief: <path of its brief in `.wayfinder/`, for a build task>
+brief: <path of its brief relative to `.wayfinder/`, for a build task>
 ---
 
 <the question>
@@ -90,8 +90,8 @@ A ticket is on the frontier when `status: open`, `assignee` is empty, and every 
 title: <title>
 status: draft | ready | in-progress | done | stuck
 updated: <UTC time of the last status change, YYYY-MM-DDTHH:MMZ>
-ticket: <path of the build ticket in `.wayfinder/`, or empty>
-blocked-by: [<id>, ...] only when `ticket` is empty
+ticket: <path of the build ticket relative to `.wayfinder/`, or empty>
+blocked-by: [<ticket path relative to `.wayfinder/`>, ...] only when `ticket` is empty
 result: <for done or stuck>
 ---
 ```

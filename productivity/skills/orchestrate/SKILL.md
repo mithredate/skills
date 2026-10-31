@@ -73,7 +73,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. A ticket with a brief waits for `fire`.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Close each build ticket whose brief is `done`, by step 4. Only `prep` changes the status of a `stuck` brief. Then claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work. If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
+2. Close each build ticket whose brief is `done`, by step 4. Delete that brief with `git rm` in the same commit. Only `prep` changes the status of a `stuck` brief. Then claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work. If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. Write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, follow the Hand-off rules for each build ticket that has it in `blocked-by`.
@@ -109,7 +109,7 @@ A new orchestrator repo needs three files: `.wayfinder/README.md` with the empty
 
 ## close
 
-An initiative closes when the `Closes when` sentence of its Destination is true, or when the user rules the rest out of scope. If the Destination has no `Closes when` sentence, write it with the user first. Then close. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
+An initiative closes when the `Closes when` sentence of its Destination is true, or when the user rules the rest out of scope. If the Destination has no `Closes when` sentence, write it with the user first. If a brief whose `ticket` is in the map is `in-progress`, wait until `orchestrate fire` records its result. Then close. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
 
 1. Write `.wayfinder/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
    - the Destination
@@ -117,7 +117,7 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
    - where the work landed, with links to the PRs, documents, or systems
    - what was ruled out of scope, and why
    - each open ticket, with the initiative it moves to, or the reason it is not done. Quote into the report any asset it needs. Keep the rest in git history.
-2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory, and each `done` brief whose `ticket` is in it, with `git rm`. Git history keeps every ticket and brief.
+2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory, and each brief whose `ticket` is in it, with `git rm`. Git history keeps every ticket and brief.
 3. Commit and push.
 
 ## Hand-off: build and gate tickets
