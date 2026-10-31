@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 
 const SCRIPT = new URL('./brief-queue.mjs', import.meta.url).pathname;
 const HOUR = 3600e3;
+const REAL_GIT = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).trim();
 const ROOT = mkdtempSync(join(tmpdir(), 'brief-queue-test-'));
 after(() => rmSync(ROOT, { recursive: true, force: true }));
 
@@ -185,6 +186,53 @@ test('take skips a brief whose ticket waits on an open gate, and claims it when 
     assert.equal(blocked.outcome, 'nothing ready');
     assert.equal(unblocked.outcome, 'claimed');
     assert.equal(unblocked.brief, 'wayfinder/briefs/2026-10-30-0900-d.md');
+});
+
+test('take keeps each brief whose blockers it cannot read, and claims the brief whose blockers are readable and closed', async () => {
+    const ticket = (id, blockedBy, eol = '\n') => ['---', `id: ${id}`, 'title: Fix', 'type: task', 'status: open', 'assignee:', ...blockedBy, '---', ''].join(eol);
+    const q = setup({
+        'wayfinder/bugs/tickets/07-gate.md': ['---', 'id: bug-07', 'type: gate', 'status: closed', '---', ''].join('\n'),
+        'wayfinder/bugs/tickets/08-crlf-gate.md': ['---', 'id: bug-08', 'type: gate', 'status: closed', '---', ''].join('\r\n'),
+        'wayfinder/bugs/tickets/11-typo.md': ticket('bug-11', ['blocked-by: [bug-7]']),
+        'wayfinder/bugs/tickets/12-quoted.md': ticket('bug-12', ['blocked-by: ["bug-07"]']),
+        'wayfinder/bugs/tickets/13-block-list.md': ticket('bug-13', ['blocked-by:', '  - bug-07']),
+        'wayfinder/bugs/tickets/14-no-brackets.md': ticket('bug-14', ['blocked-by: bug-07']),
+        'wayfinder/bugs/tickets/15-twice.md': ticket('bug-15', ['blocked-by: []', 'blocked-by: [bug-07]']),
+        'wayfinder/bugs/tickets/16-crlf.md': ticket('bug-16', ['blocked-by: []'], '\r\n'),
+        'wayfinder/bugs/tickets/17-on-crlf-gate.md': ticket('bug-17', ['blocked-by: [bug-08]']),
+        'wayfinder/bugs/tickets/20-good.md': ticket('bug-20', ['blocked-by: [bug-07]']),
+        'wayfinder/briefs/2026-10-30-0911-typo.md': brief({ extra: ['ticket: bugs/tickets/11-typo.md'] }),
+        'wayfinder/briefs/2026-10-30-0912-quoted.md': brief({ extra: ['ticket: bugs/tickets/12-quoted.md'] }),
+        'wayfinder/briefs/2026-10-30-0913-block-list.md': brief({ extra: ['ticket: bugs/tickets/13-block-list.md'] }),
+        'wayfinder/briefs/2026-10-30-0914-no-brackets.md': brief({ extra: ['ticket: bugs/tickets/14-no-brackets.md'] }),
+        'wayfinder/briefs/2026-10-30-0915-twice.md': brief({ extra: ['ticket: bugs/tickets/15-twice.md'] }),
+        'wayfinder/briefs/2026-10-30-0916-crlf.md': brief({ extra: ['ticket: bugs/tickets/16-crlf.md'] }),
+        'wayfinder/briefs/2026-10-30-0917-on-crlf-gate.md': brief({ extra: ['ticket: bugs/tickets/17-on-crlf-gate.md'] }),
+        'wayfinder/briefs/2026-10-30-0918-never-existed.md': brief({ extra: ['blocked-by: [briefs/2026-10-30-0800-typo.md]'] }),
+        'wayfinder/briefs/2026-10-30-1000-good.md': brief({ extra: ['ticket: bugs/tickets/20-good.md'] }),
+    });
+
+    const result = await queue(q, q.target, 'take', q.one);
+
+    assert.equal(result.outcome, 'claimed');
+    assert.equal(result.brief, 'wayfinder/briefs/2026-10-30-1000-good.md');
+});
+
+test('take and list report failed when a git read fails, never claimed or an empty list', async () => {
+    const q = setup({ 'wayfinder/briefs/2026-10-30-0900-a.md': brief() });
+    const shim = join(q.dir, 'shim');
+    mkdirSync(shim);
+    writeFileSync(join(shim, 'git'), `#!/bin/sh\n[ "$1" = "$FAIL_GIT" ] && exit 1\nexec "${REAL_GIT}" "$@"\n`);
+    chmodSync(join(shim, 'git'), 0o755);
+    const failing = (command) => ({ ...q, env: { ...q.env, PATH: `${shim}:${q.env.PATH}`, FAIL_GIT: command } });
+
+    const taken = await queue(failing('cat-file'), q.target, 'take', q.one);
+    const listed = await queue(failing('ls-tree'), q.one, 'list', q.one);
+
+    assert.equal(taken.outcome, 'failed');
+    assert.equal(listed.outcome, 'failed');
+    assert.equal(listed.briefs, undefined);
+    assert.match(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md'), /^status: ready$/m);
 });
 
 test('take reports nothing ready for a draft brief', async () => {

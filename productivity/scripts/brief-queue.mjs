@@ -75,18 +75,19 @@ async function open(repo) {
     const ref = (await git(repo, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD')).trim();
     const sha = (await git(repo, 'rev-parse', ref)).trim();
     const top = (await git(repo, 'ls-tree', '--name-only', sha)).split('\n');
-    return { repo, sha, branch: ref.replace(/^origin\//, ''), tracker: top.includes('.wayfinder') ? '.wayfinder' : 'wayfinder' };
+    const tracker = top.includes('.wayfinder') ? '.wayfinder' : 'wayfinder';
+    const files = new Set((await git(repo, 'ls-tree', '-r', '-z', '--name-only', sha, tracker)).split('\0'));
+    return { repo, sha, branch: ref.replace(/^origin\//, ''), tracker, files };
 }
 
-const read = (q, path) => git(q.repo, 'cat-file', 'blob', `${q.sha}:${q.tracker}/${path}`).catch(() => null);
-
-async function list(q, dir) {
-    const tree = await git(q.repo, 'ls-tree', '-z', `${q.sha}:${q.tracker}/${dir}`).catch(() => '');
-    return tree.split('\0').map((entry) => entry.split('\t')).filter(([meta, name]) => meta.includes(' blob ') && name.endsWith('.md')).map(([, name]) => name);
-}
+// Null only for a file that is not in the pushed tree. A git error throws.
+const read = async (q, path) => q.files.has(`${q.tracker}/${path}`) ? git(q.repo, 'cat-file', 'blob', `${q.sha}:${q.tracker}/${path}`) : null;
+const list = (q, dir) => [...q.files].filter((file) => posix.dirname(file) === `${q.tracker}/${dir}` && file.endsWith('.md')).map((file) => posix.basename(file));
+// The message of the last commit that deleted the file, or '' when no commit deleted it.
+const deletion = (q, path) => git(q.repo, 'log', '-1', '--format=%B', '--diff-filter=D', q.sha, '--', `${q.tracker}/${path}`);
 
 async function briefs(q) {
-    return Promise.all((await list(q, 'briefs')).map(async (name) => {
+    return Promise.all(list(q, 'briefs').map(async (name) => {
         const brief = parseBrief(name, await read(q, `briefs/${name}`));
         if (!STATUSES.includes(brief.status)) brief.bad = true;
         return brief;
@@ -99,19 +100,26 @@ async function brief(q, name) {
     return text === null ? null : parseBrief(name, text);
 }
 
-// A blocker is closed when its file is gone or has `status: closed`. A `done` brief is gone once its PRs merge.
+// A blocker is open unless the script shows it closed: a file that parses with `status: closed`, or a file that a commit deleted.
+// A `done` brief is deleted once its PRs merge. An id or a file that the script cannot read counts as open.
 async function blocked(q, brief, deleted) {
     const paths = [...brief['blocked-by'] ?? []];
     if (brief.ticket) {
-        const ids = items(frontmatter(await read(q, brief.ticket)).fields['blocked-by']) ?? [];
+        const ticket = frontmatter(await read(q, brief.ticket));
+        const ids = ticket.bad ? undefined : items(ticket.fields['blocked-by']);
+        if (!ids) return true;
         const dir = posix.dirname(brief.ticket);
-        for (const name of ids.length ? await list(q, dir) : []) {
-            if (ids.includes(frontmatter(await read(q, `${dir}/${name}`)).fields.id)) paths.push(`${dir}/${name}`);
+        const found = new Set();
+        for (const name of ids.length ? list(q, dir) : []) {
+            const { fields, bad } = frontmatter(await read(q, `${dir}/${name}`));
+            if (!bad && ids.includes(fields.id)) found.add(fields.id), paths.push(`${dir}/${name}`);
         }
+        if (ids.some((id) => !found.has(id))) return true;
     }
-    for (const path of paths) {
-        const text = deleted.includes(path) ? null : await read(q, path);
-        if (text !== null && frontmatter(text).fields.status !== 'closed') return true;
+    for (const path of paths.filter((path) => !deleted.includes(path))) {
+        const text = await read(q, path);
+        const { fields, bad } = frontmatter(text);
+        if (text === null ? !await deletion(q, path) : bad || fields.status !== 'closed') return true;
     }
     return false;
 }
