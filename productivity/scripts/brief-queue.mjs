@@ -287,13 +287,14 @@ const commands = {
     },
 };
 
+// Each printed value gets the cleaning of a written value. The body keeps its lines, as in the file.
+const print = (result) => console.log(JSON.stringify({ ...result, ...leftover && { leftover } }, (key, value) => typeof value === 'string' && key !== 'body' ? clean(value) : value));
+
 const [command, repo, ...args] = process.argv.slice(2);
 try {
     if (!commands[command] || !repo) refuse('usage: brief-queue list|write|ready|take|record|close <tracker repo> ...');
-    const result = await commands[command](await open(repo), ...args);
-    console.log(JSON.stringify({ ...result, ...leftover && { leftover } }));
+    print(await commands[command](await open(repo), ...args));
 } catch (error) {
-    const reason = error instanceof Refusal ? error.message : clean(error.stderr || error.message);
-    console.log(JSON.stringify({ outcome: error instanceof Refusal ? 'refused' : 'failed', reason, ...leftover && { leftover } }));
+    print({ outcome: error instanceof Refusal ? 'refused' : 'failed', reason: error instanceof Refusal ? error.message : error.stderr || error.message });
     process.exitCode = 1;
 }

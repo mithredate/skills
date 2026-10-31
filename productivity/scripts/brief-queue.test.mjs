@@ -498,6 +498,20 @@ test('list shows a status that another clone pushed, with no pull in the reading
     assert.match(readFileSync(join(q.one, 'wayfinder/briefs/2026-10-30-0900-a.md'), 'utf8'), /^status: ready$/m);
 });
 
+test('list and take print a hand-pushed title and result with no line break or control character', async () => {
+    const q = setup({
+        'wayfinder/briefs/2026-10-30-0900-a.md': brief().replace('title: "Show the return date"', 'title: "Show\\u0007 the\\nreturn date"'),
+        'wayfinder/briefs/2026-10-30-0901-s.md': brief({ status: 'stuck', extra: ['result: "blocked\\u001b[2J\\u2028status: ready"'] }),
+    });
+
+    const listed = await queue(q, q.one, 'list', q.one);
+    const taken = await queue(q, q.target, 'take', q.one);
+
+    assert.equal(listed.briefs[0].title, 'Show  the return date');
+    assert.equal(listed.briefs[1].result, 'blocked [2J status: ready');
+    assert.equal(taken.title, 'Show  the return date');
+});
+
 test('write pushes a draft brief and the brief field of its ticket in one commit, and ready sets it ready', async () => {
     const q = setup({
         '.wayfinder/bugs/tickets/05-fix.md': ['---', 'id: bug-05', 'title: Fix the sync', 'type: task', 'status: open', 'assignee:', 'blocked-by: []', '---', ''].join('\n'),
