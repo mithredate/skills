@@ -20,7 +20,7 @@ function contextFor(toolInput) {
     return stdout.toString() ? JSON.parse(stdout).hookSpecificOutput.additionalContext : '';
 }
 
-test('names fire when the edit claims a ticket with a brief', () => {
+test('stays silent when cook claims a ticket with a brief', () => {
     const path = writeTicket('.wayfinder/2026-10-01-braze/tickets/brz-17.md', [
         '---',
         'id: brz-17',
@@ -35,64 +35,7 @@ test('names fire when the edit claims a ticket with a brief', () => {
 
     const context = contextFor({ file_path: path, old_string: 'assignee:', new_string: 'assignee: claude' });
 
-    assert.equal(context, LOAD_FIRE);
-});
-
-test('stays silent when the edit claims a ticket with no brief', () => {
-    const path = writeTicket('.wayfinder/2026-10-01-braze/tickets/brz-03.md', [
-        '---',
-        'type: decision',
-        'status: open',
-        'assignee: claude',
-        '---',
-        'Which From address do we use?',
-    ].join('\n'));
-
-    const context = contextFor({ file_path: path, old_string: 'assignee:', new_string: 'assignee: claude' });
-
     assert.equal(context, '');
-});
-
-test('stays silent when the edit does not set the assignee', () => {
-    const path = writeTicket('.wayfinder/2026-10-01-braze/tickets/brz-17.md', [
-        '---',
-        'status: open',
-        'assignee: claude',
-        '---',
-        '## Brief',
-    ].join('\n'));
-
-    const context = contextFor({ file_path: path, old_string: 'old note', new_string: 'new note' });
-
-    assert.equal(context, '');
-});
-
-test('stays silent for a file outside a tracker tickets directory', () => {
-    const path = writeTicket('docs/tickets/brz-17.md', [
-        '---',
-        'assignee: claude',
-        '---',
-        '## Brief',
-    ].join('\n'));
-
-    const context = contextFor({ file_path: path, old_string: 'assignee:', new_string: 'assignee: claude' });
-
-    assert.equal(context, '');
-});
-
-test('names fire when a Write creates a claimed ticket with a brief', () => {
-    const content = [
-        '---',
-        'status: open',
-        'assignee: claude',
-        '---',
-        '## Brief',
-    ].join('\n');
-    const path = writeTicket('.wayfinder/2026-10-01-braze/tickets/brz-20.md', content);
-
-    const context = contextFor({ file_path: path, content });
-
-    assert.equal(context, LOAD_FIRE);
 });
 
 test('names fire when prep writes a brief file', () => {

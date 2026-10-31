@@ -1,5 +1,5 @@
 {
-  "description": "When an agent claims an orchestrator ticket that holds a brief, or prep writes a brief file, tell the agent to load dev:fire. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
+  "description": "When prep writes a brief file to the scratchpad, tell the agent to load dev:fire. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
   "hooks": {
     "PostToolUse": [
       {
