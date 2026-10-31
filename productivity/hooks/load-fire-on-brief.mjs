@@ -1,39 +1,22 @@
-import { readFileSync } from 'node:fs';
-
 let data = '';
 for await (const chunk of process.stdin) data += chunk;
 
 const event = JSON.parse(data || '{}');
 const input = event.tool_input ?? {};
-const path = input.file_path ?? '';
 
 const BRIEF = /^## Brief$/m;
 const BRIEF_FILE = /\/scratchpad\/brief\.md$/;
-// The orchestrator repo can name its tracker `wayfinder/` or `.wayfinder/`.
-const TRACKER_BRIEF = /\/\.?wayfinder\/briefs\/[^/]+\.md$/;
-const READY = /^status:[ \t]*ready[ \t]*$/m;
-const IN_PROGRESS = /^status:[ \t]*in-progress[ \t]*$/m;
-const FRONTMATTER = /^---\n([\s\S]*?)\n---/;
+const TAKE = /\bbrief-queue\.mjs["']?\s+take\b/;
+const CLAIMED = /^\{"outcome":"claimed"/m;
 
-// A claim is an Edit from `ready` to `in-progress` that leaves the frontmatter, not a body line, at `in-progress`.
-const claimsBrief = () => event.tool_name === 'Edit'
-    && TRACKER_BRIEF.test(path)
-    && READY.test(input.old_string ?? '')
-    && IN_PROGRESS.test(input.new_string ?? '')
-    && IN_PROGRESS.test(readFileSync(path, 'utf8').match(FRONTMATTER)?.[1] ?? '');
+const writesBriefFile = BRIEF_FILE.test(input.file_path ?? '') && BRIEF.test(input.content ?? '');
+const claimsBrief = event.tool_name === 'Bash' && TAKE.test(input.command ?? '') && CLAIMED.test(event.tool_response?.stdout ?? '');
 
-let context = '';
-if (BRIEF_FILE.test(path) && BRIEF.test(input.content ?? '')) {
-    context = 'Before your next tool call, call the Skill tool with: dev:fire.';
-} else if (claimsBrief()) {
-    context = 'When the push of this claim succeeds, call the Skill tool with: dev:fire.';
-}
-
-if (context) {
+if (writesBriefFile || claimsBrief) {
     console.log(JSON.stringify({
         hookSpecificOutput: {
             hookEventName: 'PostToolUse',
-            additionalContext: context,
+            additionalContext: 'Before your next tool call, call the Skill tool with: dev:fire.',
         },
     }));
 }

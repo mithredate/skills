@@ -1,5 +1,5 @@
 {
-  "description": "When prep writes a brief file to the scratchpad, or orchestrate fire claims a queued brief, tell the agent to load dev:fire. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
+  "description": "When prep writes a brief file to the scratchpad, or brief-queue take claims a queued brief, tell the agent to load dev:fire. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
   "hooks": {
     "PostToolUse": [
       {
@@ -7,6 +7,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-fire-on-brief.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(node *)",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-fire-on-brief.mjs\""
           }
         ]
