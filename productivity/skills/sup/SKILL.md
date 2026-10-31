@@ -27,7 +27,7 @@ The step is done when each row has its frontier count and its date, and sweep ha
 
 ## Report
 
-First list each `stuck` brief with its `result`. Also list each `in-progress` brief with no update for 4 hours or more. Then give the number of `ready` briefs.
+First list each `stuck` brief with its `result`, and each [overdue](../orchestrate/references/format.md#brief) brief. Then give the number of `ready` briefs and the number of `draft` briefs.
 
 Write one line per row, in index order. A table is also correct. Each line holds these fields, in this order:
 

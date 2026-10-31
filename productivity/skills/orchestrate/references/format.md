@@ -81,23 +81,24 @@ A ticket is on the frontier when `status: open`, `assignee` is empty, and every 
 
 ## Brief
 
-`productivity:prep` queues each brief as one file in `briefs/`. The name starts with the UTC time of the write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md).
+`productivity:prep` queues each brief as one file in `briefs/`. The name starts with the UTC time of the first write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md).
 
 ```markdown
 ---
 title: <title>
-status: ready | in-progress | done | stuck
+status: draft | ready | in-progress | done | stuck
 updated: <UTC time of the last status change, YYYY-MM-DDTHH:MMZ>
 ticket: <path of the build ticket in `.wayfinder/`, or empty>
 blocked-by: [<id>, ...] only when `ticket` is empty
-result: <for done, each PR link with merged or not merged. For stuck, the dev:fire status or the reason, and the blocker>
+result: <for done or stuck>
 ---
 ```
 
-- `ready`: queued, and no session took it.
-- `in-progress`: an `orchestrate fire` session took it at `updated`.
-- `done`: `dev:fire` returned `pass`.
-- `stuck`: `dev:fire` returned another status, or the brief had no update for 4 hours.
+- `draft`: the user did not say yes to the current text in the session that wrote it.
+- `ready`: the user said yes to the current text, and no session took the brief.
+- `in-progress`: an `orchestrate fire` session took the brief at `updated`. The brief is **overdue** when `updated` is 4 hours ago or more, because a session that stops on a permission prompt cannot write its status.
+- `done`: the build passed. `result` holds each PR link with `merged` or `not merged`.
+- `stuck`: the build stopped. `result` holds the `dev:fire` status or the reason, and the blocker.
 
 ## Gate
 

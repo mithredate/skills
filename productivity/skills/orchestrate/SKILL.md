@@ -90,12 +90,12 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 `orchestrate fire <orchestrator repo path>` builds one queued brief. It runs in a session in a target repo, because `EnterWorktree` reaches only the repo of the session. It runs no sweep, and it edits no map and no ticket. Run each git command for a brief with `git -C <orchestrator repo path>`.
 
 1. Read the AGENTS.md or CLAUDE.md of the orchestrator repo. Then pull it.
-2. If a brief is `in-progress` and its `updated` time is less than 4 hours ago, stop and report `busy`.
-3. Set each `in-progress` brief to `stuck`, with the result "no update since <updated>". Commit and push.
+2. If a brief is `in-progress` and not overdue, stop and report `busy`.
+3. Set each overdue brief to `stuck`, with the result "no update since <updated>", and set `updated`. Commit and push. Send a `PushNotification` for each.
 4. Take the oldest `ready` brief whose Targets line names the repo of this session. The name must match exactly, so `CakeClub` does not match `CakeClubBackend`. Its blockers must be closed. The blockers are the `blocked-by` of its `ticket`, and its own `blocked-by`. If no brief is left, stop and report `nothing ready`.
 5. With the Edit tool, set `status: in-progress` and set `updated` to the time now. Before any other work, commit only the brief file and push. If the push fails, run `git revert --no-edit HEAD` and `git pull --no-rebase`. Then go back to step 2. A revert keeps the commits of other sessions.
 6. When the push succeeds, a hook tells you to call the Skill tool with `dev:fire`. Call it with the path of the brief file.
-7. If `dev:fire` returns `pass`, set the brief to `done`, and record each PR link with `merged` or `not merged`. Otherwise, set it to `stuck`, and record the status and the blocker. Set `updated`, then commit and push. For `stuck`, send a `PushNotification`.
+7. If `dev:fire` returns `pass`, set the brief to `done`. Otherwise, set it to `stuck`. Write `result` and `updated`, then commit and push. For `stuck`, send a `PushNotification`.
 
 ## init
 
