@@ -246,8 +246,10 @@ const commands = {
             try {
                 await save(q, changes, claim ? `brief-queue: take ${claim.name}` : 'brief-queue: tidy', claim ? 0 : 3);
             } catch (error) {
-                // A lost claim race is not retried.
-                if (claim && !(error instanceof Refusal)) return { outcome: 'busy', stuck: [] };
+                // A lost claim race is not retried. The race is lost when the remote moved.
+                await git(q.repo, 'fetch', '-q', 'origin').catch(() => {});
+                const moved = (await git(q.repo, 'rev-parse', `origin/${q.branch}`)).trim() !== q.sha;
+                if (claim && moved && !(error instanceof Refusal)) return { outcome: 'busy', stuck: [] };
                 throw error;
             }
         }

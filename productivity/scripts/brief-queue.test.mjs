@@ -1,13 +1,15 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
 
 const SCRIPT = new URL('./brief-queue.mjs', import.meta.url).pathname;
 const HOUR = 3600e3;
+const ROOT = mkdtempSync(join(tmpdir(), 'brief-queue-test-'));
+after(() => rmSync(ROOT, { recursive: true, force: true }));
 
 // Every git call of the test and of the script uses this identity and no user config.
 Object.assign(process.env, {
@@ -52,7 +54,7 @@ function writeFiles(dir, files) {
 
 // A real bare remote of the orchestrator repo, two clones of it, a target repo named CakeClub, and a fake gh.
 function setup(files) {
-    const dir = mkdtempSync(join(tmpdir(), 'brief-queue-test-'));
+    const dir = mkdtempSync(join(ROOT, 'case-'));
     const remote = join(dir, 'discovery.git');
     git(dir, 'init', '-q', '--bare', '-b', 'main', remote);
     const seed = join(dir, 'seed');
@@ -79,7 +81,7 @@ function setup(files) {
 
     return {
         dir, remote, one, two, target,
-        env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, TMPDIR: dir },
         setPrState: (state) => writeFileSync(join(bin, 'pr-state'), `${state}\n`),
     };
 }
