@@ -204,7 +204,6 @@ test('runs a read and a command with no privileged call without a question', asy
 const SANDBOX = {
   enabled: true,
   failIfUnavailable: true,
-  excludedCommands: ['aws *', 'kubectl *', 'helm *', 'terraform *', 'grep *', 'head *', 'tail *', 'jq *'],
   network: { deniedDomains: ['*.amazonaws.com', '*.amazonaws.com.cn', '*.api.aws', '*.api.amazonwebservices.com.cn', '*.amazonaws.eu', '*.api.amazonwebservices.eu'] },
   credentials: {
     files: [
@@ -218,7 +217,16 @@ const SANDBOX = {
     ],
   },
 }
+// Another settings layer can add `excludedCommands` entries, so the guard still reads them.
+const SANDBOX_WITH_EXCLUDED = { ...SANDBOX, excludedCommands: ['aws *', 'kubectl *', 'helm *', 'terraform *', 'grep *', 'head *', 'tail *', 'jq *'] }
 const SANDBOXED_WRITE = 'cd ~/infra && kubectl delete pod web-1'
+
+test('with the shipped sandbox, runs a privileged write on its first, sandboxed attempt without a question', async ($, on) => {
+  const questions: string[] = []
+  claudeCode(on, 'Cancel', { questions, sandbox: SANDBOX })
+  expect(refusal(await $.tool.call({ tool: 'Bash', command: 'kubectl delete pod web-1' }))).toBeUndefined()
+  expect(questions).toEqual([])
+})
 
 test('with the sandbox on, runs a privileged call that stays in the sandbox without a question', async ($, on) => {
   const questions: string[] = []
@@ -245,7 +253,7 @@ test('with allowUnsandboxedCommands false, runs a sandboxed write that asks to l
 
 test('with the sandbox on, asks before a privileged write that can leave the sandbox', async ($, on) => {
   const questions: string[] = []
-  claudeCode(on, 'Cancel', { questions, sandbox: SANDBOX })
+  claudeCode(on, 'Cancel', { questions, sandbox: SANDBOX_WITH_EXCLUDED })
   const commands = [
     'kubectl delete pod web-1',
     'aws s3 rm s3://bucket/key | head -1',
