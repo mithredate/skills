@@ -11,7 +11,7 @@ An **orchestrator repo** plans the work. The sibling repos and systems it plans 
 
 An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of tickets. Most tickets are **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. When nothing is left to decide, the map hands off the build as build tickets and gate tickets. If you feel the pull to do the work in this session, write a build ticket.
 
-The file shapes of the index, the map, the tickets, and the gate are in [references/format.md](references/format.md). Read it before you chart a map or work a ticket.
+The file shapes of the index, the map, the tickets, the briefs, and the gate are in [references/format.md](references/format.md). Read it before you chart a map, work a ticket, or run `fire`.
 
 ## The index
 
@@ -73,7 +73,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. A ticket with a brief waits for `fire`.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Close each build ticket whose brief is `done`, by step 4. Then claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Commit and push the closes, their review gates, and the claims before any other work. If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
+2. Close each build ticket whose brief is `done`, by step 4. Then claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work. If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. Write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, follow the Hand-off rules for each build ticket that has it in `blocked-by`.
@@ -93,7 +93,7 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 2. If a brief is `in-progress` and not overdue, stop and report `busy`.
 3. Set each overdue brief to `stuck`, with the result "no update since <updated>", and set `updated`. Commit and push. Send a `PushNotification` for each.
 4. Take the oldest `ready` brief whose Targets line names the repo of this session. The name must match exactly, so `CakeClub` does not match `CakeClubBackend`. Its blockers must be closed. The blockers are the `blocked-by` of its `ticket`, and its own `blocked-by`. If no brief is left, stop and report `nothing ready`.
-5. With the Edit tool, set `status: in-progress` and set `updated` to the time now. Before any other work, commit only the brief file and push. If the push fails, run `git revert --no-edit HEAD` and `git pull --no-rebase`. Then go back to step 2. A revert keeps the commits of other sessions.
+5. With the Edit tool, set `status: in-progress` and set `updated` to the time now. Before any other work, commit only the brief file and push. If the push fails, run `git revert --no-edit HEAD` and `git pull --no-rebase --no-edit`. Then go back to step 2.
 6. When the push succeeds, a hook tells you to call the Skill tool with `dev:fire`. Call it with the path of the brief file.
 7. If `dev:fire` returns `pass`, set the brief to `done`. Otherwise, set it to `stuck`. Write `result` and `updated`, then commit and push. For `stuck`, send a `PushNotification`.
 
