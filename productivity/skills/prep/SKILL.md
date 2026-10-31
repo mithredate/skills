@@ -40,7 +40,7 @@ Check the brief before you write it to its file:
   1. To change a queued brief, read its text with `brief-queue list <repo path> <brief path>`.
   2. Write the brief to `queued-brief.md` in the session scratchpad, in the shape of [../orchestrate/references/format.md](../orchestrate/references/format.md). In the frontmatter, give `title`, and `ticket` in a hand-off. Without a ticket, give `blocked-by` for each brief that must merge first. In a hand-off, push the build ticket first, because `brief-queue` reads the pushed state.
   3. Run `brief-queue write <repo path> <file>`. To change a queued brief, add its path. If the outcome is `refused`, give the user the `reason`, and go to step 6.
-  4. Show the final brief to the user, and ask for a yes.
-  5. After the yes, run `brief-queue ready <repo path> <brief path>`. A `stuck` brief goes back to `ready` only by these steps.
+  4. Show the final brief and the `hash` of the output to the user, and ask for a yes.
+  5. After the yes, run `brief-queue ready <repo path> <brief path> <hash>`. A `stuck` brief goes back to `ready` only by these steps.
   6. In a hand-off, go back to `orchestrate`.
 - Otherwise, write the brief to `brief.md` in the session scratchpad. Show it to the user, and continue in the same turn. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.

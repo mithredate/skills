@@ -13,7 +13,7 @@ An initiative starts as a loose idea, too big for one agent session. The **desti
 
 The file shapes of the index, the map, the tickets, the briefs, and the gate are in [references/format.md](references/format.md). Read it before you chart a map or work a ticket.
 
-**`brief-queue`** is the command `node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs"`. Read and change a brief only with it, never in the working tree. It prints one JSON line with an `outcome`.
+**`brief-queue`** is the command `node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs"`. Read and change a brief only with it, never in the working tree. It prints one JSON line with an `outcome`. Act on a list only when the `outcome` is `listed`.
 
 ## The index
 
@@ -75,7 +75,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 A session that names no map works the `active` row. One session takes every frontier ticket of the map, so the human answers one round, not one session for each ticket.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Run `brief-queue list <repo path>`. Close each build ticket whose brief is `done` or not in the list, by step 4. Then claim every frontier ticket that is not a `gate`, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work.
+2. Run `brief-queue list <repo path>`. Close each build ticket whose brief is `done` or not in the list, by step 4. For a brief that is not in the list, `brief-queue list <repo path> <brief path>` gives its PR links. Then claim every frontier ticket that is not a `gate`, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work.
    - Leave a `stuck` brief alone. Tell the user to fix it with `productivity:prep`.
    - If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
@@ -93,14 +93,14 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 
 `orchestrate fire <orchestrator repo path>` builds one queued brief. It runs in a session in a target repo, because `EnterWorktree` reaches only the repo of the session. It runs no sweep, and it edits no map and no ticket.
 
-Send a `PushNotification` for each `stuck` brief, and for each `refused` or `failed` outcome of `brief-queue`. Name the PR links in it. If an output has a `leftover` path, report it.
+Send a `PushNotification` for each brief in the `stuck` array of the `take` output, and for each `refused` or `failed` outcome of `brief-queue`. Name the PR links in it. If an output has a `leftover` path, report it.
 
 1. Read the AGENTS.md or CLAUDE.md of the orchestrator repo.
 2. In the target repo, run `brief-queue take <orchestrator repo path>`.
 3. If the outcome is not `claimed`, report it and stop.
 4. A hook tells you to call the Skill tool with `dev:fire`. Give it the `copy` file as the brief. For the PR body, give it the `title` and the `brief` path.
 5. Write the result to a file in the scratchpad. For `pass`, it is each PR link with `merged` or `not merged`. Otherwise, it is the `dev:fire` status and the blocker.
-6. Run `brief-queue record <orchestrator repo path> <brief path> done <result file>`. For a status other than `pass`, write `stuck` instead of `done`.
+6. Run `brief-queue record <orchestrator repo path> <brief path> done <result file>`. For a status other than `pass`, write `stuck` instead of `done`. Then delete the directory of the `copy` file.
 
 ## init
 
@@ -125,7 +125,7 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 When the decisions for a change are made, write the build as `task` tickets, and each human step as a `gate` ticket. Connect them with `blocked-by` edges. When no decision ticket in the `blocked-by` of a build ticket is open, queue its brief with `productivity:prep`. A build ticket has one brief at most. If it has one, change that brief with `prep`.
 
 - A brief holds no human step, so one session runs it from start to end.
-- Split the build only at a gate or at a repo, because a brief names one repo. Write the fewest build tickets.
+- Split the build only at a gate or at a repo. Write the fewest build tickets.
 - The human review of a PR is a `gate` ticket. If a build has one target, and it is a git repo whose AGENTS.md or CLAUDE.md has the line `**fire can auto-merge.**`, write no review gate. `cook` writes the gate when the PR of a `done` brief is not merged.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.

@@ -21,7 +21,7 @@ If the user gives an initiative, report only that row in the same shape. Then sk
 4. Read no ticket body and no map body. The one exception is the Destination of the map. Check it for a `Closes when` sentence.
 5. For each map directory, get the date of the last commit with `git log -1 --format=%ad --date=short -- <dir>`.
 6. Run sweep in report mode, for each row that is not `closed`. The files show only what the last session wrote. The live links show the state now.
-7. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" list <repo path>`. It reads the brief state from the remote.
+7. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" list <repo path>`. It reads the brief state from the remote. If the `outcome` is not `listed`, report its `reason` in place of the brief lines.
 
 The step is done when each row has its frontier count and its date, and sweep has returned its result table.
 

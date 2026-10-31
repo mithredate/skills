@@ -2,8 +2,6 @@
 
 A brief is one `## Brief` section. In a repo with `.wayfinder/`, it is the body of a queued brief file. Elsewhere, it is the whole file `brief.md`.
 
-A queued brief names exactly one git repo in Targets, because `orchestrate fire` builds it from a session in that repo. For a system that is not a git repo, name the orchestrator repo. Split work for several repos into one brief for each repo. Order the briefs with `blocked-by`.
-
 ```
 ## Brief
 

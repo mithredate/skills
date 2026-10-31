@@ -85,13 +85,15 @@ A ticket is on the frontier when `status: open`, `assignee` and `brief` are empt
 
 `productivity:prep` queues each brief as one file in `briefs/`, through `brief-queue`. The name starts with the UTC time of the first write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md).
 
+The Targets line is one line, ``- Targets: `<repo>`, base branch `<branch>`.`` It names exactly one git repo, because `orchestrate fire` builds the brief from a session in that repo. For a system that is not a git repo, name the orchestrator repo. Split work for several repos into one brief for each repo. Order the briefs with `blocked-by`.
+
 ```markdown
 ---
 title: "<title>"
 status: draft | ready | in-progress | done | stuck
 updated: <UTC time of the last write, YYYY-MM-DDTHH:MMZ>
-ticket: <path of the build ticket relative to `.wayfinder/`, or empty>
-blocked-by: [<ticket or brief path relative to `.wayfinder/`>, ...] only when `ticket` is empty
+ticket: <path of the build ticket relative to `.wayfinder/`, <map>/tickets/<file>.md. Leave it out when there is no ticket>
+blocked-by: [<ticket or brief path relative to `.wayfinder/`>, ...] only when there is no `ticket`
 result: "<for done or stuck>"
 ---
 ```
