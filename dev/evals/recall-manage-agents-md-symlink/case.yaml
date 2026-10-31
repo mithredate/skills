@@ -26,6 +26,6 @@ graders:
     criteria: |
       The reply holds the JSON finding list of a code reviewer. Judge only its `blocking` and `discrepancy` entries. An entry can be a string or an object. A `quality_note` entry does not count.
 
-      PASS if one entry says that a Claude-only line that `AGENTS.md` already holds stays in `AGENTS.md`. The main example is a symlinked `AGENTS.md`. Step 1 replaces it with a copy of `CLAUDE.md`. `AGENTS.md` then holds every line, so step 1 moves no Claude-only line to `.claude/rules/claude-code.md`.
+      PASS if one entry says, as a defect, that step 1 can leave a Claude-only line in `AGENTS.md`, because step 1 moves only the lines that `AGENTS.md` does not hold yet. The main example is a symlinked `AGENTS.md`. Step 1 replaces it with a copy of `CLAUDE.md`, the copy holds every line, and no Claude-only line gets to `.claude/rules/claude-code.md`.
 
       FAIL otherwise.
