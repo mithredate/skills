@@ -20,17 +20,58 @@ function contextFor(toolInput) {
     return stdout.toString() ? JSON.parse(stdout).hookSpecificOutput.additionalContext : '';
 }
 
-test('stays silent when cook claims a ticket with a brief', () => {
+const LOAD_FIRE_AFTER_PUSH = 'When the push of this claim succeeds, call the Skill tool with: dev:fire.';
+
+test('names fire after the push when fire claims a queued brief', () => {
+    const path = writeTicket('wayfinder/briefs/2026-10-30-0900-return-date.md', [
+        '---',
+        'title: Show the return date',
+        'status: ready',
+        'updated: 2026-10-30T09:00Z',
+        '---',
+        '## Brief',
+    ].join('\n'));
+
+    const context = contextFor({ file_path: path, old_string: 'status: ready', new_string: 'status: in-progress' });
+
+    assert.equal(context, LOAD_FIRE_AFTER_PUSH);
+});
+
+test('stays silent when fire sets a queued brief to stuck', () => {
+    const path = writeTicket('.wayfinder/briefs/2026-10-30-0900-return-date.md', '---\nstatus: in-progress\n---\n## Brief');
+
+    const context = contextFor({ file_path: path, old_string: 'status: in-progress', new_string: 'status: stuck' });
+
+    assert.equal(context, '');
+});
+
+test('stays silent when prep writes a ready brief whose text names in-progress', () => {
+    const content = [
+        '---',
+        'title: Show the return date',
+        'status: ready',
+        '---',
+        '## Brief',
+        '',
+        '- FR: a booking with status: in-progress shows its return date',
+    ].join('\n');
+    const path = writeTicket('.wayfinder/briefs/2026-10-30-0900-return-date.md', content);
+
+    const context = contextFor({ file_path: path, content });
+
+    assert.equal(context, '');
+});
+
+test('stays silent when cook claims a ticket that links to a brief', () => {
     const path = writeTicket('.wayfinder/2026-10-01-braze/tickets/brz-17.md', [
         '---',
         'id: brz-17',
         'type: task',
         'status: open',
         'assignee: claude',
+        'brief: briefs/2026-10-30-0900-sender-address.md',
         '---',
-        '## Brief',
-        '',
-        '- Goal: the sandbox sends from the new address',
+        'Send from the new address.',
     ].join('\n'));
 
     const context = contextFor({ file_path: path, old_string: 'assignee:', new_string: 'assignee: claude' });

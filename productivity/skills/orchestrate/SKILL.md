@@ -93,8 +93,8 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 2. If a brief is `in-progress` and its `updated` time is less than 4 hours ago, stop and report `busy`.
 3. Set each `in-progress` brief to `stuck`, with the result "no update since <updated>". Commit and push.
 4. Take the oldest `ready` brief that targets the repo of this session and has no open ticket in `blocked-by`. If there is none, stop and report `nothing ready`.
-5. Set the brief to `in-progress`, and set `updated` to the time now. Commit and push before any other work. If the push shows that another session took the brief, drop your claim, pull, and go back to step 4.
-6. Call the Skill tool with `dev:fire` and the path of the brief file.
+5. With the Edit tool, set `status: in-progress` and set `updated` to the time now. Before any other work, commit only the brief file and push. If the push fails, run `git revert --no-edit HEAD` and `git pull --no-rebase`. Then go back to step 2. A revert keeps the commits of other sessions.
+6. When the push succeeds, a hook tells you to call the Skill tool with `dev:fire`. Call it with the path of the brief file.
 7. If `dev:fire` returns `pass`, set the brief to `done`, and record each PR link with `merged` or `not merged`. Otherwise, set it to `stuck`, and record the status and the blocker. Set `updated`, then commit and push. For `stuck`, send a `PushNotification`.
 
 ## init
