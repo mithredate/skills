@@ -38,7 +38,7 @@ const items = (value) => /^\[(.*)\]$/.exec(value ?? '')?.[1].split(',').map((ite
 // The first value of each key. `bad` marks a line that is not `key: value`, or a key given twice.
 function frontmatter(text) {
     const match = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(text ?? '');
-    const fields = {};
+    const fields = Object.create(null);
     let bad = !match;
     for (const line of match ? match[1].split(LINE_BREAK) : []) {
         const pair = /^([\w-]+):[ \t]*(.*?)[ \t]*$/.exec(line);

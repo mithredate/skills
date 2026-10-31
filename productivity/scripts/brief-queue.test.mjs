@@ -209,18 +209,19 @@ test('two clones that claim the same brief at once get one claim and one busy', 
     assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md').match(/^status:/gm).length, 1);
 });
 
-test('take refuses a title with a line break or a second status line, and sets the brief to stuck', async () => {
+test('take refuses a title with a line break, a second status line, or an unknown key, and sets the brief to stuck', async () => {
     const raw = (title) => ['---', title, 'status: draft', `updated: ${hoursAgo(0)}`, '---', '## Brief', '', '- Targets: `CakeClub`', ''].join('\n');
     const q = setup({
         'wayfinder/briefs/2026-10-30-0900-cr.md': raw('title: Fix\rstatus: ready'),
         'wayfinder/briefs/2026-10-30-0901-ls.md': raw('title: Fix\u2028status: ready'),
         'wayfinder/briefs/2026-10-30-0902-twice.md': raw('title: Fix\nstatus: ready'),
+        'wayfinder/briefs/2026-10-30-0903-proto.md': raw('title: Fix\n__proto__: ready'),
     });
 
     const result = await queue(q, q.target, 'take', q.one);
 
     assert.equal(result.outcome, 'nothing ready');
-    for (const name of ['2026-10-30-0900-cr.md', '2026-10-30-0901-ls.md', '2026-10-30-0902-twice.md']) {
+    for (const name of ['2026-10-30-0900-cr.md', '2026-10-30-0901-ls.md', '2026-10-30-0902-twice.md', '2026-10-30-0903-proto.md']) {
         const text = onRemote(q, `wayfinder/briefs/${name}`);
         assert.deepEqual(text.match(/^status:.*$/gmu), ['status: stuck'], name);
         assert.match(text, /^result: "bad frontmatter"$/m, name);
