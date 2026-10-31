@@ -2,6 +2,8 @@ name: validate
 
 on:
   pull_request:
+    # `edited` runs the job again after an edit of the PR body.
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 
@@ -10,6 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # On a PR, HEAD is the merge commit and HEAD^ is the base. The body is
+      # untrusted, so it reaches the script only as an environment variable.
+      # `shell: bash` adds pipefail, so a failed git diff fails the step.
+      - name: Check reviewer score lines
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: git diff --name-only --no-renames HEAD^ HEAD | scripts/check-score-lines.sh
 
       - uses: actions/setup-node@v4
         with:

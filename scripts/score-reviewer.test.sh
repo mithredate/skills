@@ -44,16 +44,17 @@ cat > "$tmp/api-error.json" <<'EOF'
    {"graders": [{"passed": false}, {"passed": true}], "error": null}]}}
 ]}
 EOF
-# A broken scaffold gives runs with no grader results.
+# A run that ended abnormally can have no grader results. Every clean run timed
+# out with no grader results, and the eval exits 0, as in the first fixture.
 cat > "$tmp/no-grader-results.json" <<'EOF'
 {"partial": false, "cases": [
  {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}},
- {"name": "clean-x", "arms": {"with": [{"graders": [], "error": "scaffold failed"},
-   {"graders": [], "error": "scaffold failed"}]}}
+ {"name": "clean-x", "arms": {"with": [{"graders": [], "error": "timed out after 300s"},
+   {"graders": [], "error": "timed out after 300s"}]}}
 ]}
 EOF
 # One recall run failed its scaffold, and the other recall run has grader
-# results. With --threshold 0, a failed scaffold does not fail the eval.
+# results. A failed scaffold means a run could not start, so the eval exits 1.
 cat > "$tmp/one-scaffold-failure.json" <<'EOF'
 {"partial": false, "cases": [
  {"name": "recall-a", "arms": {"with": [{"graders": [{"passed": true}], "error": null},
@@ -65,7 +66,7 @@ EOF
 # The eval then exits 2 with partial results.
 cat > "$tmp/partial-no-recall-results.json" <<'EOF'
 {"partial": true, "partialReason": "cost_ceiling", "cases": [
- {"name": "recall-a", "arms": {"with": [{"graders": [], "error": "scaffold failed"}]}},
+ {"name": "recall-a", "arms": {"with": [{"graders": [], "error": "timed out after 300s"}]}},
  {"name": "clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null}]}}
 ]}
 EOF
@@ -104,7 +105,7 @@ check "a run with an API error does not pass" "$tmp/api-error.json" 1 1 \
   "HEAD: recall 0.67 (2 of 3 runs), clean 0.5 (1 of 2 runs), runs with an error 1"
 check "no clean run has grader results" "$tmp/no-grader-results.json" 0 1 \
   "HEAD: a score has runs, but no run with grader results"
-check "one recall run failed its scaffold, eval exits 0" "$tmp/one-scaffold-failure.json" 0 0 \
+check "one recall run failed its scaffold, eval exits 1" "$tmp/one-scaffold-failure.json" 1 1 \
   "HEAD: recall 0.5 (1 of 2 runs), clean 1 (1 of 1 runs), runs with an error 1"
 check "no recall run has grader results, eval exits 2" "$tmp/partial-no-recall-results.json" 2 2 \
   "HEAD: a score has runs, but no run with grader results"
@@ -114,7 +115,7 @@ check "only clean cases, recall 0 of 0" "$tmp/clean-only.json" 0 0 \
   "HEAD: recall none (0 of 0 runs), clean 0.5 (1 of 2 runs), runs with an error 0"
 check "eval exits 0, no result" "" 0 1 "HEAD: no score"
 check "eval exits 1, no result" "" 1 1 "HEAD: no score"
-check "eval exits 3, no result" "" 3 3 "HEAD: no score"
+check "eval exits 143, no result" "" 143 143 "HEAD: no score"
 
 # The scaffold of a head that holds dev/evals/ writes a repo/ with no
 # dev/evals/. The pr.diff still holds the full diff.
