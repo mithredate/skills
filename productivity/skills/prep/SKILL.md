@@ -30,11 +30,11 @@ The format and the examples are in [references/brief.md](references/brief.md). R
 
 Check the brief before you write it to its file:
 
-1. Each decision of this session that the build needs is in the Decisions line. In a hand-off, the line also links each ticket that holds an open question.
+1. Each decision of this session that the build needs is in the Decisions line.
 2. Each FR is behavior that a caller, a user, or a test can see.
 3. Each Verification check is a real command with real data.
 
 ## Hand off
 
-- In a hand-off, write the brief as the body of the build ticket. Then go back to `orchestrate`. The session that claims the ticket runs it with `dev:fire`.
+- In a repo with `.wayfinder/`, write the brief to `.wayfinder/briefs/` in the shape of [../orchestrate/references/format.md](../orchestrate/references/format.md), with status `ready`. Commit and push it. `orchestrate fire` builds it, so do not start `dev:fire`. In a hand-off, link the build ticket to the brief, then go back to `orchestrate`.
 - Otherwise, write the brief to `brief.md` in the session scratchpad. Show it to the user, and continue in the same turn. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.

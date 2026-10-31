@@ -1,6 +1,6 @@
 # Brief
 
-A brief is one `## Brief` section. A build `task` ticket of `orchestrate` holds it as its body. Without a ticket, it is the whole file `brief.md`.
+A brief is one `## Brief` section. In a repo with `.wayfinder/`, it is the body of a queued brief file. Elsewhere, it is the whole file `brief.md`.
 
 ```
 ## Brief

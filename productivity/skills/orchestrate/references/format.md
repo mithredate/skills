@@ -9,6 +9,7 @@ This file holds the file shapes of an orchestrator repo. It uses plain files und
   README.md                  index of initiatives
   sources.md                 the hosts that the tracker links to, owned by productivity:sweep
   reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed
+  briefs/<YYYY-MM-DD-HHMM>-<slug>.md   one queued brief
   <YYYY-MM-DD>-<slug>/       one open initiative
     map.md                   the map
     tickets/<id>.md          one file per ticket
@@ -79,7 +80,23 @@ A ticket is on the frontier when `status: open`, `assignee` is empty, and every 
 
 ## Brief
 
-A build `task` ticket holds a `## Brief` section as its body. `productivity:prep` writes it. The format is in [../../prep/references/brief.md](../../prep/references/brief.md).
+`productivity:prep` queues each brief as one file in `briefs/`. The name starts with the UTC time of the write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md). A build `task` ticket links to its brief.
+
+```markdown
+---
+title: <title>
+status: ready | in-progress | done | stuck
+updated: <UTC time of the last status change, YYYY-MM-DDTHH:MMZ>
+ticket: <path of the build ticket in `.wayfinder/`, or empty>
+blocked-by: [<ticket path in `.wayfinder/`>, ...]
+result: <for done, each PR link with merged or not merged. For stuck, the dev:fire status or the reason, and the blocker>
+---
+```
+
+- `ready`: queued, and no session took it.
+- `in-progress`: an `orchestrate fire` session took it at `updated`.
+- `done`: `dev:fire` returned `pass`.
+- `stuck`: `dev:fire` returned another status, or the brief had no update for 4 hours.
 
 ## Gate
 
