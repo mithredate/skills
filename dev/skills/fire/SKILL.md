@@ -6,7 +6,7 @@ argument-hint: "<brief file>"
 
 # Fire
 
-**Arguments:** $ARGUMENTS. The argument is the path of a brief file: a queued brief of `orchestrate`, or the file that `productivity:prep` wrote. If there is no argument, use the brief that this session took, or the brief file that `prep` wrote in this session.
+**Arguments:** $ARGUMENTS. The argument is the path of a brief file: the copy of a queued brief that `brief-queue take` made, or the file that `productivity:prep` wrote. If there is no argument, use the brief that this session took, or the brief file that `prep` wrote in this session.
 
 The session does not edit code or a target system. Agents build, review, and verify. The session routes their results and hands back.
 
