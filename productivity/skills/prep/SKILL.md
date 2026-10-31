@@ -37,8 +37,10 @@ Check the brief before you write it to its file:
 ## Hand off
 
 - In a repo with `.wayfinder/`, write the brief in the shape of [../orchestrate/references/format.md](../orchestrate/references/format.md). Write it to a new file in `.wayfinder/briefs/`, or to the brief that the build ticket links to. In a hand-off, set the `brief` field of the build ticket and the `ticket` field of the brief. `orchestrate fire` builds the brief, so do not start `dev:fire`.
-  1. Write each change of the text and `status: draft` in one write. Do this also for a `ready` or a `stuck` brief.
-  2. Show the final brief to the user, and ask for a yes.
-  3. After the yes, set `status: ready` in a separate write. A `stuck` brief goes back to `ready` only by these steps.
-  4. Commit and push the brief. In a hand-off, go back to `orchestrate`.
+  1. If the brief is `in-progress`, change nothing. Tell the user that `orchestrate fire` builds it, and stop.
+  2. Write each change of the text and `status: draft` in one write. Do this also for a `ready` or a `stuck` brief.
+  3. Commit and push the brief. In a hand-off, put the build ticket in the same commit.
+  4. Show the final brief to the user, and ask for a yes.
+  5. After the yes, set `status: ready` in a separate write. Commit and push it. A `stuck` brief goes back to `ready` only by these steps.
+  6. In a hand-off, go back to `orchestrate`.
 - Otherwise, write the brief to `brief.md` in the session scratchpad. Show it to the user, and continue in the same turn. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
