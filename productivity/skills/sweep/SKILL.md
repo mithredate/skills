@@ -35,14 +35,14 @@ A **live link** is a link to a host with `Live: yes`. Its target can change. A h
    - the Notes section of `map.md`
    - each ticket with `status: open`
    - each closed build ticket
-   - each file in `.wayfinder/briefs/` whose `ticket` is in the map, except an `in-progress` brief
-2. Get every link from these files.
+   - the `result` of each brief in the output of `brief-queue list` whose `ticket` is in the map
+2. Get every link from these files and results.
    ```bash
    grep -oHE 'https?://[^] )>"]+' <files> | sort -u
    ```
 3. Match each link to the longest Host in `sources.md`. Skip a link whose host has `Live: no`.
 4. If no Host matches a link, the host is new. Give the host one row in the result table, with the place `sources.md`. If `sources.md` is missing, every host is new.
-5. If a ticket with a `## Brief`, or a `done` brief, names a git repo in its Targets or in an older Repos line, and has no PR link, search for the PR with `gh search prs "<file path>"`. The file path starts at the root of the orchestrator repo, because `dev:fire` names that path in each PR body.
+5. If a ticket with a `## Brief` or a `brief` field has no PR link, search for the PR with `gh search prs "<path>"`. The path is the path of the ticket or of its brief, from the root of the orchestrator repo. `dev:fire` names that path in each PR body.
 6. If a `waiting` row has no link, mark the row "check by hand".
 
 The step is done when each live link is listed with the file that holds it, and each new host has a row.

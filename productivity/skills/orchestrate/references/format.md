@@ -83,22 +83,20 @@ A ticket is on the frontier when `status: open`, `assignee` and `brief` are empt
 
 ## Brief
 
-`productivity:prep` queues each brief as one file in `briefs/`. The name starts with the UTC time of the first write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md).
+`productivity:prep` queues each brief as one file in `briefs/`, through `brief-queue`. The name starts with the UTC time of the first write, so the oldest brief sorts first. The body is the `## Brief` section in the format of [../../prep/references/brief.md](../../prep/references/brief.md).
 
 ```markdown
 ---
-title: <title>
+title: "<title>"
 status: draft | ready | in-progress | done | stuck
-updated: <UTC time of the last status change, YYYY-MM-DDTHH:MMZ>
+updated: <UTC time of the last write, YYYY-MM-DDTHH:MMZ>
 ticket: <path of the build ticket relative to `.wayfinder/`, or empty>
 blocked-by: [<ticket or brief path relative to `.wayfinder/`>, ...] only when `ticket` is empty
 result: "<for done or stuck>"
 ---
 ```
 
-`result` is one line in double quotes, at most 300 characters. Replace each newline in it with a space, and each `"` with `'`.
-
-A brief in `blocked-by` is closed when its file does not exist, because a `done` brief is deleted.
+A brief in `blocked-by` is closed when its PRs have merged, because `brief-queue` then deletes it.
 
 - `draft`: the user did not say yes to the current text in the session that wrote it.
 - `ready`: the user said yes to the current text after the last `draft` write, and no session took the brief after that yes.

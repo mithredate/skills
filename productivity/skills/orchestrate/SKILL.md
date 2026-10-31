@@ -11,7 +11,9 @@ An **orchestrator repo** plans the work. The sibling repos and systems it plans 
 
 An initiative starts as a loose idea, too big for one agent session. The **destination** is what the initiative must produce: a spec, a decision, or a change. Orchestrate plans the way to the destination as a **map** of tickets. Most tickets are **decision tickets**. A decision ticket is a question whose answer is a decision, not a slice of the build. When nothing is left to decide, the map hands off the build as build tickets and gate tickets. If you feel the pull to do the work in this session, write a build ticket.
 
-The file shapes of the index, the map, the tickets, the briefs, and the gate are in [references/format.md](references/format.md). Read it before you chart a map, work a ticket, or run `fire`.
+The file shapes of the index, the map, the tickets, the briefs, and the gate are in [references/format.md](references/format.md). Read it before you chart a map or work a ticket.
+
+**`brief-queue`** is the command `node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs"`. Read and change a brief only with it, never in the working tree. It prints one JSON line with an `outcome`.
 
 ## The index
 
@@ -73,12 +75,13 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 A session that names no map works the `active` row. One session takes every frontier ticket of the map, so the human answers one round, not one session for each ticket.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Close each build ticket whose brief is `done`, by step 4. Delete that brief with `git rm` in the same commit. Then claim every frontier ticket that is not a `gate`, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work.
+2. Run `brief-queue list <repo path>`. Close each build ticket whose brief is `done` or not in the list, by step 4. Then claim every frontier ticket that is not a `gate`, or the tickets that the user names. Commit and push the closed tickets, their review gates, and the claims before any other work.
+   - Leave a `stuck` brief alone. Tell the user to fix it with `productivity:prep`.
    - If no ticket is left to claim, give the user the first gate's checklist. Say which briefs wait for `orchestrate fire`. Then go to step 7.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. Write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, follow the Hand-off rules for each build ticket that has it in `blocked-by`.
-   - If a `done` brief records a PR as `not merged`, and its build has no review gate, write a review `gate` ticket for the PR. Add the gate to each `blocked-by` that holds the build ticket.
+   - If a `done` brief has a PR that is not merged, and its build has no review gate, write a review `gate` ticket for the PR in the same commit. Add the gate to each `blocked-by` that holds the build ticket.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket that is not a `gate`, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
@@ -90,21 +93,14 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 
 `orchestrate fire <orchestrator repo path>` builds one queued brief. It runs in a session in a target repo, because `EnterWorktree` reaches only the repo of the session. It runs no sweep, and it edits no map and no ticket.
 
-The session reads and writes the tracker only in a checkout of its own, made from the pushed state. It never reads or commits the working tree at `<orchestrator repo path>`, because an interactive session edits that tree. In the steps, `<checkout>` is that checkout. `<branch>` is the output of `git -C <orchestrator repo path> symbolic-ref --short refs/remotes/origin/HEAD`, without `origin/`.
+Send a `PushNotification` for each `stuck` brief, and for each `refused` or `failed` outcome of `brief-queue`. Name the PR links in it. If an output has a `leftover` path, report it.
 
-To record a change in steps 3, 5, and 7, use these commands. If the step changed no file, skip the commit and the push. Run `git -C <checkout> commit -m "<message>" -- <files>`, with each brief file that the step changed. Then run `git -C <checkout> status --porcelain`. If it shows a change, send a `PushNotification` and stop. Then run `git -C <checkout> push origin HEAD:<branch>`.
-
-In steps 3 and 7, if the push is rejected, run `git -C <checkout> pull --rebase origin <branch>`, and push again. If the rebase stops on a conflict, run `git -C <checkout> rebase --abort`. After a conflict or a third rejected push, send a `PushNotification` with the `result`, and stop.
-
-1. Run `git -C <orchestrator repo path> fetch origin`. Then run `git -C <orchestrator repo path> worktree add --detach <checkout> origin/<branch>`, with a new directory under `$TMPDIR` as `<checkout>`. Read the AGENTS.md or CLAUDE.md in `<checkout>` before the next step.
-2. If a brief is `in-progress` and not overdue, stop and report `busy`.
-3. Set each overdue brief to `stuck`, with the result "no update since <updated>". Set each `ready` brief whose `ticket` is set and does not exist to `stuck`, with the result "ticket missing". Set `updated` in each. Record the change. Send a `PushNotification` for each.
-4. Take the first `ready` brief in file name order whose Targets line names the repo of this session. That repo is the last part of the URL of the session's `origin` remote, without `.git`. The name must match exactly, so `CakeClub` does not match `CakeClubBackend`. Its blockers must be closed. The blockers are the `blocked-by` of its `ticket`, and its own `blocked-by`. If no brief is left, stop and report `nothing ready`.
-5. With the Edit tool, change `status: ready` to `status: in-progress`, and set `updated` to the time now. Before any other work, record the change. If this push is rejected, drop the claim with `git -C <checkout> fetch origin` and `git -C <checkout> checkout --detach origin/<branch>`. Then go back to step 2. After the third rejected claim, send a `PushNotification` and stop.
-6. When the push succeeds, a hook tells you to call the Skill tool with `dev:fire`. Call it with the path of the brief file in `<checkout>`.
-7. If `dev:fire` returns `pass`, set the brief to `done`. Otherwise, set it to `stuck`. Write `result` and `updated`. If a `done` brief has no `ticket`, run `git -C <checkout> rm <brief file>` instead, and put the result in the commit message. Record the change. For `stuck`, send a `PushNotification`.
-
-When the run stops, at any step, run `git -C <orchestrator repo path> worktree remove --force <checkout>`. If the command fails, report the path of `<checkout>`.
+1. Read the AGENTS.md or CLAUDE.md of the orchestrator repo.
+2. In the target repo, run `brief-queue take <orchestrator repo path>`.
+3. If the outcome is not `claimed`, report it and stop.
+4. A hook tells you to call the Skill tool with `dev:fire`. Give it the `copy` file as the brief. For the PR body, give it the `title` and the `brief` path.
+5. Write the result to a file in the scratchpad. For `pass`, it is each PR link with `merged` or `not merged`. Otherwise, it is the `dev:fire` status and the blocker.
+6. Run `brief-queue record <orchestrator repo path> <brief path> done <result file>`. For a status other than `pass`, write `stuck` instead of `done`.
 
 ## init
 
@@ -112,16 +108,17 @@ A new orchestrator repo needs three files: `.wayfinder/README.md` with the empty
 
 ## close
 
-An initiative closes when the `Closes when` sentence of its Destination is true, or when the user rules the rest out of scope. If the Destination has no `Closes when` sentence, write it with the user first. If a brief whose `ticket` is in the map is `in-progress`, stop and tell the user. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
+An initiative closes when the `Closes when` sentence of its Destination is true, or when the user rules the rest out of scope. If the Destination has no `Closes when` sentence, write it with the user first. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
 
-1. Write `.wayfinder/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
+1. Run `brief-queue close <repo path> <map directory>`. It deletes each brief of the map that is not `done`. If it refuses because a brief is `in-progress`, stop and tell the user.
+2. Write `.wayfinder/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
    - the Destination
    - one entry for each closed ticket, copied from the ticket, with its resolution
    - where the work landed, with links to the PRs, documents, or systems
    - what was ruled out of scope, and why
    - each open ticket, with the initiative it moves to, or the reason it is not done. Quote into the report any asset it needs. Keep the rest in git history.
-2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory, and each brief whose `ticket` is in it, with `git rm`. Git history keeps every ticket and brief.
-3. Commit and push.
+3. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory with `git rm`. Git history keeps every ticket.
+4. Commit and push.
 
 ## Hand-off: build and gate tickets
 
@@ -129,7 +126,7 @@ When the decisions for a change are made, write the build as `task` tickets, and
 
 - A brief holds no human step, so one session runs it from start to end.
 - Split the build only at a gate or at a repo, because a brief names one repo. Write the fewest build tickets.
-- The human review of a PR is a `gate` ticket. If a build has one target, and it is a git repo whose AGENTS.md or CLAUDE.md has the line `**fire can auto-merge.**`, write no review gate. `cook` writes the gate when the brief records `not merged`.
+- The human review of a PR is a `gate` ticket. If a build has one target, and it is a git repo whose AGENTS.md or CLAUDE.md has the line `**fire can auto-merge.**`, write no review gate. `cook` writes the gate when the PR of a `done` brief is not merged.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.

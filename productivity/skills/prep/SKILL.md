@@ -36,11 +36,11 @@ Check the brief before you write it to its file:
 
 ## Hand off
 
-- In a repo with `.wayfinder/`, write the brief in the shape of [../orchestrate/references/format.md](../orchestrate/references/format.md). Write it to a new file in `.wayfinder/briefs/`, or to the brief that the build ticket links to. In a hand-off, set the `brief` field of the build ticket and the `ticket` field of the brief. `orchestrate fire` builds the brief, so do not start `dev:fire`.
-  1. If the brief is `in-progress`, change nothing. Tell the user that `orchestrate fire` builds it. Then go to step 6.
-  2. Write each change of the text and `status: draft` in one write. Do this also for a `ready` or a `stuck` brief.
-  3. Commit and push the brief. In a hand-off, put the build ticket in the same commit.
+- In a repo with `.wayfinder/`, queue the brief. `orchestrate fire` builds it, so do not start `dev:fire`. `brief-queue` is the command `node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs"`.
+  1. To change a queued brief, read its text with `brief-queue list <repo path> <brief path>`.
+  2. Write the brief to `queued-brief.md` in the session scratchpad, in the shape of [../orchestrate/references/format.md](../orchestrate/references/format.md). In the frontmatter, give `title`, and `ticket` in a hand-off. Without a ticket, give `blocked-by` for each brief that must merge first. In a hand-off, push the build ticket first, because `brief-queue` reads the pushed state.
+  3. Run `brief-queue write <repo path> <file>`. To change a queued brief, add its path. If the outcome is `refused`, give the user the `reason`, and go to step 6.
   4. Show the final brief to the user, and ask for a yes.
-  5. After the yes, set `status: ready` in a separate write. Commit and push it. A `stuck` brief goes back to `ready` only by these steps.
+  5. After the yes, run `brief-queue ready <repo path> <brief path>`. A `stuck` brief goes back to `ready` only by these steps.
   6. In a hand-off, go back to `orchestrate`.
 - Otherwise, write the brief to `brief.md` in the session scratchpad. Show it to the user, and continue in the same turn. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
