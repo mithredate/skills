@@ -24,6 +24,8 @@ const KEYS = ['title', 'status', 'updated', 'ticket', 'blocked-by', 'result'];
 const NAME = /^\d{4}-\d\d-\d\d-\d{4}-[a-z0-9-]+\.md$/;
 // A path relative to the tracker. No segment starts with a dot, so `..` cannot leave the tracker.
 const PATH = /^([\w-][\w.-]*\/)*[\w-][\w.-]*\.md$/;
+const TICKET = /^[\w-][\w.-]*\/tickets\/[\w-][\w.-]*\.md$/;
+const TARGETS = /^- Targets: `([\w.-]+)`, base branch `[\w./-]+`\.?$/;
 const LINE_BREAK = /\r\n|[\n\r\u0085\u2028\u2029]/;
 const PR = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
 const OVERDUE = 4 * 3600e3;
@@ -57,8 +59,14 @@ function parseBrief(name, text) {
         else if (!value.startsWith('"')) brief[key] = value;
         else try { brief[key] = String(JSON.parse(value)); } catch { brief.bad = true; }
     }
-    if ([brief.ticket ?? 'x.md', ...brief['blocked-by'] ?? []].some((path) => !PATH.test(path))) brief.bad = true;
+    if (!TICKET.test(brief.ticket ?? 'x/tickets/x.md') || (brief['blocked-by'] ?? []).some((path) => !PATH.test(path))) brief.bad = true;
     return brief;
+}
+
+// The repo of the one Targets line of a brief, or undefined.
+function target(body) {
+    const lines = body.match(/^- Targets:.*$/gm) ?? [];
+    return lines.length === 1 ? TARGETS.exec(lines[0])?.[1] : undefined;
 }
 
 function render(brief) {
@@ -184,10 +192,15 @@ const commands = {
         const existing = path?.split('/').pop();
         const input = parseBrief(existing ?? '0000-00-00-0000-new.md', readFileSync(file, 'utf8'));
         if (input.bad || !input.title) refuse('bad frontmatter');
+        if (!target(input.body)) refuse('the Targets line must be one line: - Targets: `<repo>`, base branch `<branch>`');
+        const missing = (input['blocked-by'] ?? []).filter((path) => !q.files.has(`${q.tracker}/${path}`));
+        if (missing.length) refuse(`no such blocker: ${missing.join(', ')}`);
         const slug = clean(input.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50).replace(/^-+|-+$/g, '') || 'brief';
         const time = now();
         const name = existing ?? `${time.slice(0, 10)}-${time.slice(11, 13)}${time.slice(14, 16)}-${slug}.md`;
-        if ((await brief(q, name))?.status === 'in-progress') refuse('the brief is in-progress');
+        const current = await brief(q, name);
+        if (current && !existing) refuse(`the brief ${name} exists`);
+        if (['in-progress', 'done'].includes(current?.status)) refuse(`the brief is ${current.status}`);
         const changes = { [`briefs/${name}`]: render({ ...input, status: 'draft', result: '' }) };
         if (input.ticket) {
             const ticket = await read(q, input.ticket) ?? refuse('ticket missing');

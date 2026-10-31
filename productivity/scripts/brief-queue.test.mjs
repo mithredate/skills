@@ -46,6 +46,11 @@ function brief({ status = 'ready', updated = hoursAgo(0), targets = '`CakeClub`,
     ].join('\n');
 }
 
+// The input file of `write`: the frontmatter lines that prep gives, and the brief.
+function queued(lines = ['title: Show the return date'], targets = '`CakeClub`, base branch `main`') {
+    return ['---', ...lines, '---', '## Brief', '', '- Goal: the booking page shows the return date', `- Targets: ${targets}`, ''].join('\n');
+}
+
 function writeFiles(dir, files) {
     for (const [path, text] of Object.entries(files)) {
         mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -293,13 +298,86 @@ test('take refuses a brief whose slug holds $( or a space', async () => {
 test('write refuses a brief name that holds $( or a space', async () => {
     const q = setup({ 'wayfinder/briefs/.gitkeep': '' });
     const input = join(q.dir, 'queued-brief.md');
-    writeFileSync(input, '---\ntitle: Show the return date\n---\n## Brief\n');
+    writeFileSync(input, queued());
 
     const result = await queue(q, q.one, 'write', q.one, input, '2026-10-30-0900-a$(x) b.md');
 
     assert.equal(result.outcome, 'refused');
     assert.equal(result.exit, 1);
     assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a$(x) b.md'), null);
+});
+
+test('write refuses a title with a line break or a second status line, and an unknown key', async () => {
+    const q = setup({ 'wayfinder/briefs/.gitkeep': '' });
+    const inputs = {
+        cr: ['title: Fix\rstatus: ready', 'status: draft'],
+        ls: ['title: Fix status: ready', 'status: draft'],
+        twice: ['title: Fix\nstatus: ready', 'status: draft'],
+        unknown: ['title: Fix', 'owner: me'],
+        ok: ['title: Fix', 'status: draft'],
+    };
+
+    const outcomes = {};
+    for (const [name, lines] of Object.entries(inputs)) {
+        writeFileSync(join(q.dir, `${name}.md`), queued(lines));
+        outcomes[name] = (await queue(q, q.one, 'write', q.one, join(q.dir, `${name}.md`))).outcome;
+    }
+
+    assert.deepEqual(outcomes, { cr: 'refused', ls: 'refused', twice: 'refused', unknown: 'refused', ok: 'saved' });
+    assert.equal(git(q.remote, 'ls-tree', '--name-only', 'main', 'wayfinder/briefs/').trim().split('\n').length, 2);
+});
+
+test('write refuses a ticket path in briefs/, and leaves that brief alone', async () => {
+    const q = setup({ 'wayfinder/briefs/2026-10-30-0900-a.md': brief({ status: 'in-progress' }) });
+    const before = onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md');
+    const input = join(q.dir, 'queued-brief.md');
+    writeFileSync(input, queued(['title: Fix', 'ticket: briefs/2026-10-30-0900-a.md']));
+
+    const result = await queue(q, q.one, 'write', q.one, input);
+
+    assert.equal(result.outcome, 'refused');
+    assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md'), before);
+});
+
+test('write refuses a Targets line that is not one line naming one repo', async () => {
+    const q = setup({ 'wayfinder/briefs/.gitkeep': '' });
+    const inputs = {
+        nested: queued(['title: Nested'], '\n  - `CakeClubE2E` on `main`\n  - `CakeClub` on `main`'),
+        two: queued(['title: Two'], '`CakeClub`, `CakeClubBackend`, base branch `main`'),
+        ok: queued(['title: One']),
+    };
+
+    const outcomes = {};
+    for (const [name, text] of Object.entries(inputs)) {
+        writeFileSync(join(q.dir, `${name}.md`), text);
+        outcomes[name] = (await queue(q, q.one, 'write', q.one, join(q.dir, `${name}.md`))).outcome;
+    }
+
+    assert.deepEqual(outcomes, { nested: 'refused', two: 'refused', ok: 'saved' });
+});
+
+test('write refuses a blocker path that does not exist, a new brief whose name exists, and a change to a done brief', async () => {
+    // The new brief gets the name of the minute of the write. Both minutes around the call already hold a brief with that name.
+    const nameAt = (offset) => `${new Date(Date.now() + offset).toISOString().slice(0, 16).replace('T', '-').replace(':', '')}-fix.md`;
+    const q = setup({
+        [`wayfinder/briefs/${nameAt(0)}`]: brief({ status: 'draft' }),
+        [`wayfinder/briefs/${nameAt(60e3)}`]: brief({ status: 'draft' }),
+        'wayfinder/briefs/2026-10-30-0900-done.md': brief({ status: 'done' }),
+    });
+    const before = git(q.remote, 'rev-parse', 'main');
+    const write = async (lines, ...path) => {
+        writeFileSync(join(q.dir, 'queued-brief.md'), queued(lines));
+        return (await queue(q, q.one, 'write', q.one, join(q.dir, 'queued-brief.md'), ...path)).outcome;
+    };
+
+    const missingBlocker = await write(['title: Blocked', 'blocked-by: [briefs/2026-10-30-0800-typo.md]']);
+    const existingName = await write(['title: Fix']);
+    const done = await write(['title: Done again'], '2026-10-30-0900-done.md');
+    const existingBlocker = await write(['title: Blocked', 'blocked-by: [briefs/2026-10-30-0900-done.md]']);
+
+    assert.deepEqual([missingBlocker, existingName, done], ['refused', 'refused', 'refused']);
+    assert.equal(existingBlocker, 'saved');
+    assert.equal(git(q.remote, 'rev-parse', 'main^'), before);
 });
 
 test('take refuses to push when an extra commit lands in its checkout', async () => {
@@ -405,7 +483,7 @@ test('write pushes a draft brief and the brief field of its ticket in one commit
         '.wayfinder/bugs/tickets/05-fix.md': ['---', 'id: bug-05', 'title: Fix the sync', 'type: task', 'status: open', 'assignee:', 'blocked-by: []', '---', ''].join('\n'),
     });
     const input = join(q.dir, 'queued-brief.md');
-    writeFileSync(input, ['---', 'title: Fix the sync', 'ticket: bugs/tickets/05-fix.md', '---', '## Brief', '', '- Targets: `CakeClub`', ''].join('\n'));
+    writeFileSync(input, queued(['title: Fix the sync', 'ticket: bugs/tickets/05-fix.md']));
 
     const written = await queue(q, q.one, 'write', q.one, input);
     const draft = onRemote(q, written.brief);
@@ -427,7 +505,7 @@ test('write and ready refuse an in-progress brief', async () => {
         'wayfinder/briefs/2026-10-30-0900-a.md': brief({ status: 'in-progress' }),
     });
     const input = join(q.dir, 'queued-brief.md');
-    writeFileSync(input, '---\ntitle: Show the return date\n---\n## Brief\n');
+    writeFileSync(input, queued());
     const before = onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md');
 
     const written = await queue(q, q.one, 'write', q.one, input, '2026-10-30-0900-a.md');
