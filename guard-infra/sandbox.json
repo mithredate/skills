@@ -18,7 +18,7 @@
         "~/projects/**/.git/hooks",
         "~/projects/**/.githooks",
         "~/projects/**/.git/config",
-        "~/projects/**/guard-infra/sandbox.json",
+        "~/projects/mithredate-skills/guard-infra/sandbox.json",
         "~/projects/**/.claude/settings.json",
         "~/projects/**/.claude/settings.local.json",
         "~/projects/**/.claude/skills",
