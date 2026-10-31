@@ -19,7 +19,7 @@ If the user gives an initiative, report only that row in the same shape. Then sk
 2. If the index is missing, stop. Tell the user to run orchestrate, because its gate builds the index. Do not build the index here.
 3. For each row that is not `closed`, read the ticket frontmatter of its map. Count the frontier tickets.
 4. Read no ticket body and no map body. The one exception is the Destination of the map. Check it for a `Closes when` sentence.
-5. For each directory, get the date of the last commit with `git log -1 --format=%ad --date=short -- <dir>`.
+5. For each map directory, get the date of the last commit with `git log -1 --format=%ad --date=short -- <dir>`.
 6. Run sweep in report mode, for each row that is not `closed`. The files show only what the last session wrote. The live links show the state now.
 7. Read the frontmatter of each file in `.wayfinder/briefs/`.
 
