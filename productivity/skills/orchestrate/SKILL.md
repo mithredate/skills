@@ -127,8 +127,8 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 
 When the decisions for a change are made, write the build as `task` tickets, and each human step as a `gate` ticket. Connect them with `blocked-by` edges. When no decision ticket in the `blocked-by` of a build ticket is open, queue its brief with `productivity:prep`. A build ticket has one brief at most. If it has one, change that brief with `prep`.
 
-- A brief holds no human step, so one session runs it from start to end. Its targets can be git repos or other systems, for example an n8n instance.
-- Split the build only at a gate. Write the fewest build tickets.
+- A brief holds no human step, so one session runs it from start to end.
+- Split the build only at a gate or at a repo, because a brief names one repo. Write the fewest build tickets.
 - The human review of a PR is a `gate` ticket. If a build has one target, and it is a git repo whose AGENTS.md or CLAUDE.md has the line `**fire can auto-merge.**`, write no review gate. `cook` writes the gate when the brief records `not merged`.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
