@@ -529,6 +529,24 @@ test('take keeps a blocker brief until its PR merges, then deletes it and claims
     assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-f.md'), null);
 });
 
+test('list of a brief that take deleted after its PRs merged gives the PR links from the deleting commit', async () => {
+    const q = setup({
+        'wayfinder/briefs/2026-10-30-0900-f.md': brief({ status: 'done', extra: ['result: "https://github.com/CakeClub-Inc/CakeClub/pull/12 merged"'] }),
+        'wayfinder/briefs/2026-10-30-0901-h.md': brief({ status: 'done', extra: ['result: "https://github.com/CakeClub-Inc/CakeClub/pull/13 merged"'] }),
+    });
+    q.setPrState('MERGED');
+    await queue(q, q.target, 'take', q.one);
+
+    const listed = await queue(q, q.one, 'list', q.one, 'wayfinder/briefs/2026-10-30-0900-f.md');
+
+    assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-f.md'), null);
+    assert.deepEqual(listed.briefs, [{
+        path: 'wayfinder/briefs/2026-10-30-0900-f.md',
+        status: 'deleted',
+        result: 'https://github.com/CakeClub-Inc/CakeClub/pull/12 merged',
+    }]);
+});
+
 test('list shows a status that another clone pushed, with no pull in the reading clone', async () => {
     const q = setup({
         'wayfinder/briefs/2026-10-30-0900-a.md': brief(),

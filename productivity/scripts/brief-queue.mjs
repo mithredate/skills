@@ -183,9 +183,13 @@ async function save(q, changes, message, retries = 3) {
 const commands = {
     async list(q, path) {
         const one = path?.split('/').pop();
+        const found = (await briefs(q)).filter((b) => !one || b.name === one);
+        // A brief that take deleted after its PRs merged keeps its result in the message of the deleting commit.
+        const note = one && !found.length && (await deletion(q, `briefs/${one}`)).split('\n').find((line) => line.startsWith(`${one}: `));
+        if (note) return { outcome: 'listed', briefs: [{ path: `${q.tracker}/briefs/${one}`, status: 'deleted', result: note.slice(one.length + 2) }] };
         return {
             outcome: 'listed',
-            briefs: (await briefs(q)).filter((b) => !one || b.name === one).map(({ body, name, ...rest }) => ({
+            briefs: found.map(({ body, name, ...rest }) => ({
                 path: `${q.tracker}/briefs/${name}`, ...rest, overdue: rest.status === 'in-progress' && overdue(rest), ...one && { body },
             })),
         };
@@ -267,6 +271,8 @@ const commands = {
         }
         const stuck = Object.keys(changes).filter((path) => changes[path]).map((path) => `${q.tracker}/${path}`);
         const deleted = Object.keys(changes).filter((path) => changes[path] === null);
+        // The commit message keeps the PR links of each deleted brief for `list`.
+        const notes = all.filter((b) => deleted.includes(`briefs/${b.name}`)).map((b) => `${b.name}: ${clean(b.result)}`);
 
         // 2. Claim the oldest ready brief for this repo whose blockers are closed, unless a fresh brief is in progress.
         const busy = all.some((b) => !b.bad && b.status === 'in-progress' && !overdue(b));
@@ -281,7 +287,7 @@ const commands = {
         // 3. Push. A lost claim race is not retried. The race is lost when the remote moved.
         if (Object.keys(changes).length) {
             try {
-                await save(q, changes, claim ? `brief-queue: take ${claim.name}` : 'brief-queue: tidy', claim ? 0 : 3);
+                await save(q, changes, [claim ? `brief-queue: take ${claim.name}` : 'brief-queue: tidy', '', ...notes].join('\n'), claim ? 0 : 3);
             } catch (error) {
                 if (!claim || error instanceof Refusal) throw error;
                 await git(q.repo, 'fetch', '-q', 'origin');
