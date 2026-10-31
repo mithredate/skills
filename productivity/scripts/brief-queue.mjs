@@ -19,6 +19,8 @@ import { promisify } from 'node:util';
 const exec = promisify(execFile);
 const env = { ...process.env, GIT_LITERAL_PATHSPECS: '1' };
 const git = async (cwd, ...args) => (await exec('git', args, { cwd, env, maxBuffer: 1 << 26 })).stdout;
+// The script's own commits run with no user hook and no signing. A push keeps the hooks.
+const OWN = ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null'];
 
 const STATUSES = ['draft', 'ready', 'in-progress', 'done', 'stuck'];
 const KEYS = ['title', 'status', 'updated', 'ticket', 'blocked-by', 'result'];
@@ -147,7 +149,7 @@ let leftover;
 async function save(q, changes, message, retries = 3) {
     const co = mkdtempSync(join(tmpdir(), 'brief-queue-'));
     try {
-        await git(q.repo, 'worktree', 'add', '-q', '--detach', co, q.sha);
+        await git(q.repo, ...OWN, 'worktree', 'add', '-q', '--detach', co, q.sha);
         const files = Object.keys(changes).map((path) => `${q.tracker}/${path}`);
         for (const [path, text] of Object.entries(changes)) {
             const file = join(co, q.tracker, path);
@@ -155,7 +157,7 @@ async function save(q, changes, message, retries = 3) {
             else mkdirSync(dirname(file), { recursive: true }), writeFileSync(file, text);
         }
         await git(co, 'add', '-A', '--', ...files);
-        await git(co, 'commit', '-q', '-m', message);
+        await git(co, ...OWN, 'commit', '-q', '-m', message);
         for (let attempt = 0; ; attempt++) {
             // The push holds exactly this one commit, and the commit changes only the files of this step.
             const commits = (await git(co, 'rev-list', `origin/${q.branch}..HEAD`)).split('\n').filter(Boolean);
@@ -166,7 +168,7 @@ async function save(q, changes, message, retries = 3) {
             } catch (error) {
                 if (attempt >= retries) throw error;
                 await git(co, 'fetch', '-q', 'origin');
-                await git(co, 'rebase', '-q', `origin/${q.branch}`).catch(async (conflict) => {
+                await git(co, ...OWN, 'rebase', '-q', `origin/${q.branch}`).catch(async (conflict) => {
                     await git(co, 'rebase', '--abort').catch(() => {});
                     throw conflict;
                 });

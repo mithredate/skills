@@ -275,11 +275,24 @@ test('two clones that claim the same brief at once get one claim and one busy', 
     const q = setup({
         'wayfinder/briefs/2026-10-30-0900-a.md': brief(),
     });
+    // Clone two claims while clone one is in its push, so the push of clone one meets a rejected push.
+    const hook = join(q.one, '.git/hooks/pre-push');
+    writeFileSync(hook, [
+        '#!/bin/sh',
+        `[ -e "${q.dir}/mark" ] && exit 0`,
+        `touch "${q.dir}/mark"`,
+        'unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX',
+        `cd "${q.target}" && node "${SCRIPT}" take "${q.two}" > "${q.dir}/two.json"`,
+        '',
+    ].join('\n'));
+    chmodSync(hook, 0o755);
 
-    const results = await Promise.all([queue(q, q.target, 'take', q.one), queue(q, q.target, 'take', q.two)]);
+    const one = await queue(q, q.target, 'take', q.one);
+    const two = JSON.parse(readFileSync(join(q.dir, 'two.json'), 'utf8'));
 
-    assert.deepEqual(results.map((result) => result.outcome).sort(), ['busy', 'claimed']);
-    assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md').match(/^status:/gm).length, 1);
+    assert.equal(two.outcome, 'claimed');
+    assert.equal(one.outcome, 'busy');
+    assert.deepEqual(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md').match(/^status:.*$/gm), ['status: in-progress']);
 });
 
 test('take refuses a title with a line break, a second status line, or an unknown key, and sets the brief to stuck', async () => {
@@ -400,20 +413,57 @@ test('write refuses a blocker path that does not exist, a new brief whose name e
     assert.equal(git(q.remote, 'rev-parse', 'main^'), before);
 });
 
-test('take refuses to push when an extra commit lands in its checkout', async () => {
-    const q = setup({
-        'wayfinder/briefs/2026-10-30-0900-a.md': brief(),
-    });
-    const hook = join(q.one, '.git/hooks/post-commit');
-    writeFileSync(hook, `#!/bin/sh\n[ -e "${q.dir}/mark" ] && exit 0\ntouch "${q.dir}/mark"\necho extra > extra.txt\ngit add extra.txt\ngit commit -q -m extra\n`);
+// The first push of record fails after `hookBody` changes the checkout. The retry then meets the push guard.
+function failFirstPush(q, hookBody) {
+    const hook = join(q.one, '.git/hooks/pre-push');
+    writeFileSync(hook, ['#!/bin/sh', `[ -e "${q.dir}/mark" ] && exit 0`, `touch "${q.dir}/mark"`, ...hookBody, 'exit 1', ''].join('\n'));
     chmodSync(hook, 0o755);
+}
 
-    const result = await queue(q, q.target, 'take', q.one);
+test('record refuses to push when an extra commit lands in its checkout', async () => {
+    const q = setup({
+        'wayfinder/briefs/2026-10-30-0900-a.md': brief({ status: 'in-progress' }),
+    });
+    // The extra commit changes only the brief, so only the count of commits shows it.
+    failFirstPush(q, ['echo extra >> wayfinder/briefs/2026-10-30-0900-a.md', 'git commit -q -a -m extra']);
+    const before = onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md');
+    writeFileSync(join(q.dir, 'result.txt'), 'blocked');
+
+    const result = await queue(q, q.target, 'record', q.one, '2026-10-30-0900-a.md', 'stuck', join(q.dir, 'result.txt'));
 
     assert.equal(result.outcome, 'refused');
     assert.ok(existsSync(join(q.dir, 'mark')));
-    assert.match(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md'), /^status: ready$/m);
+    assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md'), before);
+});
+
+test('record refuses to push its one commit when it also changes a file outside the step', async () => {
+    const q = setup({
+        'wayfinder/briefs/2026-10-30-0900-a.md': brief({ status: 'in-progress' }),
+    });
+    failFirstPush(q, ['echo extra > extra.txt', 'git add extra.txt', 'git commit -q --amend --no-edit']);
+    const before = onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md');
+    writeFileSync(join(q.dir, 'result.txt'), 'blocked');
+
+    const result = await queue(q, q.target, 'record', q.one, '2026-10-30-0900-a.md', 'stuck', join(q.dir, 'result.txt'));
+
+    assert.equal(result.outcome, 'refused');
+    assert.ok(existsSync(join(q.dir, 'mark')));
+    assert.equal(onRemote(q, 'wayfinder/briefs/2026-10-30-0900-a.md'), before);
     assert.equal(onRemote(q, 'extra.txt'), null);
+});
+
+test('write commits when the user has a failing pre-commit hook and commit signing on', async () => {
+    const q = setup({ 'wayfinder/briefs/.gitkeep': '' });
+    git(q.one, 'config', 'commit.gpgsign', 'true');
+    git(q.one, 'config', 'gpg.program', 'false');
+    writeFileSync(join(q.one, '.git/hooks/pre-commit'), '#!/bin/sh\nexit 1\n');
+    chmodSync(join(q.one, '.git/hooks/pre-commit'), 0o755);
+    writeFileSync(join(q.dir, 'queued-brief.md'), queued());
+
+    const result = await queue(q, q.one, 'write', q.one, join(q.dir, 'queued-brief.md'));
+
+    assert.equal(result.outcome, 'saved');
+    assert.match(onRemote(q, result.brief), /^status: draft$/m);
 });
 
 test('record rebases and pushes when another clone pushes during the build', async () => {
