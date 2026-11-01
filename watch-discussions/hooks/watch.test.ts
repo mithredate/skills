@@ -150,6 +150,16 @@ test('tells Claude where to read a person\'s comments', async () => {
   expect(steps.join('\n')).toContain('gh api repos/acme/api/pulls/74/comments')
 })
 
+test("asks the user before it posts a reply to a person's review", async () => {
+  const { steps } = instructions(toSnapshot(pr(), 0), [{ kind: 'review', author: 'amin', state: 'CHANGES_REQUESTED', isCopilot: false }], 1)
+  expect(steps.join('\n')).toContain('draft a reply with the reason, and post it only after the user agrees')
+})
+
+test("resolves each Copilot thread before it re-requests Copilot's review", async () => {
+  const { steps } = instructions(toSnapshot(pr(), 0), [{ kind: 'review', author: 'copilot-pull-request-reviewer', state: 'COMMENTED', isCopilot: true }], 1)
+  expect(steps.join('\n')).toContain("resolve each thread, then re-request Copilot's review")
+})
+
 test('stops acting on a PR after the turn cap, except for its merge', async () => {
   const snap = toSnapshot(pr(), 0)
   const capped = instructions(snap, [{ kind: 'checks', to: 'fail' }], 6)

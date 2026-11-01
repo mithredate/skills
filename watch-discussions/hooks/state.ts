@@ -146,13 +146,13 @@ export function instructions(s: Snapshot, found: Change[], turn: number, isMerge
   if (found.some(c => c.kind === 'review' && c.isCopilot))
     steps.push(
       `Copilot reviewed. Read its inline comments with ${inline}. Judge each one critically. ` +
-        `Fix it if it is right; otherwise reply on the comment with the reason. Push the fixes, then re-request Copilot's review.`,
+        `Fix it if it is right; otherwise reply on the comment with the reason. Push the fixes, resolve each thread, then re-request Copilot's review.`,
     )
   if (found.some(c => (c.kind === 'review' && !c.isCopilot && c.state !== 'APPROVED') || c.kind === 'comment'))
     steps.push(
       `A person reviewed or commented. Read the review bodies and comments with \`gh pr view ${s.url} --comments\`, ` +
         `and the inline comments with ${inline}. ` +
-        `Judge each point critically. Fix it if it is right; otherwise reply with the reason. Push the fixes, then re-request that person's review.`,
+        `Judge each point critically. Fix it if it is right, and push the fixes. Otherwise draft a reply with the reason, and post it only after the user agrees. Then re-request that person's review.`,
     )
   if (found.some(c => c.kind === 'checks' && c.to === 'fail'))
     steps.push(`Find the failing check with \`gh pr checks ${s.url}\`, read its log, and fix the cause.`)
