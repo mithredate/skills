@@ -26,6 +26,7 @@ The format and the examples are in [references/brief.md](references/brief.md). R
 - The brief gives the why and the what. The implementer picks the how and the order of work. A how goes in the brief only as a closed decision, in the Decisions line.
 - Put in each fact that the build cannot get by itself. Examples are test data, reviewer names, access, and decisions. Leave out code facts. The implementer reads the code.
 - Write no secret value and no customer data. Name the place where the build gets them.
+- If the change touches a vendor SDK or API, link the official guide of the feature at the installed version. The model can remember an old workaround.
 - The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
 
 Check the brief before you write it to its file:
