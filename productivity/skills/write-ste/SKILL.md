@@ -11,7 +11,7 @@ description: Our writing rules. Use when writing a skill, an agent file, a refer
 
 - One word has one meaning. Use the same word for the same thing in the whole file. Do not vary words for style.
 - Prefer the short common verb: do, use, make, start, stop, check, write, read, delete, move, run, open, close, list, show, give, get, keep, put.
-- These words are not allowed: perform, utilize, initiate, terminate, facilitate, leverage, ensure, prior to, in order to. Write "make sure" for ensure, "before" for prior to, and "to" for in order to.
+- These words are not allowed: perform, utilize, initiate, terminate, facilitate, leverage, ensure, groom, prior to, in order to. Write "make sure" for ensure, "refine" for groom, "before" for prior to, and "to" for in order to.
 - Do not write "should" or "may". Write "must" for a rule and "can" for a possibility.
 - Do not use metaphors, idioms, or images. A word such as "frontier" is allowed only as a defined term of the file.
 - Do not use a noun as a verb or a verb as a noun. Write "check", not "do a check".
