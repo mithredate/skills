@@ -74,16 +74,17 @@ A session that names no map works the `active` row. One session takes every fron
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names, except a build ticket for a git repo. Claim them before any other work. If no such ticket is on the frontier, give the user the first gate's checklist. List each build ticket on the frontier as approved or as waiting for a yes. Ask for the yes on each waiting ticket by the rules of `productivity:prep`. Then go to step 7.
+   - Only the user's yes to a brief that you showed in this session adds `approved:`. A request to cook or to build is not a yes.
 3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
-7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
+7. Update the row's one-line state in the index. Name each build ticket on the frontier as approved or as waiting for a yes. If the resolution now depends on a person outside the repo, set the status to `waiting`.
 8. Commit and push the tickets, the map, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
 
-The user can run other sessions on other frontier tickets at the same time. Expect concurrent commits.
+The user can run other sessions on other frontier tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook` and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
 
 ## fire
 
@@ -92,7 +93,7 @@ The user can run other sessions on other frontier tickets at the same time. Expe
 1. Clone the orchestrator repo from its `origin` into the scratchpad. Read and change tickets only in this clone, because the user's checkout can hold work in progress.
 2. If an open ticket has an `assignee` that starts with `orchestrate fire`, and its time is less than 4 hours ago, stop, because one build runs at a time. If its time is older, send a `PushNotification` that names the ticket.
 3. Pick a frontier ticket in the map of a takeable index row. It must have `approved:` and a Targets line that names only this repo. If several match, pick the oldest `approved:` date. If none matches, stop.
-4. Set its `assignee` to `orchestrate fire <UTC time>`. Commit only that ticket file, and push. If the push fails, stop, because another run can hold the claim. Do not pull and push again.
+4. Set its `assignee` to `orchestrate fire <UTC time>` with the Edit tool, because the hook of step 5 does not watch Bash. Commit only that ticket file, and push. If the push fails, stop, because another run can hold the claim. Do not pull and push again.
 5. The claim makes a hook tell you to call the Skill tool with `dev:fire`. Call it before your next tool call, as the hook says. Start the first step of `dev:fire` only after the push of step 4. Give it the ticket path in the clone.
 6. Record the result by `cook` step 4. Commit only the tickets that `cook` step 4 changed or wrote, and push. If the push fails, pull with rebase and push again.
 7. Send a `PushNotification` with the `fire` status and the PR links.
