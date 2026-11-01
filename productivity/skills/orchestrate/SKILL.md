@@ -1,6 +1,11 @@
 ---
 name: orchestrate
 description: Use in a repo with `.wayfinder/`, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
+allowed-tools:
+  - Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" list *)
+  - Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" take *)
+  - Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" record *)
+  - Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" close *)
 ---
 
 # Orchestrate
@@ -126,7 +131,7 @@ When the decisions for a change are made, write the build as `task` tickets, and
 
 - A brief holds no human step, so one session runs it from start to end.
 - Split the build only at a gate or at a repo. Write the fewest build tickets.
-- The human review of a PR is a `gate` ticket. If a build has one target, and it is a git repo whose AGENTS.md or CLAUDE.md has the line `**fire can auto-merge.**`, write no review gate. `cook` writes the gate when the PR of a `done` brief is not merged.
+- The human review of a PR is a `gate` ticket.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.

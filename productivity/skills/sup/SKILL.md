@@ -3,6 +3,8 @@ name: sup
 description: One-screen report on every initiative in an orchestrator repo, from the index and git, with a proposal for the next map. Read-only.
 argument-hint: "[initiative]"
 disable-model-invocation: true
+allowed-tools:
+  - Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" list *)
 ---
 
 # Sup

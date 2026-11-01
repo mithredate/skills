@@ -2,6 +2,9 @@
 name: prep
 description: Requirement to brief for `fire`. Use on `/prep` with a request, an issue key, or a thread link, or when `orchestrate` hands off a build.
 argument-hint: "<request | issue key | thread link>"
+allowed-tools:
+  - Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" list *)
+  - Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/brief-queue.mjs" write *)
 ---
 
 # Prep
