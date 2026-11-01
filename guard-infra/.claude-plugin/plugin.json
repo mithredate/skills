@@ -1,7 +1,7 @@
 {
   "name": "guard-infra",
-  "version": "0.1.11",
-  "description": "Asks before each aws, kubectl, helm, or terraform apply/destroy call that is not a read. Ships a sandbox config where every other form runs with no AWS or EKS access, and asks nothing about a sandboxed call. A retry outside the sandbox gets the permission mode's review.",
+  "version": "0.1.12",
+  "description": "Asks before each aws, kubectl, helm, or terraform apply/destroy call that is not a read. Ships a sandbox config where every call runs in the sandbox first, with no AWS or EKS access, and asks nothing about a sandboxed call. A call that fails there retries outside it with the permission mode's review, and the guard asks before an aws, kubectl, helm, or terraform write in that retry.",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"
