@@ -10,7 +10,7 @@
     "filesystem": {
       "allowWrite": [
         "~/.npm", "~/Library/pnpm/store", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
-        "~/Library/Caches/pip", "~/projects", "/private/var/folders/*/*/T/**/*",
+        "~/Library/Caches/pip", "/private/var/folders/*/*/T/**/*",
         "~/Library/Developer/MobileBuildMCP/workspaces", "~/Library/Developer/Xcode/DerivedData",
         "/private/tmp/e-*", "/private/tmp/e-*/**/*"
       ],

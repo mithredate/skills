@@ -4,18 +4,14 @@ export function isMainCheckout(gitDir: string, commonDir: string) {
 }
 
 // `session` is the checkout of the session's folder, only when it is in the edited repo. `EnterWorktree` works only there.
-export function worktreeAdvice(path: string, edited: { top: string; base?: string }, session?: { top: string; isMain: boolean }) {
+// With no `session`, `EnterWorktree` cannot make a worktree of `top`, so the advice is a new session in `top`.
+// When `top` is outside the session's folder, as for another repo, a sandboxed call also cannot write there.
+export function worktreeAdvice(path: string, edited: { top: string }, session?: { top: string; isMain: boolean }) {
   const { top } = edited
   // The `EnterWorktree` tool runs only when the user or the project instructions ask for a worktree.
   const intro = `guard-worktree: ${path} is in the main checkout of ${top}. The user requires that code changes go in a worktree. `
-  if (!session) {
-    const start = edited.base ?? 'origin/<default branch>'
-    return (
-      intro +
-      `Run \`git -C ${top} fetch origin && git -C ${top} worktree add --no-track .worktrees/<branch> -b <branch> ${start}\`. ` +
-      `Then make this edit under ${top}/.worktrees/<branch>/.`
-    )
-  }
+  // `session` is also undefined when the session's folder is a non-repo parent of `top`, such as ~/projects/cakeclub over its repo discovery.
+  if (!session) return intro + `This session's folder is not a checkout of ${top}. Start a new session in ${top}, in its own worktree, and make this edit there.`
   // `top` has its symlinks resolved, so a path through a symlink such as /tmp does not start with it.
   const target = path.startsWith(top + '/') ? session.top + path.slice(top.length) : session.top
   if (!session.isMain) return intro + `This session is in the worktree ${session.top}. Make this edit in ${target}.`
