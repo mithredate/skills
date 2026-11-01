@@ -4,7 +4,8 @@ export function isMainCheckout(gitDir: string, commonDir: string) {
 }
 
 // `session` is the checkout of the session's folder, only when it is in the edited repo. `EnterWorktree` works only there.
-// A sandboxed call writes only in the session's folder, so work in another repo needs a session that starts there.
+// With no `session`, `EnterWorktree` cannot make a worktree of `top`, so the advice is a new session in `top`.
+// When `top` is outside the session's folder, as for another repo, a sandboxed call also cannot write there.
 export function worktreeAdvice(path: string, edited: { top: string }, session?: { top: string; isMain: boolean }) {
   const { top } = edited
   // The `EnterWorktree` tool runs only when the user or the project instructions ask for a worktree.
