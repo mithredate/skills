@@ -65,7 +65,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 
 ## Hand back
 
-1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and path, because `productivity:sweep` finds the PR by that path. Without a ticket, the body holds the brief. The body lists the verifier evidence and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`. It lists each Verification check that the brief puts after the merge.
+1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and by its path from the repo root, such as `.wayfinder/<map>/tickets/<file>.md`, because `productivity:sweep` finds the PR by that path. A clone in the scratchpad does not change that path. Without a ticket, the body holds the brief. The body lists the verifier evidence and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`. It lists each Verification check that the brief puts after the merge.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
@@ -78,6 +78,7 @@ A draft PR is complete, and the reviewer and the verifier passed it. It is a dra
 Merge runs only when each condition below holds. Otherwise, skip it, and the PR stays a draft for the user.
 
 - The run opened exactly one PR, and every target of the brief is a git repo.
+- The run is not part of `orchestrate fire`. A session can set `approved:` with no human, so that PR waits for a human merge.
 - The AGENTS.md or CLAUDE.md of that repo on the base branch has the line `**fire can auto-merge.**`. Run `git fetch origin`, then read the file with `git show origin/<base branch>:<file>`. The PR branch can change the file, so its copy does not count.
 
 Name the PR by its URL in each `gh` command. Without it, `gh` acts on the PR of the current branch.

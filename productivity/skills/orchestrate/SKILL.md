@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Use in a repo with `.wayfinder/`, to set one up, for work too big for one session, or on "chart", "cook", "close", or "prioritize".
+description: Use in a repo with `.wayfinder/`, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
 ---
 
 # Orchestrate
@@ -70,20 +70,32 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 
 ## cook
 
-A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. A ticket with a `## Brief` takes a session of its own.
+A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. `orchestrate fire` builds a ticket whose brief targets a git repo, so `cook` never claims one. A build for another system, such as an n8n instance, opens no PR for a human to review. So `cook` claims it only when the user names it, and runs it with the user present.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names. Claim them before any other work. If no such ticket is on the frontier, claim the first ticket with a brief. If every frontier ticket is a `gate`, give the user the first gate's checklist, and go to step 7.
-3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round. When you claim a ticket with a `## Brief`, a hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
+2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names, except a build ticket for a git repo. Claim them before any other work. If no such ticket is on the frontier, give the user the first gate's checklist. List each build ticket on the frontier as approved or as waiting for a yes. Ask for the yes on each waiting ticket by the rules of `productivity:prep`. Then go to step 7.
+3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.
-5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2. A session that claimed a ticket with a brief does not go back.
+5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the row's one-line state in the index. If the resolution now depends on a person outside the repo, set the status to `waiting`.
 8. Commit and push the tickets, the map, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
 
 The user can run other sessions on other frontier tickets at the same time. Expect concurrent commits.
+
+## fire
+
+`orchestrate fire <orchestrator repo path>` builds one approved build ticket with no human. Run it in a session in the target repo, because `EnterWorktree` reaches only the repo of the session. A scheduled task can start it.
+
+1. Clone the orchestrator repo from its `origin` into the scratchpad. Read and change tickets only in this clone, because the user's checkout can hold work in progress.
+2. If an open ticket has an `assignee` that starts with `orchestrate fire`, and its time is less than 4 hours ago, stop, because one build runs at a time. If its time is older, send a `PushNotification` that names the ticket.
+3. Pick a frontier ticket in the map of a takeable index row. It must have `approved:` and a Targets line that names only this repo. If several match, pick the oldest `approved:` date. If none matches, stop.
+4. Set its `assignee` to `orchestrate fire <UTC time>`. Commit only that ticket file, and push. If the push fails, stop, because another run can hold the claim. Do not pull and push again.
+5. The claim makes a hook tell you to call the Skill tool with `dev:fire`. Call it before your next tool call, as the hook says. Start the first step of `dev:fire` only after the push of step 4. Give it the ticket path in the clone.
+6. Record the result by `cook` step 4. Commit only the tickets that `cook` step 4 changed or wrote, and push. If the push fails, pull with rebase and push again.
+7. Send a `PushNotification` with the `fire` status and the PR links.
 
 ## init
 
@@ -106,9 +118,9 @@ An initiative closes when the `Closes when` sentence of its Destination is true,
 
 When the decisions for a change are made, write the build as `task` tickets, and each human step as a `gate` ticket. Connect them with `blocked-by` edges. Write the brief of each build ticket with `productivity:prep` in this session, because this session holds the decisions that the brief must carry.
 
-- A brief holds no human step, so a session runs it from start to end when every ticket in its `blocked-by` is closed. Its targets can be git repos or other systems, for example an n8n instance.
-- Split the build only at a gate. Write the fewest build tickets.
-- The human review of a PR is a `gate` ticket. If a build has one target, and it is a git repo whose AGENTS.md or CLAUDE.md has the line `**fire can auto-merge.**`, write no review gate. `cook` writes the gate when `fire` reports `not merged`.
+- A brief holds no human step, so one session runs it from start to end when every ticket in its `blocked-by` is closed. `orchestrate fire` runs a build for a git repo. `cook` runs a build for another system, for example an n8n instance, when the user names it.
+- Split the build only at a gate or at a repo, because `orchestrate fire` runs in the one repo of the Targets line. Write the fewest build tickets.
+- The human review of a PR is a `gate` ticket.
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.

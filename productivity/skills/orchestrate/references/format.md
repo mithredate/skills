@@ -81,6 +81,8 @@ A ticket is on the frontier when `status: open`, `assignee` is empty, and every 
 
 A build `task` ticket holds a `## Brief` section as its body. `productivity:prep` writes it. The format is in [../../prep/references/brief.md](../../prep/references/brief.md).
 
+When the human says yes to the brief, the ticket gets `approved: <YYYY-MM-DD>` in its frontmatter. `orchestrate fire` builds only an approved ticket.
+
 ## Gate
 
 A `gate` ticket has `owner:` in its frontmatter, with the human who owns it. Its `assignee:` stays empty.
