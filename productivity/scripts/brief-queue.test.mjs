@@ -680,3 +680,14 @@ test('close refuses a map directory that does not exist, and a map whose brief b
     assert.match(blocking.reason, /2026-10-30-0901-w\.md/);
     assert.equal(git(q.remote, 'rev-parse', 'main'), before);
 });
+
+test('hooks.json makes the user confirm each ready call, and no other command', () => {
+    const { hooks } = JSON.parse(readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8'));
+    const handlers = (hooks.PreToolUse ?? []).filter((entry) => entry.matcher === 'Bash').flatMap((entry) => entry.hooks);
+
+    assert.equal(handlers.length, 1);
+    assert.equal(handlers[0].if, 'Bash(*brief-queue.mjs* ready *)');
+    const output = JSON.parse(execFileSync('sh', ['-c', handlers[0].command], { encoding: 'utf8' })).hookSpecificOutput;
+    assert.equal(output.hookEventName, 'PreToolUse');
+    assert.equal(output.permissionDecision, 'ask');
+});

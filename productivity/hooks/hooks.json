@@ -1,6 +1,18 @@
 {
-  "description": "When prep writes a brief file to the scratchpad, or brief-queue take claims a queued brief, tell the agent to load dev:fire. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
+  "description": "Before brief-queue ready, ask the user, also in auto mode. When prep writes a brief file to the scratchpad, or brief-queue take claims a queued brief, tell the agent to load dev:fire. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*brief-queue.mjs* ready *)",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"ready approves a brief that orchestrate fire then builds with no human. Say yes only if you read this brief and its hash.\"}}'"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
