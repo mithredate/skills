@@ -78,6 +78,7 @@ A draft PR is complete, and the reviewer and the verifier passed it. It is a dra
 Merge runs only when each condition below holds. Otherwise, skip it, and the PR stays a draft for the user.
 
 - The run opened exactly one PR, and every target of the brief is a git repo.
+- The run is not part of `orchestrate fire`. A session can set `approved:` with no human, so that PR waits for a human merge.
 - The AGENTS.md or CLAUDE.md of that repo on the base branch has the line `**fire can auto-merge.**`. Run `git fetch origin`, then read the file with `git show origin/<base branch>:<file>`. The PR branch can change the file, so its copy does not count.
 
 Name the PR by its URL in each `gh` command. Without it, `gh` acts on the PR of the current branch.

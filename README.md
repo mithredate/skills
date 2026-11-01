@@ -23,8 +23,8 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `write-a-skill` — write or rewrite a skill, an agent file, or a reference: name, invocation, shape, frontmatter, checks, and the PR
   - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
-  - `orchestrate` — run a planning-only orchestrator repo: one map of decision tickets per initiative under `.wayfinder/`, an index read first that orders them by priority, `chart`, `cook`, `init`, `close` (report replaces the map), the hand-off to build and gate tickets
-  - `prep` — turn a requirement into the brief that `fire` builds: a request, a Jira or Linear key, a Slack or Teams thread, or an `orchestrate` hand-off. Settles the decisions in the session that holds the context, then starts `fire`
+  - `orchestrate` — run a planning-only orchestrator repo: one map of decision tickets per initiative under `.wayfinder/`, an index read first that orders them by priority, `chart`, `cook`, `init`, `close` (report replaces the map), the hand-off to build and gate tickets, and `orchestrate fire`, which builds the oldest approved build ticket with no human, from a session in the target repo, and never auto-merges
+  - `prep` — turn a requirement into the brief that `fire` builds: a request, a Jira or Linear key, a Slack or Teams thread, or an `orchestrate` hand-off. Settles the decisions in the session that holds the context, then starts `fire`. In an `orchestrate` hand-off, it asks for a yes and marks the build ticket approved instead
   - `sup` — one-screen, read-only report across the maps of an orchestrator repo, with a proposal for the next map, with the live state of linked PRs, issues, and threads
   - `sweep` — check the PRs, issues, pages, and threads linked from an orchestrator tracker, on the hosts listed in `.wayfinder/sources.md`, and give each session fact its place (used by `orchestrate` and `sup`)
   - `domain-modeling` — pin down a domain's terms and boundaries; record choices as ADRs

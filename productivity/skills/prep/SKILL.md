@@ -36,5 +36,5 @@ Check the brief before you write it to its file:
 
 ## Hand off
 
-- In a hand-off, write the brief as the body of the build ticket. Then go back to `orchestrate`. The session that claims the ticket runs it with `dev:fire`.
+- In a hand-off, write the brief as the body of the build ticket. Show it to the user, and ask for a yes. After the yes, add `approved: <YYYY-MM-DD>` to the ticket frontmatter. When you change an approved brief, ask for the yes again. Then go back to `orchestrate`. `orchestrate fire` builds the ticket later, with no human.
 - Otherwise, write the brief to `brief.md` in the session scratchpad. Show it to the user, and continue in the same turn. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call.
