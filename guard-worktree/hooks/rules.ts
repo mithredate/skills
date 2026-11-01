@@ -9,7 +9,8 @@ export function worktreeAdvice(path: string, edited: { top: string }, session?: 
   const { top } = edited
   // The `EnterWorktree` tool runs only when the user or the project instructions ask for a worktree.
   const intro = `guard-worktree: ${path} is in the main checkout of ${top}. The user requires that code changes go in a worktree. `
-  if (!session) return intro + `This session works in another folder. Start a new session in ${top}, in its own worktree, and make this edit there.`
+  // `session` is also undefined when the session's folder is a non-repo parent of `top`, such as ~/projects/cakeclub over its repo discovery.
+  if (!session) return intro + `This session's folder is not a checkout of ${top}. Start a new session in ${top}, in its own worktree, and make this edit there.`
   // `top` has its symlinks resolved, so a path through a symlink such as /tmp does not start with it.
   const target = path.startsWith(top + '/') ? session.top + path.slice(top.length) : session.top
   if (!session.isMain) return intro + `This session is in the worktree ${session.top}. Make this edit in ${target}.`

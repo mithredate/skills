@@ -68,7 +68,7 @@ test('points to the session worktree folder when the edited path does not start 
 test('refuses an edit in the main checkout of another repo and tells the agent to start a session in that repo', async ($, on) => {
   fakeGit(on, { cwd: OTHER })
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
-  expect(refusal(ran)).toContain('This session works in another folder. Start a new session in /repo, in its own worktree, and make this edit there.')
+  expect(refusal(ran)).toContain("This session's folder is not a checkout of /repo. Start a new session in /repo, in its own worktree, and make this edit there.")
   expect(refusal(ran)).not.toContain('worktree add')
   expect(refusal(ran)).not.toContain('EnterWorktree')
 })
@@ -76,7 +76,7 @@ test('refuses an edit in the main checkout of another repo and tells the agent t
 test('refuses an edit in the main checkout and tells the agent to start a session in that repo when the session folder is in no guarded repo', async ($, on) => {
   fakeGit(on, { cwd: NO_ORIGIN })
   const ran = await $.tool.call({ tool: 'Edit', file_path: REPO + '/src/a.ts', old_string: 'a', new_string: 'b' })
-  expect(refusal(ran)).toContain('This session works in another folder. Start a new session in /repo, in its own worktree, and make this edit there.')
+  expect(refusal(ran)).toContain("This session's folder is not a checkout of /repo. Start a new session in /repo, in its own worktree, and make this edit there.")
   expect(refusal(ran)).not.toContain('worktree add')
   expect(refusal(ran)).not.toContain('EnterWorktree')
 })
