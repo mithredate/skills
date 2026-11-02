@@ -23,8 +23,7 @@ The file shapes of the index, the map, the tickets, and the gate are in [referen
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the map.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
-- Exactly one row is `active`. When the user names a map, that row becomes `active` and the old `active` row becomes `open`. Commit the index with the ticket.
-- `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. A row that is `waiting` or `paused` is not takeable.
+- `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. Only an `open` row is takeable.
 
 ## One directory per initiative
 
@@ -70,7 +69,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 
 ## cook
 
-A session that names no map works the `active` row. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. `orchestrate fire` builds a ticket whose brief targets a git repo, so `cook` never claims one. A build for another system, such as an n8n instance, opens no PR for a human to review. So `cook` claims it only when the user names it, and runs it with the user present.
+If the user names no map, ask the user which map to work. Claim no ticket until the user names the map. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. `orchestrate fire` builds a ticket whose brief targets a git repo, so `cook` never claims one. A build for another system, such as an n8n instance, opens no PR for a human to review. So `cook` claims it only when the user names it, and runs it with the user present.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names, except a build ticket for a git repo. Claim them before any other work. If no such ticket is on the frontier, give the user the first gate's checklist. List each build ticket on the frontier as approved or as waiting for a yes. Ask for the yes on each waiting ticket by the rules of `productivity:prep`. Then go to step 7.
@@ -81,10 +80,10 @@ A session that names no map works the `active` row. One session takes every fron
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the destination, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If the frontier now holds a ticket without a brief that is not a `gate`, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
-7. Update the row's one-line state in the index. Name each build ticket on the frontier as approved or as waiting for a yes. If the resolution now depends on a person outside the repo, set the status to `waiting`.
+7. Update the one-line state in the index row of this map. Change no other row. Name each build ticket on the frontier as approved or as waiting for a yes. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
 8. Commit and push the tickets, the map, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
 
-The user can run other sessions on other frontier tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook` and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
+The user can run other sessions on other frontier tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the map, and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
 
 ## fire
 

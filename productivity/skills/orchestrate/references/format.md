@@ -20,12 +20,11 @@ This file holds the file shapes of an orchestrator repo. It uses plain files und
 ```
 | Map | Status | Destination |
 |---|---|---|
-| [<dir>](<dir>/map.md) | **active**; <one-line state> | <Destination in one line> |
+| [<dir>](<dir>/map.md) | open; <one-line state> | <Destination in one line> |
 ```
 
 The rows are in priority order. The Status column holds one value:
-- **active**, for exactly one row
-- `open`, takeable but not active
+- `open`, takeable
 - `waiting <who> since <date> (<link>)`. The link points to the PR, issue, or thread, so that `productivity:sweep` can check it.
 - `paused <date> (<resume pointer>)`
 - `closed <date>`. The Map column then links to the report.
