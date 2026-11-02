@@ -39,7 +39,7 @@ Mark each map that has no `Closes when` sentence. Put no prose between the rows.
 
 ## Propose
 
-1. Propose the first row in index order that is `active` or `open` and has a frontier ticket. Give the reason in one sentence.
+1. Propose the first row in index order that is `open` and has a frontier ticket. Give the reason in one sentence.
 2. If a row is not `paused` and one of these holds, propose that the user names its map in orchestrate:
    - The row is `waiting`, and the sweep table shows that its dependency is resolved.
    - The map has claims.
