@@ -19,13 +19,15 @@ try {
     const input = JSON.parse(data).tool_input;
     if (TRACKER_TICKET.test(input.file_path)) {
         const file = readFileSync(input.file_path, 'utf8');
-        const start = file.search(BRIEF);
-        const rest = file.slice(start + '## Brief'.length).search(NEXT_SECTION);
-        const end = rest < 0 ? file.length : start + '## Brief'.length + rest;
+        const heading = file.search(BRIEF);
+        // The brief starts after its heading line, so an edit that only anchors on the heading is outside it.
+        const start = heading + '## Brief\n'.length;
+        const next = file.slice(start).search(NEXT_SECTION);
+        const end = next < 0 ? file.length : start + next;
         // ponytail: a deletion leaves no text to find, so it gets no reminder.
         const editedTexts = [input.new_string, input.content, ...(input.edits ?? []).map((edit) => edit.new_string)].filter(Boolean);
 
-        if (start >= 0 && editedTexts.some((text) => overlaps(file, text, start, end))) {
+        if (heading >= 0 && editedTexts.some((text) => overlaps(file, text, start, end))) {
             console.log(JSON.stringify({
                 hookSpecificOutput: {
                     hookEventName: 'PostToolUse',

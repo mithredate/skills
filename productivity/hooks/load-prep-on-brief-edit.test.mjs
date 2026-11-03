@@ -52,6 +52,35 @@ test('reminds after an Edit inside the brief of a ticket', () => {
     assert.equal(context, LOAD_PREP);
 });
 
+test('stays silent after an Edit that claims the ticket, approves it, or records a resolution', () => {
+    const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    for (const [old_string, new_string] of [
+        ['assignee:', 'assignee: claude'],
+        ['---\n\n## Brief', 'approved: 2026-11-03\n---\n\n## Brief'],
+        ['blocked:', 'Fire returned blocked:'],
+    ]) assert.equal(contextFor('Edit', { file_path: path, old_string, new_string }), '', new_string);
+    assert.equal(contextFor('Edit', { file_path: path, old_string: 'example.com', new_string: 'noreply@example.com' }), LOAD_PREP);
+});
+
+test('stays silent after an Edit of a map or of a brief file outside a ticket', () => {
+    for (const [relativePath, expected] of [
+        ['.wayfinder/2026-10-01-braze/map.md', ''],
+        ['scratchpad/brief.md', ''],
+        ['.wayfinder/2026-10-01-braze/tickets/brz-17.md', LOAD_PREP],
+    ]) {
+        const path = writeFile(relativePath, TICKET);
+
+        const context = contextFor('Edit', { file_path: path, old_string: 'the new address', new_string: 'the sandbox sends from the new address' });
+
+        assert.equal(context, expected, relativePath);
+    }
+});
+
+test('stays silent and exits 0 for input it cannot read', () => {
+    assert.equal(hookOutput('not json'), '');
+});
+
 test('hooks.json runs the hook after each Edit, Write, and MultiEdit', () => {
     const { hooks } = JSON.parse(readFileSync(new URL('./hooks.json', import.meta.url), 'utf8'));
 
