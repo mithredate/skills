@@ -48,7 +48,7 @@ After the deploy, read the signal. If the hypothesis is false, the fix is a new 
 
 ## The round
 
-Put at most four questions in one round. Word each question so that a yes accepts your recommendation. Put first the questions that block the most decisions. A question that depends on another open question waits for a later round. Then wait for the answers. Each answer settles part of the tree. Recompute the frontier, settle what you can, and ask the next round.
+Put at most four questions in one round. Write each question so that a yes accepts your recommendation. Put first the questions that block the most decisions. A question that depends on another open question waits for a later round. Then wait for the answers. Each answer settles part of the tree. Recompute the frontier, settle what you can, and ask the next round.
 
 Format a round like so:
 
@@ -57,7 +57,7 @@ Format a round like so:
 
 ---
 
-❓ **Q1 - <the decision, in one line>**
+❓ **Q1 - <your recommendation, as a yes or no question>**
 Critical because: <the matching item of the critical list>
 Facts: <at most three bullets>
 - **A**: <option>. Gain: <one line>. Cost: <one line>

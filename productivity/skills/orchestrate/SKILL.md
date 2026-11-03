@@ -19,7 +19,7 @@ The file shapes of the index, the map, the tickets, and the gate are in [referen
 
 - Every session reads the index before any other step. This rule applies also when the user names a map.
 - If the index is missing, build it. If a map directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
-- Then run sweep in write mode. `orchestrate fire` skips this sweep. Give it the map of this session and each `waiting` row. Sweep also adds each new host to `.wayfinder/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
+- Then run sweep in write mode. Give it the map of this session and each `waiting` row. Sweep also adds each new host to `.wayfinder/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked. `orchestrate fire` skips this sweep.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the map.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
@@ -63,7 +63,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 2. Map the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no map. Write the user a prompt that starts that session. Then stop.
 3. Write `map.md` with the Destination and the Notes. Leave Decisions so far empty. List the unspecified questions under Not yet specified.
 4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges in a second pass.
-5. For each research ticket, start a subagent that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
+5. For each research ticket, start a subagent with a fresh context that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
 6. Sweep the session as in `cook` step 6.
 7. Commit and push.
 
@@ -74,7 +74,7 @@ If the user names no map, ask the user which map to work. Claim no ticket until 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names, except a build ticket for a git repo. Claim them before any other work. If no such ticket is on the frontier, give the user the first gate's checklist. List each build ticket on the frontier as approved or as waiting for a yes. Ask for the yes on each waiting ticket by the rules of `productivity:prep`. Then go to step 7.
    - Only the user's yes to a brief that you showed in this session adds `approved:`. A request to cook or to build is not a yes.
-3. Resolve the tickets. Start a subagent for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
+3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.
