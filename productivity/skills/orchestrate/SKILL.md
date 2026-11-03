@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Use in a `.orchestrate/` repo, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
+description: Use in a `.initiatives/` repo, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
 ---
 
 # Orchestrate
@@ -15,11 +15,11 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 
 ## The index
 
-**The index** is the file `.orchestrate/README.md`, with one row for each initiative.
+**The index** is the file `.initiatives/README.md`, with one row for each initiative.
 
 - Every session reads the index before any other step. This rule applies also when the user names an initiative.
 - If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
-- Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.orchestrate/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked. `orchestrate fire` skips this sweep.
+- Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked. `orchestrate fire` skips this sweep.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
@@ -27,7 +27,7 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 
 ## One directory per initiative
 
-`.orchestrate/<YYYY-MM-DD>-<slug>/` holds the `initiative.md` of one initiative, with its tickets and assets. For a new initiative, first create its directory and its index row. Then chart the initiative inside the directory.
+`.initiatives/<YYYY-MM-DD>-<slug>/` holds the `initiative.md` of one initiative, with its tickets and assets. For a new initiative, first create its directory and its index row. Then chart the initiative inside the directory.
 
 When a change happens to an initiative, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
 
@@ -99,13 +99,13 @@ The user can run other sessions on other ready tickets at the same time. If the 
 
 ## init
 
-A new orchestrator repo needs three files: `.orchestrate/README.md` with the empty index table, `.orchestrate/sources.md` with the empty table from `productivity:sweep`, and `AGENTS.md`. Copy `AGENTS.md` from [references/agents-md-template.md](references/agents-md-template.md). Add `.claude/rules/claude-code.md` only when a gate is Claude-only. Fill the repos table with the sibling repos this repo plans for.
+A new orchestrator repo needs three files: `.initiatives/README.md` with the empty index table, `.initiatives/sources.md` with the empty table from `productivity:sweep`, and `AGENTS.md`. Copy `AGENTS.md` from [references/agents-md-template.md](references/agents-md-template.md). Add `.claude/rules/claude-code.md` only when a gate is Claude-only. Fill the repos table with the sibling repos this repo plans for.
 
 ## close
 
 An initiative closes when the `Closes when` sentence of its Goal is true, or when the user rules the rest out of scope. If the Goal has no `Closes when` sentence, write it with the user first. Then close. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
 
-1. Write `.orchestrate/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
+1. Write `.initiatives/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
    - the Goal
    - one entry for each closed ticket, copied from the ticket, with its resolution
    - where the work landed, with links to the PRs, documents, or systems

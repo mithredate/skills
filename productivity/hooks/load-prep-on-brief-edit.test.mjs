@@ -53,7 +53,7 @@ function contextAfterEdit(path, old_string, new_string) {
 }
 
 test('reminds after an Edit inside the brief of a ticket', () => {
-    const path = writeFile('.orchestrate/2026-10-01-braze/tickets/brz-17.md', TICKET);
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
     const context = contextAfterEdit(path, 'the new address', 'the sandbox sends from the new address');
 
@@ -61,7 +61,7 @@ test('reminds after an Edit inside the brief of a ticket', () => {
 });
 
 test('reminds after a Write of a ticket that holds a brief', () => {
-    const path = writeFile('.orchestrate/2026-10-01-braze/tickets/brz-20.md', TICKET);
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-20.md', TICKET);
 
     const context = contextFor('Write', { file_path: path, content: TICKET }, { type: 'create', filePath: path, content: TICKET, originalFile: null });
 
@@ -69,7 +69,7 @@ test('reminds after a Write of a ticket that holds a brief', () => {
 });
 
 test('reminds after a MultiEdit with one edit inside the brief', () => {
-    const path = writeFile('.orchestrate/2026-10-01-braze/tickets/brz-17.md', TICKET);
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
     const context = contextFor('MultiEdit', { file_path: path, edits: [
         { old_string: 'assignee:', new_string: 'assignee: claude' },
@@ -80,7 +80,7 @@ test('reminds after a MultiEdit with one edit inside the brief', () => {
 });
 
 test('stays silent after an Edit that claims the ticket, approves it, or records a resolution', () => {
-    const path = writeFile('.orchestrate/2026-10-01-braze/tickets/brz-17.md', TICKET);
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
     for (const [old_string, new_string] of [
         ['assignee:', 'assignee: claude'],
@@ -91,7 +91,7 @@ test('stays silent after an Edit that claims the ticket, approves it, or records
 });
 
 test('stays silent after an Edit that anchors on the last brief line to add a resolution', () => {
-    const path = writeFile('.orchestrate/2026-10-01-braze/tickets/brz-17.md', TICKET_WITHOUT_RESOLUTION);
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET_WITHOUT_RESOLUTION);
 
     const context = contextAfterEdit(path, '- FR: the From header is noreply@example.com', '- FR: the From header is noreply@example.com\n\n## Resolution\n\nBuilt in PR 12.');
 
@@ -99,7 +99,7 @@ test('stays silent after an Edit that anchors on the last brief line to add a re
 });
 
 test('stays silent after an Edit outside the brief whose new text the brief repeats', () => {
-    const path = writeFile('.orchestrate/2026-10-01-braze/tickets/brz-18.md', [
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-18.md', [
         '---',
         'id: brz-18',
         'assignee: orchestrate fire 2026-11-03T10:00Z',
@@ -116,7 +116,7 @@ test('stays silent after an Edit outside the brief whose new text the brief repe
 });
 
 test('stays silent after a Write that adds a resolution and keeps the brief', () => {
-    const path = writeFile('.orchestrate/2026-10-01-braze/tickets/brz-17.md', TICKET);
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
     const context = contextFor('Write', { file_path: path, content: TICKET }, { type: 'update', filePath: path, content: TICKET, originalFile: TICKET_WITHOUT_RESOLUTION });
 
@@ -125,9 +125,9 @@ test('stays silent after a Write that adds a resolution and keeps the brief', ()
 
 test('stays silent after an Edit of an initiative or of a brief file outside a ticket', () => {
     for (const [relativePath, expected] of [
-        ['.orchestrate/2026-10-01-braze/initiative.md', ''],
+        ['.initiatives/2026-10-01-braze/initiative.md', ''],
         ['scratchpad/brief.md', ''],
-        ['.orchestrate/2026-10-01-braze/tickets/brz-17.md', LOAD_PREP],
+        ['.initiatives/2026-10-01-braze/tickets/brz-17.md', LOAD_PREP],
     ]) {
         const path = writeFile(relativePath, TICKET);
 

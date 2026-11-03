@@ -65,7 +65,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 ## Hand back
 
 1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. Write the body by the PR body rule of `personal:code-like-mehrdad`.
-   - The body names the ticket by title and by its path from the repo root, such as `.orchestrate/<initiative>/tickets/<file>.md`, because `productivity:sweep` finds the PR by that path. A clone in the scratchpad does not change that path. Without a ticket, the body gives the change in one sentence.
+   - The body names the ticket by title and by its path from the repo root, such as `.initiatives/<initiative>/tickets/<file>.md`, because `productivity:sweep` finds the PR by that path. A clone in the scratchpad does not change that path. Without a ticket, the body gives the change in one sentence.
    - The body lists each Verification check that the brief puts after the merge.
    - One `<details>` block at the end holds the verifier evidence, each open `quality_note`, and each `pre_existing` item. It holds each refuted finding with the evidence of `dev:finding-checker`. Without a ticket, it also holds the brief.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.

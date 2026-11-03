@@ -110,7 +110,7 @@ test('allows an edit in a worktree that EnterWorktree made', async ($, on) => {
 
 test('allows tracker edits and ignored files in the main checkout', async ($, on) => {
   fakeGit(on)
-  const tracker = await $.tool.call({ tool: 'Edit', file_path: REPO + '/.orchestrate/m/tickets/t.md', old_string: 'a', new_string: 'b' })
+  const tracker = await $.tool.call({ tool: 'Edit', file_path: REPO + '/.initiatives/m/tickets/t.md', old_string: 'a', new_string: 'b' })
   const ignored = await $.tool.call({ tool: 'Write', file_path: REPO + '/dist/out.js', content: 'x' })
   expect(refusal(tracker)).toBeUndefined()
   expect(refusal(ignored)).toBeUndefined()

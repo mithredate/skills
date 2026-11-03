@@ -15,7 +15,7 @@ If the user gives an initiative, report only that row in the same shape. Then sk
 
 ## Read
 
-1. Read the index at `.orchestrate/README.md`.
+1. Read the index at `.initiatives/README.md`.
 2. If the index is missing, stop. Tell the user to run orchestrate, because its gate builds the index. Do not build the index here.
 3. For each row that is not `closed`, read the ticket frontmatter of its initiative. Count the ready tickets.
 4. Read no ticket body and no `initiative.md` body. The one exception is the Goal of the initiative. Check it for a `Closes when` sentence.

@@ -1,11 +1,11 @@
 # Format
 
-This file holds the file shapes of an orchestrator repo. It uses plain files under `.orchestrate/`, not an issue tracker. The rules are in the orchestrate `SKILL.md`.
+This file holds the file shapes of an orchestrator repo. It uses plain files under `.initiatives/`, not an issue tracker. The rules are in the orchestrate `SKILL.md`.
 
 ## Layout
 
 ```
-.orchestrate/
+.initiatives/
   README.md                  index of initiatives
   sources.md                 the hosts that the tracker links to, owned by productivity:sweep
   reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed

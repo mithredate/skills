@@ -1,6 +1,6 @@
 ---
 name: sweep
-description: Use when the user says "sweep", "check the PRs", or "what changed" in a `.orchestrate/` repo, or when `orchestrate` or `sup` calls it.
+description: Use when the user says "sweep", "check the PRs", or "what changed" in a `.initiatives/` repo, or when `orchestrate` or `sup` calls it.
 ---
 
 # Sweep
@@ -14,7 +14,7 @@ The caller names a mode:
 
 ## Sources
 
-`.orchestrate/sources.md` lists each host that the tracker links to. Sweep owns this file.
+`.initiatives/sources.md` lists each host that the tracker links to. Sweep owns this file.
 
 ```markdown
 # Sources
@@ -31,7 +31,7 @@ A **live link** is a link to a host with `Live: yes`. Set `Live` to `yes` for a 
 ## Live links
 
 1. For each initiative that the caller names, collect these files:
-   - the row of the initiative in `.orchestrate/README.md`
+   - the row of the initiative in `.initiatives/README.md`
    - the Notes section of `initiative.md`
    - each ticket with `status: open`
    - each closed ticket with a `## Brief` section
@@ -41,7 +41,7 @@ A **live link** is a link to a host with `Live: yes`. Set `Live` to `yes` for a 
    ```
 3. Match each link to the longest Host in `sources.md`. Skip a link whose host has `Live: no`.
 4. If no Host matches a link, the host is new. Give the host one row in the result table, with the place `sources.md`. If `sources.md` is missing, every host is new.
-5. If a ticket has a `## Brief` with a git repo in its Targets or in an older Repos line, and no PR link, search for the PR with `gh search prs "<initiative dir>/tickets/<file>.md" --repo <target repo>`. The path starts below `.orchestrate/`, because an older PR body names another tracker folder. `dev:fire` names the full path in each PR body.
+5. If a ticket has a `## Brief` with a git repo in its Targets or in an older Repos line, and no PR link, search for the PR with `gh search prs "<initiative dir>/tickets/<file>.md" --repo <target repo>`. The path starts below `.initiatives/`, because an older PR body names another tracker folder. `dev:fire` names the full path in each PR body.
 6. If a `waiting` row has no link, mark the row "check by hand".
 
 The step is done when each live link is listed with the file that holds it, and each new host has a row.

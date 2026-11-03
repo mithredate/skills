@@ -21,7 +21,7 @@ function contextFor(toolInput) {
 }
 
 test('names fire when the edit claims a ticket with a brief', () => {
-    const path = writeTicket('.orchestrate/2026-10-01-braze/tickets/brz-17.md', [
+    const path = writeTicket('.initiatives/2026-10-01-braze/tickets/brz-17.md', [
         '---',
         'id: brz-17',
         'type: task',
@@ -39,7 +39,7 @@ test('names fire when the edit claims a ticket with a brief', () => {
 });
 
 test('stays silent when the edit claims a ticket with no brief', () => {
-    const path = writeTicket('.orchestrate/2026-10-01-braze/tickets/brz-03.md', [
+    const path = writeTicket('.initiatives/2026-10-01-braze/tickets/brz-03.md', [
         '---',
         'type: decision',
         'status: open',
@@ -54,7 +54,7 @@ test('stays silent when the edit claims a ticket with no brief', () => {
 });
 
 test('stays silent when the edit does not set the assignee', () => {
-    const path = writeTicket('.orchestrate/2026-10-01-braze/tickets/brz-17.md', [
+    const path = writeTicket('.initiatives/2026-10-01-braze/tickets/brz-17.md', [
         '---',
         'status: open',
         'assignee: claude',
@@ -70,8 +70,8 @@ test('stays silent when the edit does not set the assignee', () => {
 test('stays silent for a file outside a tracker tickets directory', () => {
     for (const [relativePath, expected] of [
         ['docs/tickets/brz-17.md', ''],
-        ['.orchestrate/2026-10-01-braze/initiative.md', ''],
-        ['.orchestrate/2026-10-01-braze/tickets/brz-17.md', LOAD_FIRE],
+        ['.initiatives/2026-10-01-braze/initiative.md', ''],
+        ['.initiatives/2026-10-01-braze/tickets/brz-17.md', LOAD_FIRE],
     ]) {
         const path = writeTicket(relativePath, [
             '---',
@@ -94,7 +94,7 @@ test('names fire when a Write creates a claimed ticket with a brief', () => {
         '---',
         '## Brief',
     ].join('\n');
-    const path = writeTicket('.orchestrate/2026-10-01-braze/tickets/brz-20.md', content);
+    const path = writeTicket('.initiatives/2026-10-01-braze/tickets/brz-20.md', content);
 
     const context = contextFor({ file_path: path, content });
 
