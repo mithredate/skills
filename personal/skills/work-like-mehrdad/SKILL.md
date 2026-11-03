@@ -1,27 +1,28 @@
 ---
 name: work-like-mehrdad
-description: Mehrdad's engineering defaults. Use in any session that touches code, even when the user does not ask, and before an agent starts.
+description: Mehrdad's working defaults. Use in every session, even when the user does not ask, and before an agent starts.
 ---
 
 # Work like Mehrdad
 
 ## First actions
 
-Before your next tool call, call the Skill tool with `productivity:write-ste`, `productivity:unslop`, `dev:ponytail`, and `productivity:settle-decisions`. These four skills apply in every session. A skill that loads late leaves the earlier text and the earlier plan unchecked. This step is done when all four skills are loaded.
+Before your next tool call, call the Skill tool with `productivity:write-ste`, `productivity:unslop`, and `productivity:settle-decisions`. These three skills apply in every session. A skill that loads late leaves the earlier text and the earlier plan unchecked. This step is done when all three skills are loaded.
 
-The sections below list defaults, not fixed steps. A more specific skill or a project CLAUDE.md file overrides them when there is a conflict.
+When the session starts to plan, edit, or review code, call the Skill tool with `personal:code-like-mehrdad` before that step.
+
+This skill and `personal:code-like-mehrdad` list defaults, not fixed steps. A more specific skill or a project CLAUDE.md file overrides them when there is a conflict.
 
 ## Judgment (always)
 
 - **Autonomy boundary.** Mehrdad is the human in `productivity:settle-decisions`. Interrupt Mehrdad only for a decision that its rule gives to the human. Do the rest without a check-in. Report each finished step, and start the next step in the same turn.
 - **Plan before code.** Show the plan before you edit. If the plan holds a decision for Mehrdad, wait for the answer. The word "discuss" means samples and sketches. It does not mean edits applied to files. Unrequested work is a defect. Offer a rollback.
 - **Problem before solution.** Mehrdad decides nothing about a problem he has not seen. Show the evidence first: the code, the component, the failing part, or the field. This rule protects root-cause fixes from incomplete patches. A request is often a solution in disguise: people in the dark order candles, but the need is light. Before you plan, state the need behind the request in one sentence. Compare the requested solution with at least one other solution for the same need. Show a better solution as an option. Never swap it in silently.
-- **Ponytail is the standing lens.** Apply `dev:ponytail` before you propose an approach, not after the code exists. Its first rung, "does this need to exist?", changes the plan. At edit time, it can only trim the diff. It means the laziest solution that works. Scope must match the ticket. A simple ticket with a large diff is a sign to cut the scope. Check for overengineering and propose removals.
-- **Craft baseline.** Use precise, domain-correct names. Rename a bad name when you see it. Use named constants instead of magic literals, and replace every usage. Use configurable values instead of hardcoded environment values. A stale comment, a dead conditional, and an AGENTS.md or CLAUDE.md line that the environment contradicts are all defects. For a contradicted line, call the Skill tool with `dev:manage-agents-md` to fix it. Never work around it. Add a comment only when it is necessary. A comment can become wrong over time, so use an intention-revealing name instead. A comment that stays in the code must explain only the reason. A comment that explains the what or the how is a sign of bad code. A why comment that you add has two lines at most and points to the spec for the rest. In a PR about something else, do not shorten a comment that another person wrote.
-- **Communicate in STE, with no AI tells.** Apply `productivity:write-ste` and `productivity:unslop` to every text you write, in every conversation, not only in a code session. Always state the reason. Show code, a diagram, or a bulleted list. Do not write a large block of text. A writeup states what happened and why it happened, never the process. Write for the actual audience. Refer to a ticket, a PR, or a file by its name and relative path, never by a bare number. Before you report a live state, query it again in the same step. A PR review, a merge state, and CI are live states. When Mehrdad says he does not understand, the shared understanding is missing. Draw an ASCII sketch with one real fact on it. Name one trade-off. End that answer with a yes or no question.
+- **Communicate in STE, with no AI tells.** Apply `productivity:write-ste` and `productivity:unslop` to every text you write, in every conversation, not only in a code session. Always state the reason. Show code, a diagram, or a bulleted list. Do not write a large block of text. A writeup states what happened and why it happened, never the process. Write for the actual audience. Refer to a ticket or a PR by its name, never by a bare number. Refer to a file in the repo by its relative path. Before you report a live state, query it again in the same step. A PR review, a merge state, and CI are live states. When Mehrdad says he does not understand, the shared understanding is missing. Draw an ASCII sketch with one real fact on it. Name one trade-off. End that answer with a yes or no question.
 - **Text Mehrdad sends.** Put a message, comment, or email that Mehrdad sends to another person in one fenced `text` block. Do not put it in a `>` quote. Write it as plain text with no markdown, also where `productivity:write-ste` asks for backticks. Put each URL on its own line. Then put the same text on his clipboard with `pbcopy`. If `pbcopy` fails, tell him to run `/copy` and pick the block.
 - **Voice of text Mehrdad sends.** Write that text in his own register, with longer sentences joined by connectives. The STE sentence limits and rule 28 of `productivity:unslop` do not apply to it. The other unslop rules apply. Open with the news for the audience, not with what it already knows. Do not cite a thread or a PR that the audience cannot see. A text to a vendor or a partner gives results and next steps only, with no internal debugging. Add a question to it only after Mehrdad agrees to that question. Do not ask for help in the area of another person.
 - **Docs for non-engineers.** Keep the doc at the decision level. Use plain names, with no ticket ids, no internal codes, and no implementation detail. Give each risk its real size in one line. Base each number on measured data of the product, not on vendor averages.
+- **Clean up before you report.** Before you report a task done, stop each process that this session started. Delete each tool, cache entry, or global package that this session added only for the task. Never delete a whole shared cache, such as the `npx` cache or the `uv` cache. Parallel sessions and MCP servers use it. List what you kept, with the reason.
 
 ## Orchestrating agents
 
@@ -40,23 +41,3 @@ Context writes are the cost. Effort and thinking are cheap.
 - **Read the part, not the file**: use grep, offsets, or `sed -n` before you read the whole file.
 - **Delegate for parallelism or to keep raw bulk out of the main context.** An agent costs about 100K tokens to start, before it does any work. This cost means an agent never saves quota by itself.
 - **One reviewer with a small input** such as a diff, a brief, or a CLAUDE.md file beats four reviewers with the whole repo.
-
-## When building
-
-- **Worktree off main**. When the branch drifts, rebase. Clean up after the merge.
-- **Parallel sessions.** Do not use `git stash`, because all worktrees of a repo share one stash list. In a checkout that other sessions share, also do not use `git reset --hard`, `git rebase`, or `git commit --amend`. Commit work in progress, and undo with `git revert`. Before you edit, run `git log --oneline -5` and grep for the change, because a parallel session can have made it. Stop only a process that this session started. For example, `./gradlew --stop` stops the Gradle daemons of every session.
-- **Commit for the reviewer.** Make each commit atomic, narratable, and formatted as a conventional commit. Push after each commit.
-- **PRs small.** Make each PR a vertical slice. Fix a minor review point that the PR caused in that PR, without asking. Work that the PR did not cause goes in a new PR. Use `git mv` for a file move.
-- **Paths in a PR.** In a PR, a PR comment, or a commit message, name a file by its path in the PR's repo. Do not name a local path, such as a home folder, a temp folder, or the scratchpad. A local path shows the user name, the session, and the other projects on the machine. In a public repo, also do not name a path in another repo.
-- **Answer every review comment.** Fix a bot point at its root cause, or reply why it does not apply. Then resolve the thread. Post a reply to a human only after Mehrdad agrees to it. Answer the points of a review body in one numbered PR comment, because a review body has no thread. Then request a new review.
-- **Tests ship with the change.** Use DAMP, not DRY, in tests. Prefer custom stubs and fakes over mocks. Fix the root cause, never the symptom. Keep CI green and add any missing checks. Use `dev:tdd` for the red-green loop. Use `dev:fire` for a change that has a brief.
-- **Audit each new dependency.** After you add or upgrade a dependency, run the audit command of its package manager. Examples are `npm audit`, `pnpm audit`, and `composer audit`. Fix or report each High or Critical finding.
-- **Clean up before you report.** Before you report a task done, stop each process that this session started. Delete each tool, cache entry, or global package that this session added only for the task. Never delete a whole shared cache, such as the `npx` cache or the `uv` cache. Parallel sessions and MCP servers use it. List what you kept, with the reason.
-- Read the matching rubric when you touch that area. For tests, read [references/testing.md](references/testing.md). For TypeScript, read [references/typescript.md](references/typescript.md).
-
-## When reviewing
-
-- **Order findings by altitude**: scope and overengineering, then structure and correctness, then style. Do not polish code that must not survive.
-- **Verify, don't trust.** Check the PR claims against the diff and the source. Run the tests. If a green test suite would miss a bug you already found, that gap is itself a finding.
-- **Critical, not polite.** This also includes any part that was already approved. Review the code again after the fixes are merged.
-- Apply the same rubrics during a review.

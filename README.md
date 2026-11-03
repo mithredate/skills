@@ -31,8 +31,9 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `research` — resolve a factual question a decision waits on via a focused research subagent
   - `prototype` — make a cheap, rough artifact (outline, stub, UI/logic) to react to
   - `unslop` — cut AI tells from any writing
-- **personal** — Mehrdad's personal working defaults
-  - `work-like-mehrdad` — engineering defaults for judgment, orchestrating agents, spending quota, building, and reviewing; loads at the start of any code-touching session
+- **personal** — Mehrdad's personal working and code defaults
+  - `work-like-mehrdad` — working defaults for judgment, text, orchestrating agents, and spending quota. It loads at the start of every session
+  - `code-like-mehrdad` — code defaults for the ponytail lens, craft, building, and reviewing, with the testing and TypeScript rubrics. It loads when a session plans, edits, debugs, or reviews code
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
 - **guard-worktree** — mod (JS hooks that run inside Claude Code): refuses an edit in a repo's main checkout and tells the agent to make a worktree in `.claude/worktrees/<name>/` with the `EnterWorktree` tool. If the session is already in a worktree, the refusal names the path in it. `EnterWorktree` works only in the repo of the session's folder. For an edit in another repo, the refusal tells the agent to start a new session in that repo, in its own worktree. Fetches before `git worktree add` and refuses a new branch not based on `origin/<default>`. Skips `.wayfinder/`, ignored files, repos with no `origin`, and GitHub repos whose default branch is unprotected (one `gh api` call per repo)
