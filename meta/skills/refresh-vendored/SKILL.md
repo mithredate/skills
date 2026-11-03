@@ -93,15 +93,12 @@ After all skills are processed:
 Print:
 - Per skill: the counts of items adopted, skipped, and adapted, and any footer change, such as a SHA bump or a verb change
 - Files modified
-- A suggested commit message, for example:
+- A suggested commit message of one subject line, for example:
   ```
   refresh: pull updates from mattpocock-skills
-
-  - productivity/prototype: 2 items adopted, SHA bump
-  - productivity/tdd: 1 item adopted; verb re-banded to "Inspired by" (52% drift)
   ```
 
-Bump the patch version in the `plugin.json` of each plugin that changed. Run `./scripts/validate.sh`. If it passes, commit with this message. Push the branch, and open the PR as the Worktree workflow in AGENTS.md says. Put the report and every Open question in the PR body.
+Bump the patch version in the `plugin.json` of each plugin that changed. Run `./scripts/validate.sh`. If it passes, commit with this message. Push the branch, and open the PR as the Worktree workflow in AGENTS.md says. Put the report in the `<details>` block of the PR body. Keep every Open question above it.
 
 ## Output discipline
 
