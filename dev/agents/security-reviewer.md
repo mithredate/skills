@@ -64,6 +64,3 @@ The effect of a defect sets its label.
 - `blocking` is a defect that an attacker, a caller, a user, or a test can see.
 - `discrepancy` means the security model of the plan is wrong, and re-coding to the same plan cannot fix it.
 - `pre_existing` is a defect that the base commit has too, in code that the diff does not change.
-
----
-_Originally seeded from [anthropics/claude-code-security-review/.claude/commands/security-review.md](https://github.com/anthropics/claude-code-security-review/tree/c19afa74097b892109a6598b94297280ce7d1beb/.claude/commands/security-review.md) — MIT © 2025 Anthropic._

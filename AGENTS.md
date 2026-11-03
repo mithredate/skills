@@ -9,7 +9,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 ## Conventions
 
 - **Skill names are verb-first hyphenated** (`import-skill`, `manage-agents-md`). Never linguistically "improve" upstream names; user overrides if needed.
-- **Vendored skills carry a footer** at the bottom of `SKILL.md` linking to the upstream commit. Canonical format: `meta/skills/import-skill/references/footer-format.md`. The link is always preserved (MIT-compliance anchor) even when the skill has fully drifted.
+- **Vendored skills carry a footer** at the bottom of `SKILL.md` linking to the upstream commit. Canonical format: `meta/skills/import-skill/references/footer-format.md`. The link stays (MIT-compliance anchor) while the drift is 80% or less.
 - **The SHA in the footer is a last-reviewed checkpoint**, not the original fork point. Advances every refresh.
 - **No parallel skills.** When concepts conflict, merge or abort — never run two forks of the same idea side by side.
 - **A Skill call that every run needs goes in a "First actions" line at the top of the body.** A Skill call that depends on a fact found later gets a hook on the event that reveals the fact. A Skill call inside a numbered step, or a skill list in a file the agent reads, is skipped about half the time (cakeclub discovery, 2026-10: 18 of 35 ticket sessions never loaded `grilling`, now `settle-decisions`).
@@ -50,7 +50,7 @@ Per session:
 A skill is a deprecation candidate when both conditions hold:
 
 1. No session invoked it in the last 30 days. Claude Code deletes transcripts after 30 days, so this window is the whole visible history. Count sessions, not calls. Count subagent transcripts too, because research and review run in agents.
-2. No skill or agent file calls it. A dependency never shows in a direct count. `codebase-design` is called by `tdd`, and `verification-before-completion` by `systematic-debugging`.
+2. No skill or agent file calls it. A dependency never shows in a direct count. `research` is called by `orchestrate`, and `verification-before-completion` by `systematic-debugging`.
 
 `scripts/skill-usage.sh` prints both numbers for every skill on the branch, with the callers. Run it before you deprecate a skill. A skill younger than the window is exempt. A `meta/` skill is a maintenance tool, so a quiet month is not a verdict on it. Deprecation moves the skill to `deprecated/`. Removal deletes the skill and its lines in `README.md`, `marketplace.json`, and `NOTICES.md`.
 
@@ -62,9 +62,11 @@ Footer verb depends on local drift since last review:
 |---|---|
 | < 30%  | `Adapted from` |
 | 30–80% | `Inspired by` |
-| > 80%  | `Originally seeded from` |
+| > 80%  | no footer |
 
-`merge-skill` rewrites the verb when the band shifts. Its report names the change.
+A file over 80% drift has no footer and no `NOTICES.md` entry. It keeps only the idea of the upstream, and an idea needs no reference.
+
+`merge-skill` rewrites the verb when the band shifts. Over 80%, it deletes the footer and the `NOTICES.md` entry. Its report names the change.
 
 ## When in doubt
 

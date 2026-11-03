@@ -5,7 +5,7 @@ description: Use in a repo with `.wayfinder/`, to set one up, for work too big f
 
 # Orchestrate
 
-First actions: call the Skill tool with `personal:work-like-mehrdad`, `productivity:sweep`, `productivity:settle-decisions`, `productivity:domain-modeling`, and `productivity:prep`.
+First actions: call the Skill tool with `personal:work-like-mehrdad` and `productivity:sweep`.
 
 An **orchestrator repo** plans the work. The sibling repos and systems it plans for hold the implementation.
 
@@ -72,7 +72,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 If the user names no map, ask the user which map to work. Claim no ticket until the user names the map. One session takes every frontier ticket of the map that has no brief, so the human answers one round, not one session for each ticket. `orchestrate fire` builds a ticket whose brief targets a git repo, so `cook` never claims one. A build for another system, such as an n8n instance, opens no PR for a human to review. So `cook` claims it only when the user names it, and runs it with the user present.
 
 1. Read `map.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names, except a build ticket for a git repo. Claim them before any other work. If no such ticket is on the frontier, give the user the first gate's checklist. List each build ticket on the frontier as approved or as waiting for a yes. Ask for the yes on each waiting ticket by the rules of `productivity:prep`. Then go to step 7.
+2. Claim every frontier ticket that is not a `gate` and has no brief, or the tickets that the user names, except a build ticket for a git repo. Claim them before any other work. If no such ticket is on the frontier, give the user the first gate's checklist. List each build ticket on the frontier as approved or as waiting for a yes. Show the brief of each waiting ticket. Ask the user for a yes. Then go to step 7.
    - Only the user's yes to a brief that you showed in this session adds `approved:`. A request to cook or to build is not a yes.
 3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under the map's Decisions so far. The resolution of a build ticket links the PRs or the Verification evidence.
@@ -124,6 +124,3 @@ When the decisions for a change are made, write the build as `task` tickets, and
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
-
----
-_Originally seeded from [mattpocock/skills/skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/wayfinder) — MIT © 2026 Matt Pocock._

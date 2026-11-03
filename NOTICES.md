@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This repository vendors skills from other open-source projects. Originals retain their licenses. Each vendored `SKILL.md` carries a footer linking back to the upstream commit it was forked from.
+This repository vendors skills from other open-source projects. Originals retain their licenses. Each vendored `SKILL.md` carries a footer linking back to the upstream commit it was forked from. A file over 80% drift keeps only the idea, so it has no footer and no entry here.
 
 ## Upstream sources
 
@@ -8,7 +8,7 @@ This repository vendors skills from other open-source projects. Originals retain
 - **Repository:** https://github.com/mattpocock/skills
 - **License:** MIT
 - **Copyright:** © 2026 Matt Pocock
-- **Vendored skills:** dev/tdd, productivity/settle-decisions (seeded from grilling), productivity/write-a-skill (seeded from writing-great-skills), productivity/teach, deprecated/wayfinder, productivity/orchestrate (seeded from wayfinder), productivity/domain-modeling, productivity/research, productivity/prototype, dev/codebase-design
+- **Vendored skills:** dev/tdd, productivity/teach, productivity/research, productivity/prototype
 
 ### skills (humanlayer)
 - **Repository:** https://github.com/humanlayer/skills
@@ -34,12 +34,6 @@ This repository vendors skills from other open-source projects. Originals retain
 - **Copyright:** © 2026 Lauren Tan
 - **Vendored skills:** productivity/unslop
 - **Adapted rules:** dev/tdd, the Unfalsifiable anti-pattern, from `principle-test-behavior-not-implementation`
-
-### claude-code-security-review
-- **Repository:** https://github.com/anthropics/claude-code-security-review
-- **License:** MIT
-- **Copyright:** © 2025 Anthropic
-- **Vendored agents:** dev/agents/security-reviewer (seeded from the `security-review` command)
 
 <!--
 Format for each upstream:

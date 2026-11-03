@@ -26,11 +26,11 @@ When invoked, create a TodoWrite item for each step.
 ### 1. Discover vendored skills
 
 ```bash
-git grep -nE '^_(Adapted from|Inspired by|Originally seeded from) \[' -- '**/SKILL.md' \
+git grep -nE '^_(Adapted from|Inspired by) \[' -- '**/SKILL.md' \
   | grep -v '^deprecated/'
 ```
 
-Note: `deprecated/skills/**` is **excluded** from refresh. Skills you stop using do not need reconciliation.
+Note: `deprecated/skills/**` is **excluded** from refresh. Skills you stop using do not need reconciliation. A skill over 80% drift has no footer, so this step skips it.
 
 For each match, parse the footer to extract:
 - Local skill directory path
@@ -67,7 +67,7 @@ git -C "$tmp/<repo>" log --follow --diff-filter=R --oneline -- <upstream_path>/S
 ```
 
 - **Rename candidates found**: use the most likely match as the new path for the rest of the refresh. Record the new path and its commit in the PR body. Update the footer URL when `merge-skill` rewrites it.
-- **No candidates found (likely deleted upstream)**: keep the local skill as fully forked. Recompute the drift band. Soften the verb, probably to `Originally seeded from`. Keep the link to the upstream's last commit. If you delete the local skill, you reverse a decision of the human. If you recommend it, list it under Open questions in the PR body.
+- **No candidates found (likely deleted upstream)**: keep the local skill as fully forked. Recompute the drift band. If the drift is over 80%, delete the footer and the `NOTICES.md` entry. Otherwise, soften the verb, and keep the link to the upstream's last commit. If you delete the local skill, you reverse a decision of the human. If you recommend it, list it under Open questions in the PR body.
 
 ### 4. Delegate reconciliation to merge-skill
 

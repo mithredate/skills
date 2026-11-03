@@ -6,7 +6,7 @@ argument-hint: "<request | issue key | thread link>"
 
 # Prep
 
-First actions: call the Skill tool with `personal:work-like-mehrdad`, `personal:code-like-mehrdad`, and `productivity:settle-decisions`.
+First actions: call the Skill tool with `personal:work-like-mehrdad` and `dev:ponytail`.
 
 **Arguments:** $ARGUMENTS. The argument is a requirement: a request in the user's words, a Jira or Linear key, or a link to a Slack or Teams thread. In an `orchestrate` hand-off, the requirement is the build ticket and the decisions of its map.
 

@@ -1,5 +1,5 @@
 {
-  "description": "When an agent claims an orchestrator ticket that holds a brief, or prep writes a brief file, tell the agent to load dev:fire. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
+  "description": "When an agent claims an orchestrator ticket that holds a brief, or prep writes a brief file, tell the agent to load dev:fire. When an edit changes the brief of an orchestrator ticket, tell the agent to load productivity:prep. When a skill or agent file of this marketplace changes, tell the agent to load productivity:write-a-skill.",
   "hooks": {
     "PostToolUse": [
       {
@@ -8,6 +8,10 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-fire-on-brief.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-prep-on-brief-edit.mjs\""
           }
         ]
       },
