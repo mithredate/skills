@@ -50,7 +50,7 @@ Per session:
 A skill is a deprecation candidate when both conditions hold:
 
 1. No session invoked it in the last 30 days. Claude Code deletes transcripts after 30 days, so this window is the whole visible history. Count sessions, not calls. Count subagent transcripts too, because research and review run in agents.
-2. No skill or agent file calls it. A dependency never shows in a direct count. `codebase-design` is called by `tdd`, and `verification-before-completion` by `systematic-debugging`.
+2. No skill or agent file calls it. A dependency never shows in a direct count. `research` is called by `orchestrate`, and `verification-before-completion` by `systematic-debugging`.
 
 `scripts/skill-usage.sh` prints both numbers for every skill on the branch, with the callers. Run it before you deprecate a skill. A skill younger than the window is exempt. A `meta/` skill is a maintenance tool, so a quiet month is not a verdict on it. Deprecation moves the skill to `deprecated/`. Removal deletes the skill and its lines in `README.md`, `marketplace.json`, and `NOTICES.md`.
 

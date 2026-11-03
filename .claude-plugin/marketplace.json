@@ -18,7 +18,6 @@
         "./skills/fire",
         "./skills/ponytail",
         "./skills/verification-before-completion",
-        "./skills/codebase-design",
         "./skills/review-pr"
       ]
     },
@@ -30,7 +29,6 @@
         "./skills/settle-decisions",
         "./skills/write-a-skill",
         "./skills/teach",
-        "./skills/domain-modeling",
         "./skills/prototype",
         "./skills/research",
         "./skills/orchestrate",
@@ -97,9 +95,7 @@
       "name": "deprecated",
       "source": "./deprecated",
       "description": "Skills phased out. Still installable to ease the transition; will be removed once unused.",
-      "skills": [
-        "./skills/wayfinder"
-      ]
+      "skills": []
     }
   ]
 }

@@ -23,7 +23,13 @@ A **seam** is the public boundary you test at: the interface where you observe b
 
 Decide: "What's the public interface, and which seams should we test?"
 
-When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface should expose), call the Skill tool with `dev:codebase-design` for the vocabulary. It is the shared source of the module, interface, depth, seam, adapter, leverage and locality terms, and it is a reference to consult, not a session to run.
+When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface should expose), apply these rules:
+
+- A **deep module** puts much behavior behind a small interface.
+- **The deletion test.** If complexity vanishes when the module goes, the module was a pass-through.
+- One adapter means a hypothetical seam. Two adapters mean a real seam.
+- Accept dependencies instead of creating them.
+- Return results instead of side effects.
 
 ## Anti-patterns
 
