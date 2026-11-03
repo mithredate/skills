@@ -9,6 +9,7 @@ const HOOK = fileURLToPath(new URL('./load-code-like-mehrdad-on-code-edit.mjs', 
 const PLUGIN_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const LOAD_CODE_LIKE_MEHRDAD = 'A code file changed. If `personal:code-like-mehrdad` is not loaded, call the Skill tool with it before your next tool call.';
 const READ_TESTING = `If you have not read the testing rubric in this session, read \`${join(PLUGIN_ROOT, 'skills/code-like-mehrdad/references/testing.md')}\`.`;
+const READ_TYPESCRIPT = `If you have not read the TypeScript rubric in this session, read \`${join(PLUGIN_ROOT, 'skills/code-like-mehrdad/references/typescript.md')}\`.`;
 const RUBRIC_PATH = /`(\/[^`]+\.md)`/g;
 
 function hookOutput(input) {
@@ -57,10 +58,24 @@ test('does not name the testing rubric for a code file whose name only looks lik
     }
 });
 
-test('each rubric path in the message exists on disk', () => {
-    const paths = [...editContext('Edit', { file_path: '/repo/tests/test_app.py', old_string: 'a', new_string: 'b' }).matchAll(RUBRIC_PATH)].map((match) => match[1]);
+test('also names the TypeScript rubric after an Edit of a TypeScript file', () => {
+    assert.equal(editContext('Edit', { file_path: '/repo/src/app.ts', old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TYPESCRIPT}`);
+});
 
-    assert.equal(paths.length, 1);
+test('names the TypeScript rubric for each TypeScript extension', () => {
+    for (const ext of ['ts', 'tsx', 'mts', 'cts']) {
+        assert.equal(editContext('Edit', { file_path: `/repo/src/app.${ext}`, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TYPESCRIPT}`, ext);
+    }
+});
+
+test('names both rubrics after a Write of a TypeScript test file', () => {
+    assert.equal(editContext('Write', { file_path: '/repo/src/app.test.ts', content: 'test()\n' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TESTING} ${READ_TYPESCRIPT}`);
+});
+
+test('each rubric path in the message exists on disk', () => {
+    const paths = [...editContext('Edit', { file_path: '/repo/src/app.test.ts', old_string: 'a', new_string: 'b' }).matchAll(RUBRIC_PATH)].map((match) => match[1]);
+
+    assert.equal(paths.length, 2);
     for (const path of paths) assert.ok(existsSync(path), path);
 });
 
