@@ -36,7 +36,7 @@ These defaults are not fixed steps. A more specific skill or a project CLAUDE.md
 
 Context writes are the cost. Effort and thinking are cheap.
 
-- **Fresh session from the initiative after a break.** A resumed session rewrites its whole context.
+- **Fresh session after a break.** After a break of more than one hour, start a fresh session from a written state, such as a brief, a ticket, or a PR. A resumed session then writes its whole context again.
 - **Read the part, not the file**: use grep, offsets, or `sed -n` before you read the whole file.
-- **Delegate for parallelism or to keep raw bulk out of the main context.** An agent costs about 100K tokens to start, before it does any work. This cost means an agent never saves quota by itself.
+- **Delegate for parallelism or to keep raw bulk out of the main context.** An agent writes 10K to 40K tokens of context before it does any work. A `general-purpose` agent is at the top of that range. This cost means an agent never saves quota by itself.
 - **One reviewer with a small input** such as a diff, a brief, or a CLAUDE.md file beats four reviewers with the whole repo.
