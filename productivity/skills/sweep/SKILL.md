@@ -60,7 +60,7 @@ The step is done when each live link has a state or a "not checked" mark, and yo
 
 ## Session items
 
-Use this section only at the end of an orchestrate session. List each answer from the user, each fact that you found, and each new term. For each item, name its place: a ticket resolution, a new ticket, Not yet specified, Out of scope, the map's Notes, `CONTEXT.md`, or an ADR.
+Use this section only at the end of an orchestrate session. List each answer from the user, each fact that you found, and each new term. For each item, name its place: a ticket resolution, a new ticket, Not yet specified, Out of scope, or the map's Notes.
 
 ## Result
 

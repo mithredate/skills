@@ -160,4 +160,4 @@ merge: absorb superpowers/tdd into productivity/tdd
 - **Target plugin not registered in `marketplace.json`.** Stop with an error. Tell the user to register the plugin first.
 - **Upstream directory holds nested skill directories.** The fresh import path copies only the top-level `SKILL.md` and its sibling files, such as `references/` and `scripts/`. The merge path compares only these same files. Neither path recurses into a nested skill.
 - **Upstream skill has no `SKILL.md`.** Check for this in Step 2. Refuse to continue.
-- **Merge path with a non-vendored local skill.** The existing skill is fully authored by the user and has no footer. Merge it anyway. `merge-skill`'s Step 6 adds the footer, because `incoming-sha` is provided.
+- **Merge path with a non-vendored local skill.** The existing skill is fully authored by the user and has no footer. Merge it anyway. The caller gives `incoming-sha`, so `merge-skill`'s Step 6 computes the drift. It adds the footer only when the drift is 80% or less.
