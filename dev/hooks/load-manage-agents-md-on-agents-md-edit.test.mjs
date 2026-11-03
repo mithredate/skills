@@ -22,3 +22,37 @@ test('reminds after an Edit of an AGENTS.md', () => {
 
     assert.deepEqual(output, expected);
 });
+
+test('reminds after a Write of a CLAUDE.md in a subfolder', () => {
+    const expected = LOAD_MANAGE_AGENTS_MD;
+
+    const output = editOutput('Write', { file_path: '/repo/sub/CLAUDE.md', content: '# Rules\n' });
+
+    assert.equal(output.additionalContext, expected);
+});
+
+test('reminds after a MultiEdit of an AGENTS.md', () => {
+    const expected = LOAD_MANAGE_AGENTS_MD;
+
+    const output = editOutput('MultiEdit', { file_path: '/repo/AGENTS.md', edits: [{ old_string: 'a', new_string: 'b' }] });
+
+    assert.equal(output.additionalContext, expected);
+});
+
+test('reminds after an Edit of an AGENTS.md inside an agent', () => {
+    const expected = LOAD_MANAGE_AGENTS_MD;
+
+    const output = editOutput('Edit', { file_path: '/repo/AGENTS.md', old_string: 'a', new_string: 'b' }, { agent_id: 'agent-1', agent_type: 'general-purpose' });
+
+    assert.equal(output.additionalContext, expected);
+});
+
+test('stays silent after an Edit of a file that is not named AGENTS.md or CLAUDE.md', () => {
+    const expected = '';
+
+    for (const path of ['/repo/README.md', '/repo/AGENTS.md.bak', '/repo/CLAUDE.local.md']) {
+        const output = editOutput('Edit', { file_path: path, old_string: 'a', new_string: 'b' });
+
+        assert.equal(output.additionalContext, expected, path);
+    }
+});
