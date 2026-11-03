@@ -36,8 +36,18 @@ test('reminds after a MultiEdit of a code file', () => {
     assert.equal(editContext('MultiEdit', { file_path: '/repo/src/app.go', edits: [{ old_string: 'a', new_string: 'b' }] }), LOAD_CODE_LIKE_MEHRDAD);
 });
 
-test('reminds after an Edit of a code file inside a subagent', () => {
-    assert.equal(editContext('Edit', { file_path: '/repo/src/app.py', old_string: 'a', new_string: 'b' }, { agent_id: 'agent-1', agent_type: 'general-purpose' }), LOAD_CODE_LIKE_MEHRDAD);
+test('names only the matching rubric after an Edit of a code file inside an agent', () => {
+    const inAgent = { agent_id: 'agent-1', agent_type: 'general-purpose' };
+
+    assert.equal(editContext('Edit', { file_path: '/repo/src/app.test.js', old_string: 'a', new_string: 'b' }, inAgent), READ_TESTING);
+    assert.equal(editContext('Write', { file_path: '/repo/src/app.test.ts', content: 'test()\n' }, inAgent), `${READ_TESTING} ${READ_TYPESCRIPT}`);
+});
+
+test('stays silent inside an agent after an Edit of a code file with no rubric', () => {
+    const edit = { file_path: '/repo/src/app.py', old_string: 'a', new_string: 'b' };
+
+    assert.equal(editContext('Edit', edit, { agent_id: 'agent-1', agent_type: 'claude' }), '');
+    assert.equal(editContext('Edit', edit), LOAD_CODE_LIKE_MEHRDAD);
 });
 
 test('also names the testing rubric after an Edit of a test file', () => {
