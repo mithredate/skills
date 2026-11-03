@@ -50,7 +50,7 @@ In rounds 2 and 3, also give the reviewers and the verifiers the `pre_existing` 
 
 If a reviewer returns a `blocking` or `discrepancy` finding, start `dev:finding-checker` once. Give it these findings of all reviewers, the diff file, and the brief. Also give it the root, the base commit, and the AGENTS.md or CLAUDE.md of each changed repo. If it returns no JSON, treat each finding as confirmed.
 
-An **open** finding is a finding that `dev:finding-checker` did not refute. A `pre_existing` item is not a finding. A `pre_existing` item and a refuted finding start nothing. Keep each one for the PR body.
+An **open** finding is a finding that `dev:finding-checker` did not refute. A `pre_existing` item is not a finding. A `pre_existing` item and a refuted finding start nothing. Keep each one for the `<details>` block of the PR body.
 
 Then decide:
 
@@ -64,7 +64,10 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 
 ## Hand back
 
-1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. The body names the ticket by title and by its path from the repo root, such as `.wayfinder/<map>/tickets/<file>.md`, because `productivity:sweep` finds the PR by that path. A clone in the scratchpad does not change that path. Without a ticket, the body holds the brief. The body lists the verifier evidence, each open `quality_note`, and each `pre_existing` item. It lists each refuted finding with the evidence of `dev:finding-checker`. It lists each Verification check that the brief puts after the merge.
+1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. Write the body by the PR body rule of `personal:code-like-mehrdad`.
+   - The body names the ticket by title and by its path from the repo root, such as `.wayfinder/<map>/tickets/<file>.md`, because `productivity:sweep` finds the PR by that path. A clone in the scratchpad does not change that path. Without a ticket, the body gives the change in one sentence.
+   - The body lists each Verification check that the brief puts after the merge.
+   - One `<details>` block at the end holds the verifier evidence, each open `quality_note`, and each `pre_existing` item. It holds each refuted finding with the evidence of `dev:finding-checker`. Without a ticket, it also holds the brief.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".

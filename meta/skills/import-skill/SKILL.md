@@ -13,7 +13,7 @@ This skill pairs with [`refresh-vendored`](../refresh-vendored/SKILL.md). All th
 
 This skill runs in a **dedicated git worktree per session**. It never runs directly on `main`. The worktree is created after Step 4, when the target name is resolved. All later file edits happen in the worktree. On success, the skill commits and pushes the branch. On a validation failure, the worktree stays dirty for inspection. See AGENTS.md, section Worktree workflow, for the details.
 
-First actions: call the Skill tool with `productivity:settle-decisions`. Record each decision you make in the PR body.
+First actions: call the Skill tool with `productivity:settle-decisions`. Record each decision you make in the `<details>` block of the PR body.
 
 ## Process
 
@@ -103,7 +103,7 @@ Check the newly imported skill directory. Fix each structural mismatch. Here are
 - **Doc files next to `SKILL.md`**, such as `REFERENCE.md`, `EXAMPLES.md`, or `FORMS.md`. Move them into `references/`. Local convention puts doc files in `references/`, not at the skill root.
 - **Loose scripts at the skill root**. Move them into `scripts/`.
 - **Asset files**, such as `.png`, `.svg`, or templates. Move them into `assets/`.
-- **An unusual order in the `SKILL.md` body**, such as a missing `## When to use` section. Flag this in the PR body only. Do not rewrite the content yourself.
+- **An unusual order in the `SKILL.md` body**, such as a missing `## When to use` section. Flag this in the `<details>` block of the PR body only. Do not rewrite the content yourself.
 
 If you moved a file, update the matching link in `SKILL.md`. For example, change `[REFERENCE.md](REFERENCE.md)` to `[references/REFERENCE.md](references/REFERENCE.md)`.
 
@@ -127,7 +127,7 @@ Commit in the worktree with a message in this form:
 vendor: import productivity/grill-me from mattpocock-skills
 ```
 
-Push the branch. Open the PR with the body shape from `write-a-skill`. Show the files you created and the files you changed.
+Push the branch. Open the PR with a body by the PR body rule of `personal:code-like-mehrdad`. Show the files you created and the files you changed.
 
 Tell the user that the installed copy changes only after the PR merges. The marketplace clone auto-updates. Then this command fetches the new plugin version:
 
