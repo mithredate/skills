@@ -11,7 +11,7 @@ This skill runs in a **dedicated git worktree per session**. It never runs direc
 
 Footer format reference: [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md). The SHA in the footer is a **last-reviewed checkpoint**, not the original fork commit. It moves forward after every successful refresh, whether `merge-skill` adopts or skips the changes.
 
-First actions: call the Skill tool with `productivity:settle-decisions`. Record each decision you make in the PR body.
+First actions: call the Skill tool with `productivity:settle-decisions`. Record each decision you make in the `<details>` block of the PR body.
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ For each match, parse the footer to extract:
 - Upstream `owner/repo`, last-reviewed SHA, upstream skill path (from the `tree/<sha>/<path>` URL)
 - Current footer verb
 
-If a footer is malformed, or missing the `/tree/<sha>/` component, flag it and skip it. List it in the PR body.
+If a footer is malformed, or missing the `/tree/<sha>/` component, flag it and skip it. List it in the `<details>` block of the PR body.
 
 Report the discovered list before proceeding.
 
@@ -66,7 +66,7 @@ If it does not:
 git -C "$tmp/<repo>" log --follow --diff-filter=R --oneline -- <upstream_path>/SKILL.md
 ```
 
-- **Rename candidates found**: use the most likely match as the new path for the rest of the refresh. Record the new path and its commit in the PR body. Update the footer URL when `merge-skill` rewrites it.
+- **Rename candidates found**: use the most likely match as the new path for the rest of the refresh. Record the new path and its commit in the `<details>` block of the PR body. Update the footer URL when `merge-skill` rewrites it.
 - **No candidates found (likely deleted upstream)**: keep the local skill as fully forked. Recompute the drift band. If the drift is over 80%, delete the footer and the `NOTICES.md` entry. Otherwise, soften the verb, and keep the link to the upstream's last commit. If you delete the local skill, you reverse a decision of the human. If you recommend it, list it under Open questions in the PR body.
 
 ### 4. Delegate reconciliation to merge-skill
@@ -107,7 +107,7 @@ Bump the patch version in the `plugin.json` of each plugin that changed. Run `./
 
 ## Edge cases
 
-- **Footer missing or malformed**: flag it, skip it, and list it in the PR body.
-- **Last-reviewed SHA cannot be resolved even after deepening to depth 1000**: flag it. Use the upstream's earliest available commit as a fallback, and record it in the PR body. Later refresh comparisons can overreport changes once, then return to normal.
-- **`merge-skill` aborts mid-skill**, for example when a patch fails to apply cleanly. Restore that skill's files with `git checkout -- <skill dir>`. Delete the files that the attempt added with `git clean -fd -- <skill dir>`. List the skill in the PR body as not refreshed. Continue with the next skill.
+- **Footer missing or malformed**: flag it, skip it, and list it in the `<details>` block of the PR body.
+- **Last-reviewed SHA cannot be resolved even after deepening to depth 1000**: flag it. Use the upstream's earliest available commit as a fallback, and record it in the `<details>` block of the PR body. Later refresh comparisons can overreport changes once, then return to normal.
+- **`merge-skill` aborts mid-skill**, for example when a patch fails to apply cleanly. Restore that skill's files with `git checkout -- <skill dir>`. Delete the files that the attempt added with `git clean -fd -- <skill dir>`. List the skill in the `<details>` block of the PR body as not refreshed. Continue with the next skill.
 - **Multiple vendored skills from the same upstream**: clone the upstream once in step 2. Reuse that temporary directory for all of them.

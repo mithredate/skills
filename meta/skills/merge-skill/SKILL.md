@@ -94,7 +94,7 @@ Print:
 - the deleted footer and `NOTICES.md` entry, if the drift is above 80%
 - a suggested commit message
 
-The caller commits. When you run this skill on its own, ship the change as the Ship section of `productivity:write-a-skill` says. Put the report in the PR body.
+The caller commits. When you run this skill on its own, ship the change as the Ship section of `productivity:write-a-skill` says. Put the report in the `<details>` block of the PR body.
 
 ## Edge cases
 
