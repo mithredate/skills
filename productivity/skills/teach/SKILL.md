@@ -52,7 +52,7 @@ A lesson should be **beautiful**, with clean, readable typography and layout, si
 
 The lesson should be short, and completable very quickly. Learners' working memory is very small, and we need to stay within it. But each lesson should give the user a single tangible win that they can build on. It should be directly tied to the mission, and should be in the user's zone of proximal development.
 
-If possible, open the lesson file for the user by running a CLI command.
+If possible, open the lesson file for the user.
 
 Each lesson should link via HTML anchors to other lessons and reference documents.
 
@@ -81,12 +81,6 @@ Missions may change as the user develops more skills and knowledge. This is norm
 ## Zone Of Proximal Development
 
 Each lesson, the user should always feel as if they are being challenged 'just enough'.
-
-The user may specify an exact thing they want to learn. If they don't, figure out their zone of proximal development by:
-
-- Reading their `learning-records`
-- Figuring out the right thing to teach them based on their mission
-- Teach the most relevant thing that fits in their zone of proximal development
 
 ## Knowledge
 
