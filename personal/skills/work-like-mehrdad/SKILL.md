@@ -50,6 +50,8 @@ Context writes are the cost. Effort and thinking are cheap.
 - **Paths in a PR.** In a PR, a PR comment, or a commit message, name a file by its path in the PR's repo. Do not name a local path, such as a home folder, a temp folder, or the scratchpad. A local path shows the user name, the session, and the other projects on the machine. In a public repo, also do not name a path in another repo.
 - **Answer every review comment.** Fix a bot point at its root cause, or reply why it does not apply. Then resolve the thread. Post a reply to a human only after Mehrdad agrees to it. Answer the points of a review body in one numbered PR comment, because a review body has no thread. Then request a new review.
 - **Tests ship with the change.** Use DAMP, not DRY, in tests. Prefer custom stubs and fakes over mocks. Fix the root cause, never the symptom. Keep CI green and add any missing checks. Use `dev:tdd` for the red-green loop. Use `dev:fire` for a change that has a brief.
+- **Audit each new dependency.** After you add or upgrade a dependency, run the audit command of its package manager. Examples are `npm audit`, `pnpm audit`, and `composer audit`. Fix or report each High or Critical finding.
+- **Clean up before you report.** Before you report a task done, stop each process that this session started. Delete each tool, cache entry, or global package that this session added only for the task. Never delete a whole shared cache, such as the `npx` cache or the `uv` cache. Parallel sessions and MCP servers use it. List what you kept, with the reason.
 - Read the matching rubric when you touch that area. For tests, read [references/testing.md](references/testing.md). For TypeScript, read [references/typescript.md](references/typescript.md).
 
 ## When reviewing

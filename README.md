@@ -49,6 +49,26 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 2. `/plugin marketplace add mithredate/skills`
 3. `/plugin install <plugin-name>@skills`
 
+## Machine setup
+
+A plugin cannot set package-manager config. Apply these settings once on each machine. In 2026, attackers used hijacked maintainer accounts to publish malicious new versions on npm and PyPI. With these settings, npm, pnpm, and uv refuse a version that is younger than 7 days.
+
+| Tool | Setting | 7-day value | Minimum version | Command or config file |
+|---|---|---|---|---|
+| npm | `min-release-age` | `7` (days) | 11.10.0 | `npm config set min-release-age 7` |
+| pnpm | `minimumReleaseAge` | `10080` (minutes) | 10.16.0 | `pnpm config set --global minimum-release-age 10080` |
+| uv | `exclude-newer` | `"7 days"` | 0.9.17 | Add `exclude-newer = "7 days"` to `~/.config/uv/uv.toml` |
+
+`min-release-age` needs npm 11.10.0 or later. Node 22 ships npm 10, which does not have the setting. Run `npm --version` before you set it.
+
+For an urgent fix that is younger than 7 days, exclude only that package:
+
+| Tool | Exclude setting | Minimum version | Example |
+|---|---|---|---|
+| npm | `min-release-age-exclude` | 11.17.0 | `npm install <pkg>@<version> --min-release-age-exclude=<pkg>` |
+| pnpm | `minimumReleaseAgeExclude` | 10.19.0 | Add `<pkg>@<version>` to `minimumReleaseAgeExclude` in the project's `pnpm-workspace.yaml` |
+| uv | `exclude-newer-package` | 0.9.25 | `uv add <pkg>==<version> --exclude-newer-package <pkg>=false` |
+
 ## Vendoring and maintenance
 
 Most skills here are forks of upstream open-source work. Lifecycle:
