@@ -28,7 +28,7 @@ description: Our writing rules. Use when writing a skill, an agent file, a refer
 - Do not join independent clauses with a semicolon or a colon. Write two sentences.
 - Do not use an arrow, a slash for "or", or parentheses that hold a second idea. Write the second idea as its own sentence.
 - Use articles: "the manifest", "a rule". Do not write "manifest lists scripts".
-- Do not use an -ing form as a noun or as a sentence opener. Write "Housekeep the destination", not "Housekeeping the destination".
+- Do not use an -ing form as a noun or as a sentence opener. Write "Check the manifest", not "Checking the manifest".
 - Put no more than three nouns in a row.
 
 ## Paragraphs and lists
@@ -42,6 +42,6 @@ description: Our writing rules. Use when writing a skill, an agent file, a refer
 ## Check before you finish
 
 1. Read every sentence. Count the words. Split any sentence over the limit.
-2. Search the file for: should, may, ensure, perform, an arrow, a semicolon. Each hit is a defect.
+2. Search the file for each word that the Words section bans. Also search for an arrow, a slash for "or", and a semicolon. Each hit is a defect. A hit inside backticks is not a defect.
 3. Search for figurative words. Each hit is a defect.
 4. Search for two words that name the same thing. Keep one.
