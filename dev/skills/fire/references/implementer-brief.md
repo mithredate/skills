@@ -16,7 +16,8 @@ Read the AGENTS.md or CLAUDE.md of each git target first. They declare the test,
 Call the Skill tool with `dev:tdd` before the first edit in a git target. Follow its rules of the loop.
 
 - If the kind of change is `bugfix`, the first commit after the base holds only the failing test. The test must fail for the reason the brief describes. After that commit, no test file changes.
-- Make one commit per red-green cycle. Use conventional-commit messages.
+- Make one commit per red-green cycle. Write each commit message as one conventional-commit subject line.
+- Write no code comment, except a one-line reason that the code cannot show.
 - Run the declared test command before you return `implemented`. A red test suite is not `implemented`.
 
 ## Limits
