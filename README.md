@@ -66,7 +66,7 @@ For an urgent fix that is younger than 7 days, exclude only that package:
 | Tool | Exclude setting | Minimum version | Example |
 |---|---|---|---|
 | npm | `min-release-age-exclude` | 11.17.0 | `npm install <pkg>@<version> --min-release-age-exclude=<pkg>` |
-| pnpm | `minimumReleaseAgeExclude` | 10.16.0 | Add `<pkg>@<version>` to `minimumReleaseAgeExclude` in the project's `pnpm-workspace.yaml` |
+| pnpm | `minimumReleaseAgeExclude` | 10.19.0 | Add `<pkg>@<version>` to `minimumReleaseAgeExclude` in the project's `pnpm-workspace.yaml` |
 | uv | `exclude-newer-package` | 0.9.25 | `uv add <pkg>==<version> --exclude-newer-package <pkg>=false` |
 
 ## Vendoring and maintenance
