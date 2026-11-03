@@ -1,16 +1,16 @@
 # Format
 
-This file holds the file shapes of an orchestrator repo. It uses plain files under `.wayfinder/`, not an issue tracker. The rules are in the orchestrate `SKILL.md`.
+This file holds the file shapes of an orchestrator repo. It uses plain files under `.orchestrate/`, not an issue tracker. The rules are in the orchestrate `SKILL.md`.
 
 ## Layout
 
 ```
-.wayfinder/
+.orchestrate/
   README.md                  index of initiatives
   sources.md                 the hosts that the tracker links to, owned by productivity:sweep
   reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed
   <YYYY-MM-DD>-<slug>/       one open initiative
-    map.md                   the map
+    initiative.md            the initiative
     tickets/<id>.md          one file per ticket
     assets/                  research, specs, digests, linked from tickets
 ```
@@ -18,25 +18,25 @@ This file holds the file shapes of an orchestrator repo. It uses plain files und
 ## Index
 
 ```
-| Map | Status | Destination |
+| Initiative | Status | Goal |
 |---|---|---|
-| [<dir>](<dir>/map.md) | open; <one-line state> | <Destination in one line> |
+| [<dir>](<dir>/initiative.md) | open; <one-line state> | <Goal in one line> |
 ```
 
 The rows are in priority order. The Status column holds one value:
 - `open`, takeable
 - `waiting <who> since <date> (<link>)`. The link points to the PR, issue, or thread, so that `productivity:sweep` can check it.
 - `paused <date> (<resume pointer>)`
-- `closed <date>`. The Map column then links to the report.
+- `closed <date>`. The Initiative column then links to the report.
 
 The text after the status is the one-line state of the initiative.
 
-## Map
+## Initiative
 
 ```markdown
-## Destination
+## Goal
 
-<what the end of this map looks like: the spec, decision, or change. One or two lines. The last sentence starts with "Closes when".>
+<what the end of this initiative looks like: the spec, decision, or change. One or two lines. The last sentence starts with "Closes when".>
 
 ## Notes
 
@@ -52,7 +52,7 @@ The text after the status is the one-line state of the initiative.
 
 ## Out of scope
 
-<work ruled past the destination, each line with its reason and a link to the closed ticket>
+<work ruled past the goal, each line with its reason and a link to the closed ticket>
 ```
 
 ## Ticket
@@ -74,7 +74,7 @@ blocked-by: [<id>, ...]
 <appended on close: for a decision ticket, one record of `productivity:settle-decisions` for each decision. For another ticket, what was done and the facts that later tickets need>
 ```
 
-A ticket is on the frontier when `status: open`, `assignee` is empty, and every `blocked-by` id is closed. Assets are files under `assets/`, linked from the ticket.
+A ticket is ready when `status: open`, `assignee` is empty, and every `blocked-by` id is closed. Assets are files under `assets/`, linked from the ticket.
 
 ## Brief
 

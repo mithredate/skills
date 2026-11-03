@@ -1,6 +1,6 @@
 ---
 name: sweep
-description: Use when the user says "sweep", "check the PRs", or "what changed" in a `.wayfinder/` repo, or when `orchestrate` or `sup` calls it.
+description: Use when the user says "sweep", "check the PRs", or "what changed" in a `.orchestrate/` repo, or when `orchestrate` or `sup` calls it.
 ---
 
 # Sweep
@@ -14,7 +14,7 @@ The caller names a mode:
 
 ## Sources
 
-`.wayfinder/sources.md` lists each host that the tracker links to. Sweep owns this file.
+`.orchestrate/sources.md` lists each host that the tracker links to. Sweep owns this file.
 
 ```markdown
 # Sources
@@ -30,9 +30,9 @@ A **live link** is a link to a host with `Live: yes`. Set `Live` to `yes` for a 
 
 ## Live links
 
-1. For each map that the caller names, collect these files:
-   - the row of the map in `.wayfinder/README.md`
-   - the Notes section of `map.md`
+1. For each initiative that the caller names, collect these files:
+   - the row of the initiative in `.orchestrate/README.md`
+   - the Notes section of `initiative.md`
    - each ticket with `status: open`
    - each closed ticket with a `## Brief` section
 2. Get every link from these files.
@@ -41,7 +41,7 @@ A **live link** is a link to a host with `Live: yes`. Set `Live` to `yes` for a 
    ```
 3. Match each link to the longest Host in `sources.md`. Skip a link whose host has `Live: no`.
 4. If no Host matches a link, the host is new. Give the host one row in the result table, with the place `sources.md`. If `sources.md` is missing, every host is new.
-5. If a ticket has a `## Brief` with a git repo in its Targets or in an older Repos line, and no PR link, search for the PR with `gh search prs "<ticket path from the repo root>"`. An example path is `.wayfinder/<map>/tickets/<file>.md`. `dev:fire` names this path in each PR body.
+5. If a ticket has a `## Brief` with a git repo in its Targets or in an older Repos line, and no PR link, search for the PR with `gh search prs "<initiative dir>/tickets/<file>.md" --repo <target repo>`. The path starts below `.orchestrate/`, because an older PR body names another tracker folder. `dev:fire` names the full path in each PR body.
 6. If a `waiting` row has no link, mark the row "check by hand".
 
 The step is done when each live link is listed with the file that holds it, and each new host has a row.
@@ -60,7 +60,7 @@ The step is done when each live link has a state or a "not checked" mark, and yo
 
 ## Session items
 
-Use this section only at the end of an orchestrate session. List each answer from the user, each fact that you found, and each new term. For each item, name its place: a ticket resolution, a new ticket, Not yet specified, Out of scope, or the map's Notes.
+Use this section only at the end of an orchestrate session. List each answer from the user, each fact that you found, and each new term. For each item, name its place: a ticket resolution, a new ticket, Not yet specified, Out of scope, or the Notes of the initiative.
 
 ## Result
 
@@ -71,7 +71,7 @@ Write one table. It has one row for each live link whose state is different from
 | [Subscription spec PR](https://github.com/org/repo/pull/12) | waiting Amin since 2026-10-03 | approved 2026-10-04 | index row, status `open` |
 | `acme.atlassian.net` | not in `sources.md` | Jira issues, Live `yes` | `sources.md` |
 
-For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value by the rule in Sources. A live link whose state matches the record gets no row. After the table, give the number of links checked and the number of claims for each map. Then list each link marked "not checked" or "check by hand".
+For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value by the rule in Sources. A live link whose state matches the record gets no row. After the table, give the number of links checked and the number of claims for each initiative. Then list each link marked "not checked" or "check by hand".
 
 - In write mode, write each row to its place. Give each claim and its link to the caller. The step is done when each row is written.
 - In report mode, print the table and write nothing. Print no claim.
