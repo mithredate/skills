@@ -22,7 +22,7 @@ The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:verifier`, `dev:find
 
 ## Build
 
-Start one agent with the Agent tool, on Opus. Give it:
+Start one agent with the Agent tool, on Opus. If a target is a git repo, start the prompt with `First actions: call the Skill tool with dev:tdd.` Give it:
 
 - the path of [references/implementer-brief.md](references/implementer-brief.md), as its contract
 - the path of the ticket or the brief file, and the Brief section, verbatim

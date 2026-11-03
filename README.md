@@ -8,7 +8,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `manage-agents-md` — write, improve, and housekeep a repo's instruction file, `AGENTS.md`, with Claude-only lines in `.claude/rules/claude-code.md`; graduate corrections out of auto-memory into it
   - `tdd` — test-driven development with a red-green-refactor loop
   - `systematic-debugging` — finding root cause before applying a fix
-  - `fire` — build one brief, from a build ticket or from `prep`, with a fresh implementer agent, review it with `pr-reviewer`, `security-reviewer`, and `verifier`, check each serious finding with `finding-checker`, at most three rounds, then open draft PRs. For one PR from a run that `orchestrate fire` did not start, in a repo whose AGENTS.md at the base commit has the line `**fire can auto-merge.**`, the `merge-judge` agent decides between auto-merge and human review. In a repo with no required check, the PR merges at once, and the verifier and the judge are the only checks. Targets can be git repos or other systems such as n8n
+  - `fire` — build one brief, from a build ticket or from `prep`, with a fresh implementer agent, review it with `pr-reviewer`, `security-reviewer`, and `verifier`, check each serious finding with `finding-checker`, at most three rounds, then open draft PRs. For one PR from a run that `orchestrate fire` did not start, in a repo whose AGENTS.md on the base branch has the line `**fire can auto-merge.**`, the `merge-judge` agent decides between auto-merge and human review. In a repo with no required check, the PR merges at once, and the verifier and the judge are the only checks. Targets can be git repos or other systems such as n8n
   - `ponytail` — force the laziest solution that actually works — YAGNI, stdlib first, shortest diff
   - `verification-before-completion` — require fresh verification evidence before claiming work is done
   - `codebase-design` — shared vocabulary for designing deep modules and finding deepening opportunities
@@ -19,7 +19,7 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `refresh-vendored` — reconcile vendored skills against upstream changes
   - `merge-skill` — shared core that reconciles two skill versions into one (used by the above)
 - **productivity** — process and workflow skills
-  - `settle-decisions` — sort each decision, decide the non-critical ones, ask the human the critical ones in short rounds
+  - `settle-decisions` — sort each decision, decide the ones that are not critical or that evidence settles, ask the human the rest in short rounds
   - `write-a-skill` — write or rewrite a skill, an agent file, or a reference: name, invocation, shape, frontmatter, checks, and the PR
   - `write-ste` — the Simplified Technical English rules for every text we author, with the check to run before you finish
   - `teach` — turn the working directory into a stateful workspace for learning a topic across sessions
@@ -31,8 +31,9 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
   - `research` — resolve a factual question a decision waits on via a focused research subagent
   - `prototype` — make a cheap, rough artifact (outline, stub, UI/logic) to react to
   - `unslop` — cut AI tells from any writing
-- **personal** — Mehrdad's personal working defaults
-  - `work-like-mehrdad` — engineering defaults for judgment, orchestrating agents, spending quota, building, and reviewing; loads at the start of any code-touching session
+- **personal** — Mehrdad's personal working and code defaults
+  - `work-like-mehrdad` — working defaults for judgment, text, orchestrating agents, and spending quota. It loads at the start of every session
+  - `code-like-mehrdad` — code defaults for the ponytail lens, craft, building, and reviewing, with the testing and TypeScript rubrics. It loads when a session plans, edits, debugs, or reviews code
 - **in-progress** — skills being actively authored or rewritten (installable for dogfooding; expect churn until they graduate)
   - `show-me` — explain the current topic visually — pseudocode, trees, diffs, mermaid, or one HTML page
 - **guard-worktree** — mod (JS hooks that run inside Claude Code): refuses an edit in a repo's main checkout and tells the agent to make a worktree in `.claude/worktrees/<name>/` with the `EnterWorktree` tool. If the session is already in a worktree, the refusal names the path in it. `EnterWorktree` works only in the repo of the session's folder. For an edit in another repo, the refusal tells the agent to start a new session in that repo, in its own worktree. Fetches before `git worktree add` and refuses a new branch not based on `origin/<default>`. Skips `.wayfinder/`, ignored files, repos with no `origin`, and GitHub repos whose default branch is unprotected (one `gh api` call per repo)

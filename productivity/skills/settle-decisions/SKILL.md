@@ -12,8 +12,8 @@ Map the decisions as a **design tree**. In the tree, each decision branches into
 Sort each frontier decision before you act on it:
 
 1. If the decision is not critical, make it. Use evidence when evidence settles it. Evidence is the code, the docs, a prototype, or a measurement. If evidence does not settle it, pick the option you can defend, and write a hypothesis.
-2. If the decision is critical and evidence settles it, show the evidence and your decision in one line. Act when the human agrees.
-3. If the decision is critical and evidence does not settle it, put it to the human in a round.
+2. If a critical decision has one defensible option, or evidence settles it, do not wait for a yes. First check each fact that the decision rests on in the code, the data, or the docs. This includes your own statements. Then make the decision and record the evidence. If the choice cannot be undone, such as lost data or a message sent to people, wait for a yes.
+3. If evidence does not settle a critical decision and more than one option is defensible, put it to the human in a round.
 
 If the stated goal of the human implies a choice inside that goal, the goal is the answer of the human. Make the choice and record it. Ask about a choice that widens the scope or reverses a decision of the human.
 
@@ -33,7 +33,7 @@ A **conflict** is two claims that disagree. A claim or a conflict that the check
 
 When the human reports a meeting, record what the others said as reported. Each commitment of the human, such as time, scope, or role, stays open until the human confirms it.
 
-Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
+Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent with a fresh context for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
 Write each record, round, and message for a reader who has not read the sources. Say what a thing is, not its label from a source, such as "option A" or "milestone 2".
 
@@ -48,7 +48,7 @@ After the deploy, read the signal. If the hypothesis is false, the fix is a new 
 
 ## The round
 
-Put at most four questions in one round. Put first the questions that block the most decisions. A question that depends on another open question waits for a later round. Then wait for the answers. Each answer settles part of the tree. Recompute the frontier, settle what you can, and ask the next round.
+Put at most four questions in one round. Write each question so that a yes accepts your recommendation. Put first the questions that block the most decisions. A question that depends on another open question waits for a later round. Then wait for the answers. Each answer settles part of the tree. Recompute the frontier, settle what you can, and ask the next round.
 
 Format a round like so:
 
@@ -57,7 +57,7 @@ Format a round like so:
 
 ---
 
-❓ **Q1 - <the decision, in one line>**
+❓ **Q1 - <your recommendation, as a yes or no question>**
 Critical because: <the matching item of the critical list>
 Facts: <at most three bullets>
 - **A**: <option>. Gain: <one line>. Cost: <one line>
@@ -67,7 +67,7 @@ Facts: <at most three bullets>
 
 ---
 
-❓ **Q2 - <a decision that evidence settles>**: <the evidence, with a link>. Confirm?
+❓ **Q2 - <a decision that cannot be undone>**: <the evidence, with a link>. Confirm?
 ```
 
 If you ask in an `AskUserQuestion` dialog, put the full context in the question text. The terminal can hide the message above the dialog.
@@ -75,4 +75,4 @@ If you ask in an `AskUserQuestion` dialog, put the full context in the question 
 The session is done when the frontier is empty. Every decision has a record, and nothing is assumed silently.
 
 ---
-_Originally seeded from [mattpocock/skills/skills/productivity/grilling](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/productivity/grilling) — MIT © 2026 Matt Pocock._
+_Originally seeded from [mattpocock/skills/skills/productivity/grilling](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/productivity/grilling) — MIT © 2026 Matt Pocock._

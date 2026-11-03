@@ -26,7 +26,7 @@ The caller names a mode:
 | `docs.<vendor>.com` | vendor docs | no |
 ```
 
-A **live link** is a link to a host with `Live: yes`. Its target can change. A host with `Live: no` holds pages that do not change the state of a ticket, for example vendor docs. The `no` rows stop the same host from showing as new in every session.
+A **live link** is a link to a host with `Live: yes`. Set `Live` to `yes` for a host whose items can change the state of a ticket. Examples are PRs, issues, pages that people edit, and threads. Set `Live` to `no` for any other host, such as vendor docs. The `no` rows stop the same host from showing as new in every session.
 
 ## Live links
 
@@ -41,7 +41,7 @@ A **live link** is a link to a host with `Live: yes`. Its target can change. A h
    ```
 3. Match each link to the longest Host in `sources.md`. Skip a link whose host has `Live: no`.
 4. If no Host matches a link, the host is new. Give the host one row in the result table, with the place `sources.md`. If `sources.md` is missing, every host is new.
-5. If a ticket has a `## Brief` with a git repo in its Targets or in an older Repos line, and no PR link, search for the PR with `gh search prs "<ticket path>"`. `dev:fire` names the ticket path in each PR body.
+5. If a ticket has a `## Brief` with a git repo in its Targets or in an older Repos line, and no PR link, search for the PR with `gh search prs "<ticket path from the repo root>"`. An example path is `.wayfinder/<map>/tickets/<file>.md`. `dev:fire` names this path in each PR body.
 6. If a `waiting` row has no link, mark the row "check by hand".
 
 The step is done when each live link is listed with the file that holds it, and each new host has a row.
@@ -50,7 +50,7 @@ The step is done when each live link is listed with the file that holds it, and 
 
 Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last time that the record gives for the link. A comment or an edit after that time is new. If the record gives only a date, a comment or an edit on that date is new too. Read the body of each new comment and each new edit.
 
-An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement in a link that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link.
+An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement by another person or a bot that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link.
 
 For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
 
@@ -71,7 +71,7 @@ Write one table. It has one row for each live link whose state is different from
 | [Subscription spec PR](https://github.com/org/repo/pull/12) | waiting Amin since 2026-10-03 | approved 2026-10-04 | index row, status `open` |
 | `acme.atlassian.net` | not in `sources.md` | Jira issues, Live `yes` | `sources.md` |
 
-For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value. Set Live to `yes` when the host holds items that can change: PRs, issues, pages that people edit, or threads. A live link whose state matches the record gets no row. After the table, give the number of links checked and the number of claims for each map. Then list each link marked "not checked" or "check by hand".
+For a live link, the Now column holds only an update. For a new host, the Now column gives what the host holds and the Live value by the rule in Sources. A live link whose state matches the record gets no row. After the table, give the number of links checked and the number of claims for each map. Then list each link marked "not checked" or "check by hand".
 
 - In write mode, write each row to its place. Give each claim and its link to the caller. The step is done when each row is written.
 - In report mode, print the table and write nothing. Print no claim.

@@ -8,7 +8,7 @@ argument-hint: "<PR number | branch> [--inline | --fresh]"
 
 **Arguments:** $ARGUMENTS. The argument is a PR number or a branch name. Add `--inline` or `--fresh` to force a mode. When no flag is given, the mode follows the author.
 
-Review stance, order of findings, and the verify-don't-trust rule come from `personal:work-like-mehrdad`. Call the Skill tool with `personal:work-like-mehrdad` first. The checklists are [../../agents/pr-reviewer.md](../../agents/pr-reviewer.md) and [../../agents/security-reviewer.md](../../agents/security-reviewer.md). Each file is also the system prompt of its agent. The human decides whether to merge.
+Review stance, order of findings, and the verify-don't-trust rule come from `personal:code-like-mehrdad`. Call the Skill tool with `personal:work-like-mehrdad` and `personal:code-like-mehrdad` first. The checklists are [../../agents/pr-reviewer.md](../../agents/pr-reviewer.md) and [../../agents/security-reviewer.md](../../agents/security-reviewer.md). Each file is also the system prompt of its agent. The human decides whether to merge.
 
 ## Gather
 

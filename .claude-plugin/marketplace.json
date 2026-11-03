@@ -77,9 +77,10 @@
     {
       "name": "personal",
       "source": "./personal",
-      "description": "Mehrdad's personal working defaults (work-like-mehrdad).",
+      "description": "Mehrdad's personal working and code defaults (work-like-mehrdad, code-like-mehrdad).",
       "skills": [
-        "./skills/work-like-mehrdad"
+        "./skills/work-like-mehrdad",
+        "./skills/code-like-mehrdad"
       ]
     },
     {

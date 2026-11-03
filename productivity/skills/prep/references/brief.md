@@ -11,10 +11,10 @@ A brief is one `## Brief` section. A build `task` ticket of `orchestrate` holds 
 - Decisions: <each closed decision that the build must follow, one line each, with a link to its ticket or ADR. Optional>
 - FR: <behavior that a caller, a user, or a test can see, one sub-bullet for each requirement>
 - NFR: <limits, one sub-bullet for each limit: security, performance, allowed new dependencies, what stays unbuilt>
-- Verification: <how the session proves it, with real commands and data, and the checks that pass before the hand-back. For a bugfix, the failing test first>
+- Verification: <how the session proves it, with real commands and data, and the checks that pass before the hand-back. For a bugfix, the failing test first. Start a check that runs after the merge with "After merge:">
 ```
 
-Each pair below shows a line that gives the how, then the same line rewritten.
+Each pair below shows a weak line, then the same line rewritten.
 
 <examples>
 <example>

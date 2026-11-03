@@ -1,7 +1,7 @@
 {
   "name": "personal",
-  "version": "0.1.13",
-  "description": "Mehrdad's personal working defaults (work-like-mehrdad).",
+  "version": "0.1.14",
+  "description": "Mehrdad's personal working and code defaults (work-like-mehrdad, code-like-mehrdad).",
   "author": {
     "name": "Mehrdad Hedayati",
     "email": "mehrdad.hedayati@gmail.com"

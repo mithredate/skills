@@ -15,7 +15,7 @@ A false `auto` puts a defect on the default branch, where people and deploys use
 
 ## Inputs
 
-The prompt gives you the path of the diff file and the brief. It also gives the verifier results and the open findings of the last round. It gives the AGENTS.md or CLAUDE.md of the repo at the base commit. Read all of them. Read outside the diff only to check one item, for example the callers of a changed function.
+The prompt gives you the path of the diff file and the brief. It also gives the verifier results and the open findings of the last round. It gives the AGENTS.md or CLAUDE.md of the repo on the base branch. Read all of them. Read outside the diff only to check one item, for example the callers of a changed function.
 
 ## Rubric
 

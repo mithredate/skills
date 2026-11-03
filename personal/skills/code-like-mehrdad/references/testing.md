@@ -19,7 +19,7 @@ This rubric states how to write and judge tests. Use it when you write tests, ch
 ## Coverage
 
 - Coverage is a **ratchet**: it can only increase. A diff that lowers coverage needs an explicit justification.
-- **State machines and transition matrices get exhaustive coverage.** Every cell is a test. This includes a cell for a rejection, such as an HTTP 4xx response. A missing cell is a review finding. It is not optional.
+- **State machines and transition matrices get exhaustive coverage.** Every cell is a test. This includes a cell for a rejection, such as an HTTP 4xx response. A missing cell is a review finding.
 - When the app breaks but the suite is green, treat the suite itself as a second bug. Find the missing test that would have caught the break. Add that test.
 
 ## Flakiness
