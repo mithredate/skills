@@ -6,7 +6,7 @@ for await (const chunk of process.stdin) data += chunk;
 const input = JSON.parse(data || '{}').tool_input ?? {};
 const editedText = [input.new_string, input.content, ...(input.edits ?? []).map((edit) => edit.new_string)].join('\n');
 
-const TRACKER_TICKET = /\/\.wayfinder\/[^/]+\/tickets\/[^/]+\.md$/;
+const TRACKER_TICKET = /\/\.orchestrate\/[^/]+\/tickets\/[^/]+\.md$/;
 const CLAIM = /^assignee:[ \t]*\S/m;
 const BRIEF = /^## Brief$/m;
 const BRIEF_FILE = /\/scratchpad\/brief\.md$/;
