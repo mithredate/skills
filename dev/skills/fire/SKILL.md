@@ -50,7 +50,7 @@ In rounds 2 and 3, also give the reviewers and the verifiers the `pre_existing` 
 
 If a reviewer returns a `blocking` or `discrepancy` finding, start `dev:finding-checker` once. Give it these findings of all reviewers, the diff file, and the brief. Also give it the root, the base commit, and the AGENTS.md or CLAUDE.md of each changed repo. If it returns no JSON, treat each finding as confirmed.
 
-An **open** finding is a finding that `dev:finding-checker` did not refute. A `pre_existing` item is not a finding. A `pre_existing` item and a refuted finding start nothing. Keep each one for the PR body.
+An **open** finding is a finding that `dev:finding-checker` did not refute. A `pre_existing` item is not a finding. A `pre_existing` item and a refuted finding start nothing. Keep each one for the `<details>` block of the PR body.
 
 Then decide:
 
