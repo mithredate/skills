@@ -7,27 +7,23 @@ const TRACKER_TICKET = /\/\.wayfinder\/[^/]+\/tickets\/[^/]+\.md$/;
 const BRIEF = /^## Brief$/m;
 const NEXT_SECTION = /^## /m;
 
-// True when an occurrence of the text in the file overlaps the range from start to end.
-function overlaps(file, text, start, end) {
-    for (let at = file.indexOf(text); at >= 0; at = file.indexOf(text, at + 1)) {
-        if (at < end && at + text.length > start) return true;
-    }
-    return false;
+// The text under the brief heading up to the next section, or null for a file with no brief.
+function briefOf(file) {
+    const heading = file.search(BRIEF);
+    if (heading < 0) return null;
+    const body = file.slice(heading + '## Brief'.length);
+    const next = body.search(NEXT_SECTION);
+    return (next < 0 ? body : body.slice(0, next)).trim();
 }
 
 try {
-    const input = JSON.parse(data).tool_input;
+    const { tool_input: input, tool_response: response } = JSON.parse(data);
     if (TRACKER_TICKET.test(input.file_path)) {
-        const file = readFileSync(input.file_path, 'utf8');
-        const heading = file.search(BRIEF);
-        // The brief starts after its heading line, so an edit that only anchors on the heading is outside it.
-        const start = heading + '## Brief\n'.length;
-        const next = file.slice(start).search(NEXT_SECTION);
-        const end = next < 0 ? file.length : start + next;
-        // ponytail: a deletion leaves no text to find, so it gets no reminder.
-        const editedTexts = [input.new_string, input.content, ...(input.edits ?? []).map((edit) => edit.new_string)].filter(Boolean);
+        // A new file has a null originalFile. A tool response without it counts as a new file too.
+        const before = briefOf(response?.originalFile ?? '');
+        const after = briefOf(readFileSync(input.file_path, 'utf8'));
 
-        if (heading >= 0 && editedTexts.some((text) => overlaps(file, text, start, end))) {
+        if (before !== after) {
             console.log(JSON.stringify({
                 hookSpecificOutput: {
                     hookEventName: 'PostToolUse',

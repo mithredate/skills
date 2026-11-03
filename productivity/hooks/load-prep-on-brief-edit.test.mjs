@@ -26,6 +26,7 @@ const TICKET = [
     '',
     'Fire returned blocked: the sandbox has no DNS record.',
 ].join('\n');
+const TICKET_WITHOUT_RESOLUTION = TICKET.split('\n\n## Resolution')[0];
 
 function writeFile(relativePath, content) {
     const path = join(mkdtempSync(join(tmpdir(), 'prep-on-brief-edit-')), relativePath);
@@ -40,14 +41,21 @@ function hookOutput(input) {
     return stdout.toString() ? JSON.parse(stdout).hookSpecificOutput.additionalContext : '';
 }
 
-function contextFor(toolName, toolInput) {
-    return hookOutput(JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: toolName, tool_input: toolInput }));
+function contextFor(toolName, toolInput, toolResponse) {
+    return hookOutput(JSON.stringify({ hook_event_name: 'PostToolUse', tool_name: toolName, tool_input: toolInput, tool_response: toolResponse }));
+}
+
+// Edits the file the way the Edit tool does, then runs the hook with the tool's input and response.
+function contextAfterEdit(path, old_string, new_string) {
+    const originalFile = readFileSync(path, 'utf8');
+    writeFileSync(path, originalFile.replace(old_string, () => new_string));
+    return contextFor('Edit', { file_path: path, old_string, new_string }, { filePath: path, oldString: old_string, newString: new_string, originalFile });
 }
 
 test('reminds after an Edit inside the brief of a ticket', () => {
     const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
-    const context = contextFor('Edit', { file_path: path, old_string: 'the new address', new_string: 'the sandbox sends from the new address' });
+    const context = contextAfterEdit(path, 'the new address', 'the sandbox sends from the new address');
 
     assert.equal(context, LOAD_PREP);
 });
@@ -55,7 +63,7 @@ test('reminds after an Edit inside the brief of a ticket', () => {
 test('reminds after a Write of a ticket that holds a brief', () => {
     const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-20.md', TICKET);
 
-    const context = contextFor('Write', { file_path: path, content: TICKET });
+    const context = contextFor('Write', { file_path: path, content: TICKET }, { type: 'create', filePath: path, content: TICKET, originalFile: null });
 
     assert.equal(context, LOAD_PREP);
 });
@@ -78,8 +86,41 @@ test('stays silent after an Edit that claims the ticket, approves it, or records
         ['assignee:', 'assignee: claude'],
         ['---\n\n## Brief', 'approved: 2026-11-03\n---\n\n## Brief'],
         ['blocked:', 'Fire returned blocked:'],
-    ]) assert.equal(contextFor('Edit', { file_path: path, old_string, new_string }), '', new_string);
-    assert.equal(contextFor('Edit', { file_path: path, old_string: 'example.com', new_string: 'noreply@example.com' }), LOAD_PREP);
+    ]) assert.equal(contextAfterEdit(path, old_string, new_string), '', new_string);
+    assert.equal(contextAfterEdit(path, 'example.com', 'noreply@example.com'), LOAD_PREP);
+});
+
+test('stays silent after an Edit that anchors on the last brief line to add a resolution', () => {
+    const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-17.md', TICKET_WITHOUT_RESOLUTION);
+
+    const context = contextAfterEdit(path, '- FR: the From header is noreply@example.com', '- FR: the From header is noreply@example.com\n\n## Resolution\n\nBuilt in PR 12.');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after an Edit outside the brief whose new text the brief repeats', () => {
+    const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-18.md', [
+        '---',
+        'id: brz-18',
+        'assignee: orchestrate fire 2026-11-03T10:00Z',
+        '---',
+        '',
+        '## Brief',
+        '',
+        '- FR: a claim sets assignee: to the session name',
+    ].join('\n'));
+
+    const context = contextAfterEdit(path, 'assignee: orchestrate fire 2026-11-03T10:00Z', 'assignee:');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after a Write that adds a resolution and keeps the brief', () => {
+    const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextFor('Write', { file_path: path, content: TICKET }, { type: 'update', filePath: path, content: TICKET, originalFile: TICKET_WITHOUT_RESOLUTION });
+
+    assert.equal(context, '');
 });
 
 test('stays silent after an Edit of a map or of a brief file outside a ticket', () => {
