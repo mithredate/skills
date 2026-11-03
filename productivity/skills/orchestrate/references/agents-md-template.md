@@ -1,6 +1,6 @@
 # Instruction files for an orchestrator repo
 
-This file holds repo facts only. The procedure lives in the `productivity:orchestrate` skill. The defaults live in `personal:work-like-mehrdad`.
+This file holds repo facts only. The procedure lives in the `productivity:orchestrate` skill. The working defaults live in `personal:work-like-mehrdad`. The code defaults live in `personal:code-like-mehrdad`.
 
 Every agent reads `AGENTS.md`.
 
