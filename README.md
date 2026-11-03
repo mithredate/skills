@@ -51,7 +51,9 @@ Opinionated, curated Claude Code skills — vendored from upstream sources (matt
 
 ## Machine setup
 
-A plugin cannot set package-manager config. Apply these settings once on each machine. In 2026, attackers used hijacked maintainer accounts to publish malicious new versions on npm and PyPI. With these settings, npm, pnpm, and uv refuse a version that is younger than 7 days.
+In 2026, attackers used hijacked maintainer accounts to publish malicious new versions on npm and PyPI. With these settings, npm, pnpm, and uv refuse a version that is younger than 7 days.
+
+The managed settings link of `guard-infra/sandbox.json` sets the cooldown for every Claude Code session. Its `env` block sets `npm_config_min_release_age`, `pnpm_config_minimum_release_age`, and `UV_EXCLUDE_NEWER`. These variables override the value in a project's `.npmrc` or `pnpm-workspace.yaml`. uv needs 0.9.17 or later to read the duration in `UV_EXCLUDE_NEWER`. A plugin cannot set package-manager config. For your own terminal, apply the settings below once on each machine.
 
 | Tool | Setting | 7-day value | Minimum version | Command or config file |
 |---|---|---|---|---|
