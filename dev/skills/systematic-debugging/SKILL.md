@@ -41,18 +41,23 @@ Use for ANY technical issue:
 - You're in a hurry (rushing guarantees rework)
 - Manager wants it fixed NOW (systematic is faster than thrashing)
 
-## Phase 3: Hypothesis and Testing
+## Phase 1: Root Cause Investigation
 
-2. **Test Minimally**
+Find the root cause before you propose a fix. The root cause is the first place where the value or the state goes wrong.
+
+## Phase 2: Hypothesis and Testing
+
+1. **Test Minimally**
    - Make the SMALLEST possible change to test hypothesis
    - One variable at a time
    - Don't fix multiple things at once
 
-4. **When You Don't Know**
+2. **When You Don't Know**
    - Say "I don't understand X"
    - Don't pretend to know
+   - Ask for help
 
-## Phase 4: Implementation
+## Phase 3: Implementation
 
 1. **Create Failing Test Case**
    - Simplest possible reproduction
@@ -61,17 +66,17 @@ Use for ANY technical issue:
    - MUST have before fixing
    - Use the `dev:tdd` skill for writing proper failing tests
 
-3. **Verify Fix**
+2. **Verify Fix**
    - Use the `dev:verification-before-completion` skill before claiming success
 
-4. **If Fix Doesn't Work**
+3. **If Fix Doesn't Work**
    - STOP
    - Count: How many fixes have you tried?
    - If < 3: Return to Phase 1, re-analyze with new information
-   - **If ≥ 3: STOP and question the architecture (step 5 below)**
+   - **If ≥ 3: STOP and question the architecture (step 4 below)**
    - DON'T attempt Fix #4 without architectural discussion
 
-5. **If 3+ Fixes Failed: Question Architecture**
+4. **If 3+ Fixes Failed: Question Architecture**
 
    **Pattern indicating architectural problem:**
    - Each fix reveals new shared state/coupling/problem in different place
@@ -104,7 +109,7 @@ If you catch yourself thinking:
 
 **ALL of these mean: STOP. Return to Phase 1.**
 
-**If 3+ fixes failed:** Question the architecture (see Phase 4.5)
+**If 3+ fixes failed:** Question the architecture (see Phase 3.4)
 
 ## your human partner's Signals You're Doing It Wrong
 
@@ -119,7 +124,7 @@ If you catch yourself thinking:
 
 ## When Process Reveals "No Root Cause"
 
-**But:** 95% of "no root cause" cases are incomplete investigation.
+95% of "no root cause" cases are incomplete investigation.
 
 ---
 _Adapted from [obra/superpowers/skills/systematic-debugging](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging) — MIT © 2025 Jesse Vincent._
