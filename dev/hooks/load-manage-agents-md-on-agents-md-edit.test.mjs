@@ -56,3 +56,13 @@ test('stays silent after an Edit of a file that is not named AGENTS.md or CLAUDE
         assert.equal(output.additionalContext, expected, path);
     }
 });
+
+test('stays silent and exits 0 for empty or malformed input', () => {
+    const expected = '';
+
+    for (const input of ['', 'not json']) {
+        const output = hookOutput(input);
+
+        assert.equal(output.additionalContext, expected, input);
+    }
+});
