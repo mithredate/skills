@@ -22,10 +22,6 @@ Only include these when they add genuine value. Most records won't need them.
 - **Evidence**: how the user demonstrated the understanding (a question answered, an exercise completed, prior experience cited). Useful when the claim might be revisited.
 - **Implications**: what this unlocks or rules out for future sessions. Worth recording when non-obvious.
 
-## Numbering
-
-Scan `./learning-records/` for the highest existing number and increment by one.
-
 ## When to write a learning record
 
 Write one when any of these is true:

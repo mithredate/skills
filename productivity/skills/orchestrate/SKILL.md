@@ -62,7 +62,7 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 1. Name the goal with the user. The goal fixes the scope, so settle it first. It ends with one sentence that starts with `Closes when`. The step is done when the user agrees to the goal.
 2. List the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no initiative. Write the user a prompt that starts that session. Then stop.
 3. Write `initiative.md` with the Goal and the Notes. Leave Decisions so far empty. List the unspecified questions under Not yet specified.
-4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges in a second pass.
+4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges.
 5. For each research ticket, start a subagent with a fresh context that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
 6. Sweep the session as in `cook` step 6.
 7. Commit and push.
