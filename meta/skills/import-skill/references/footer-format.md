@@ -14,7 +14,7 @@ _<Verb> [<owner>/<repo>/<upstream-path>](https://github.com/<owner>/<repo>/tree/
 - **Verb**. This word encodes the current drift band. **Drift** is the share of the local skill that is not upstream text: `1 − (local lines identical to upstream ÷ local non-blank lines)`, counted across every skill file, footer excluded. A deletion of upstream text does not raise the drift.
   - `Adapted from`: local drift under 30%
   - `Inspired by`: local drift from 30% to 80%
-  - `Originally seeded from`: local drift over 80%
+  - No footer: local drift over 80%. The file keeps only the idea of the upstream, and an idea needs no reference. Delete the footer and the `NOTICES.md` entry.
 - **owner/repo/upstream-path**. This is the human-readable identifier of the source skill.
 - **URL**. It must include `/tree/<sha>/<path>`. The `<sha>` is the **fork commit**, the upstream SHA at which the agent last reviewed or refreshed the skill. `import-skill` sets it first, at vendor time. `refresh-vendored` updates it after every review, whether the review adopts or skips the upstream changes.
 - **license**. This is the SPDX identifier, for example `MIT` or `Apache-2.0`.
@@ -37,7 +37,7 @@ _Inspired by [mattpocock/skills/skills/engineering/tdd](https://github.com/mattp
 The leading `---` is a markdown horizontal rule. It sits on its own line, directly before the italic footer line. The footer line must match this fixed pattern:
 
 ```
-^_(?<verb>Adapted from|Inspired by|Originally seeded from) \[(?<label>[^\]]+)\]\((?<url>https://github\.com/(?<owner>[^/]+)/(?<repo>[^/]+)/tree/(?<sha>[a-f0-9]+)/(?<path>[^)]+))\) — (?<license>\S+) (?<copyright>©[^.]+)\._$
+^_(?<verb>Adapted from|Inspired by) \[(?<label>[^\]]+)\]\((?<url>https://github\.com/(?<owner>[^/]+)/(?<repo>[^/]+)/tree/(?<sha>[a-f0-9]+)/(?<path>[^)]+))\) — (?<license>\S+) (?<copyright>©[^.]+)\._$
 ```
 
 `refresh-vendored` flags a skill with a footer that does not match this pattern. It marks the skill malformed and skips it until a person fixes it by hand.

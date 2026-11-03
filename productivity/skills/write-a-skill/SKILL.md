@@ -60,8 +60,5 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 
 - Work in a worktree off `origin/main`. Make it with the `EnterWorktree` tool, which puts it in `.claude/worktrees/<name>/`. Then run `git switch -c <branch> --no-track` in it. One skill per PR. Stack a dependent skill as a second PR on the first branch.
 - Update the marketplace manifest, the README plugin list, and every caller from step 1. Bump the patch version in the plugin's `plugin.json`. An installer updates a plugin only when the version changes.
-- A vendored skill keeps its footer. Recompute the verb from the drift band by [../../../meta/skills/import-skill/references/footer-format.md](../../../meta/skills/import-skill/references/footer-format.md). The SHA changes only on a refresh.
+- A vendored skill keeps its footer while its drift is 80% or less. Over 80%, delete the footer and the `NOTICES.md` entry. Recompute the verb from the drift band by [../../../meta/skills/import-skill/references/footer-format.md](../../../meta/skills/import-skill/references/footer-format.md). The SHA changes only on a refresh.
 - Use conventional commits. Open the PR body with Why, then What, Verified, and Links.
-
----
-_Originally seeded from [mattpocock/skills/skills/productivity/writing-for-agents](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/productivity/writing-for-agents) — MIT © 2026 Matt Pocock._

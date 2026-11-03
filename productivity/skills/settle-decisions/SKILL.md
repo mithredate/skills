@@ -73,6 +73,3 @@ Facts: <at most three bullets>
 If you ask in an `AskUserQuestion` dialog, put the full context in the question text. The terminal can hide the message above the dialog.
 
 The session is done when the frontier is empty. Every decision has a record, and nothing is assumed silently.
-
----
-_Originally seeded from [mattpocock/skills/skills/productivity/grilling](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/productivity/grilling) — MIT © 2026 Matt Pocock._

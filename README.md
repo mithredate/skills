@@ -74,8 +74,8 @@ For an urgent fix that is younger than 7 days, exclude only that package:
 Most skills here are forks of upstream open-source work. Lifecycle:
 
 - **Add a new vendored skill** — invoke `/import-skill`. Gathers upstream coords, clones, copies files into a target plugin, writes the canonical attribution footer with the fork-commit SHA, and updates `marketplace.json` and `NOTICES.md`.
-- **Refresh existing vendored skills** — invoke `/refresh-vendored`. Surfaces upstream changes since the fork commit, and adopts or skips each change. Lists each reversal of a local rule as an open question. Adjusts the attribution verb if local drift has shifted bands (`Adapted from` → `Inspired by` → `Originally seeded from`).
+- **Refresh existing vendored skills** — invoke `/refresh-vendored`. Surfaces upstream changes since the fork commit, and adopts or skips each change. Lists each reversal of a local rule as an open question. Adjusts the attribution verb if local drift has shifted bands (`Adapted from` → `Inspired by`). Over 80% drift, it deletes the footer and the `NOTICES.md` entry.
 
 ## Attribution
 
-Each vendored `SKILL.md` carries a one-line footer at the bottom with the source URL (including the fork-commit SHA) and license. The repo-level summary lives in [`NOTICES.md`](NOTICES.md). Canonical footer format: [`meta/skills/import-skill/references/footer-format.md`](meta/skills/import-skill/references/footer-format.md).
+Each vendored `SKILL.md` carries a one-line footer at the bottom with the source URL (including the fork-commit SHA) and license. A file over 80% drift keeps only the idea, so it has no footer and no `NOTICES.md` entry. The repo-level summary lives in [`NOTICES.md`](NOTICES.md). Canonical footer format: [`meta/skills/import-skill/references/footer-format.md`](meta/skills/import-skill/references/footer-format.md).

@@ -19,7 +19,7 @@ First actions: call the Skill tool with `productivity:settle-decisions`.
 
 - This skill rewrites `current` in place with the accepted changes.
 - This skill never edits `incoming`. This skill only reads `incoming`.
-- If the caller gives `incoming-sha`, this skill updates the footer in `current/SKILL.md` to that SHA. This skill also recomputes the verb. The verb is `Adapted from`, `Inspired by`, or `Originally seeded from`. This skill picks the verb from the new local drift band.
+- If the caller gives `incoming-sha`, this skill updates the footer in `current/SKILL.md` to that SHA. This skill also recomputes the verb. The verb is `Adapted from` or `Inspired by`. This skill picks the verb from the new local drift band. If the drift is above 80%, this skill deletes the footer and the `NOTICES.md` entry.
 - This skill prints a summary of accepted, skipped, and adapted items.
 
 ## Process
@@ -67,7 +67,7 @@ If the caller gives `incoming-sha`:
 2. Match the ratio to a verb:
    - Below 30% — use `Adapted from`.
    - 30% to 80% — use `Inspired by`.
-   - Above 80% — use `Originally seeded from`.
+   - Above 80% — delete the footer and the skill's entry in `NOTICES.md`. Skip item 3.
 3. Rewrite the footer in `current/SKILL.md` with the new verb and the new SHA. Keep the license, the copyright, and the source URL path unchanged. Use the format in [`../import-skill/references/footer-format.md`](../import-skill/references/footer-format.md).
 
 If the caller does not give `incoming-sha`, leave the footer as it is. This happens when you merge two local skills.
@@ -91,6 +91,7 @@ Print:
 - the Open questions from step 4
 - the files this skill changed
 - the new footer line, if the footer changed
+- the deleted footer and `NOTICES.md` entry, if the drift is above 80%
 - a suggested commit message
 
 The caller commits. When you run this skill on its own, ship the change as the Ship section of `productivity:write-a-skill` says. Put the report in the PR body.

@@ -124,6 +124,3 @@ When the decisions for a change are made, write the build as `task` tickets, and
 - If a question needs the human, write it as its own ticket, and add it to the `blocked-by` of the build ticket. If a fact contradicts a closed decision, do the same, and name the decision.
 - For each closed decision with a `Check:` line, write a `task` ticket that reads the signal. Add to its `blocked-by` the ticket that the signal waits for, for example the `gate` of the deploy. If the signal shows that the hypothesis is false, the session that reads it writes a new `decision` ticket.
 - An agent never claims a `gate` ticket. The human closes it, or tells the agent to close it. The resolution records the facts that later tickets need, for example a secret name or a deploy version.
-
----
-_Originally seeded from [mattpocock/skills/skills/engineering/wayfinder](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/wayfinder) — MIT © 2026 Matt Pocock._
