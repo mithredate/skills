@@ -76,23 +76,18 @@ else for hooks_json in */hooks/hooks.json; do
   fi
 done; fi
 
-# A mod's types come from the claude build. A `claude -p` load writes them to
-# .claude-plugin/types/ only for a watched `--plugin-dir` folder, so the call
-# sets CLAUDE_CODE_PLUGIN_DIR_WATCH. `-p` refuses an empty prompt, and
-# `/reload-plugins` is a prompt that makes no model call. A build or an
-# environment where mods are off writes none. The old types go first, so a
-# failed load cannot pass against them.
 echo
 echo "→ mod types"
-# The sandbox denies writes to ~/.npm/_npx, where npx then runs out of memory,
-# so tsc runs from a fresh npm cache. A cache that outlives the run would let a
-# sandboxed call plant a tsc that a later run outside the sandbox starts.
+# npx runs out of memory when the sandbox denies writes to ~/.npm/_npx.
 npm_cache=$(mktemp -d "${TMPDIR:-/tmp}/validate-npm.XXXXXX")
+# A cache that outlives the run can hold a tsc that a sandboxed call planted.
 trap 'rm -rf "$npm_cache"' EXIT
 for hooks_json in */hooks/hooks.json; do
   jq -e '.modules' "$hooks_json" >/dev/null || continue
   plugin_dir=$(dirname "$(dirname "$hooks_json")")
+  # Without this, a failed load passes against the old types.
   rm -rf "$plugin_dir/.claude-plugin/types"
+  # claude -p writes types only for a watched --plugin-dir. /reload-plugins makes no model call.
   CLAUDE_CODE_PLUGIN_DIR_WATCH=1 claude -p --plugin-dir "$plugin_dir" /reload-plugins </dev/null >/dev/null 2>&1 || true
   if [ ! -f "$plugin_dir/.claude-plugin/types/tsconfig.json" ]; then
     echo "⚠ this claude wrote no mod types; skipped the type check of $plugin_dir. Run it locally."
