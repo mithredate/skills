@@ -76,17 +76,24 @@ else for hooks_json in */hooks/hooks.json; do
   fi
 done; fi
 
-# A mod's types come from the claude build. A `--plugin-dir` load writes them
-# to .claude-plugin/types/, and the empty prompt then makes claude exit. A
-# build or an environment where mods are off writes none. The old types go
-# first, so a failed load cannot pass against them.
+# A mod's types come from the claude build. A `claude -p` load writes them to
+# .claude-plugin/types/ only for a watched `--plugin-dir` folder, so the call
+# sets CLAUDE_CODE_PLUGIN_DIR_WATCH. `-p` refuses an empty prompt, and
+# `/reload-plugins` is a prompt that makes no model call. A build or an
+# environment where mods are off writes none. The old types go first, so a
+# failed load cannot pass against them.
 echo
 echo "→ mod types"
+# The sandbox denies writes to ~/.npm/_npx, where npx then runs out of memory,
+# so tsc runs from a fresh npm cache. A cache that outlives the run would let a
+# sandboxed call plant a tsc that a later run outside the sandbox starts.
+npm_cache=$(mktemp -d "${TMPDIR:-/tmp}/validate-npm.XXXXXX")
+trap 'rm -rf "$npm_cache"' EXIT
 for hooks_json in */hooks/hooks.json; do
   jq -e '.modules' "$hooks_json" >/dev/null || continue
   plugin_dir=$(dirname "$(dirname "$hooks_json")")
   rm -rf "$plugin_dir/.claude-plugin/types"
-  claude -p --plugin-dir "$plugin_dir" "" </dev/null >/dev/null 2>&1 || true
+  CLAUDE_CODE_PLUGIN_DIR_WATCH=1 claude -p --plugin-dir "$plugin_dir" /reload-plugins </dev/null >/dev/null 2>&1 || true
   if [ ! -f "$plugin_dir/.claude-plugin/types/tsconfig.json" ]; then
     echo "⚠ this claude wrote no mod types; skipped the type check of $plugin_dir. Run it locally."
     # In a folder with no mod, `claude plugin test` prints why mods cannot load.
@@ -94,7 +101,7 @@ for hooks_json in */hooks/hooks.json; do
     continue
   fi
   echo "  $plugin_dir"
-  npx --yes -p "typescript@$TYPESCRIPT_VERSION" tsc -p "$plugin_dir" || failed=1
+  npm_config_cache="$npm_cache" npm_config_update_notifier=false npx --yes -p "typescript@$TYPESCRIPT_VERSION" tsc -p "$plugin_dir" || failed=1
 done
 
 echo
