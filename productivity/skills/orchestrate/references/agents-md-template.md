@@ -8,8 +8,8 @@ Every agent reads `AGENTS.md`.
 # <repo-name>
 
 This repo is an orchestrator for <what it plans for>. It is planning only.
-Implementation lives in the repos below. Everything lives in `.wayfinder/`,
-one directory for each initiative. `.wayfinder/README.md` is the index.
+Implementation lives in the repos below. Everything lives in `.initiatives/`,
+one directory for each initiative. `.initiatives/README.md` is the index.
 The index is read first in every session. Commit and push every change.
 At the start of every session, load the `productivity:orchestrate` skill.
 
