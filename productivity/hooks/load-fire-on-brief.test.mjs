@@ -67,7 +67,7 @@ test('stays silent when the edit does not set the assignee', () => {
     assert.equal(context, '');
 });
 
-test('stays silent for a file outside a tracker tickets directory', () => {
+test('names fire only for a file in a tracker tickets directory', () => {
     for (const [relativePath, expected] of [
         ['docs/tickets/brz-17.md', ''],
         ['.initiatives/2026-10-01-braze/initiative.md', ''],

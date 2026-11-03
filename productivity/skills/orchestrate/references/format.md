@@ -10,7 +10,7 @@ This file holds the file shapes of an orchestrator repo. It uses plain files und
   sources.md                 the hosts that the tracker links to, owned by productivity:sweep
   reports/<YYYY-MM-DD>-<slug>.md   one closed initiative, its directory removed
   <YYYY-MM-DD>-<slug>/       one open initiative
-    initiative.md            the initiative
+    initiative.md            the goal, the notes, and the decisions of the initiative
     tickets/<id>.md          one file per ticket
     assets/                  research, specs, digests, linked from tickets
 ```
