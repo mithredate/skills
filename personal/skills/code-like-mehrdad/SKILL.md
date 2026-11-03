@@ -18,7 +18,7 @@ Before your next tool call, call the Skill tool with `personal:work-like-mehrdad
 ## When building
 
 - **Tests ship with the change.** Use DAMP, not DRY, in tests. Prefer custom stubs and fakes over mocks. Fix the root cause, never the symptom. Keep CI green and add any missing checks. Use `dev:tdd` for the red-green loop. Use `dev:fire` for a change that has a brief.
-- **Audit each new dependency.** After you add or upgrade a dependency, run the audit command of its package manager. Examples are `npm audit`, `pnpm audit`, and `composer audit`. Fix or report each High or Critical finding.
+- **Audit each new dependency.** After you add or upgrade a dependency, run the audit command of its package manager. An example is `npm audit`. Fix or report each High or Critical finding.
 - Read the matching rubric when you touch that area. For tests, read [references/testing.md](references/testing.md). For TypeScript, read [references/typescript.md](references/typescript.md).
 
 ## When reviewing
