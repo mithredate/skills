@@ -14,7 +14,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 - **No parallel skills.** When concepts conflict, merge or abort — never run two forks of the same idea side by side.
 - **A Skill call that every run needs goes in a "First actions" line at the top of the body.** A Skill call that depends on a fact found later gets a hook on the event that reveals the fact. A Skill call inside a numbered step, or a skill list in a file the agent reads, is skipped about half the time (cakeclub discovery, 2026-10: 18 of 35 ticket sessions never loaded `grilling`, now `settle-decisions`).
 - **A change under a plugin directory ships with a patch bump of that plugin's `plugin.json` version.** An installer updates a plugin only when the version changes. A skill listed in `marketplace.json` but absent from the installed copy fails the whole plugin at load. The `import-skill` script bumps automatically. `write-a-skill`, `merge-skill`, and `refresh-vendored` bump by hand.
-- **A PR that changes `dev/agents/pr-reviewer.md` or a file in `dev/evals/` shows reviewer scores.** The PR body gives each score line as `scripts/score-reviewer.sh` prints it, on a line of its own, for example `HEAD: recall 0.78 (14 of 18 runs), clean 0.6 (9 of 15 runs), runs with an error 0`. A PR that changes `pr-reviewer.md` gives the lines of `origin/main` and of `HEAD` on the branch. A PR that changes only files in `dev/evals/` gives the line of `HEAD`, because `origin/main` then has the same `pr-reviewer.md`. CI fails such a PR until its body holds these lines. A score is missing when it is `none`, or when its run of the script exits non-zero. If a score is missing, or a `HEAD` score is lower than the `origin/main` score, a human reviews the PR.
+- **A PR that changes `dev/agents/pr-reviewer.md` or a file in `dev/evals/` shows reviewer scores.** The PR body gives each score line as `scripts/score-reviewer.sh` prints it, on a line of its own, for example `HEAD: recall 0.78 (14 of 18 runs), clean 0.6 (9 of 15 runs), runs with an error 0`. Put the score lines above the `<details>` block. They do not count in the 50 words of the PR body. A PR that changes `pr-reviewer.md` gives the lines of `origin/main` and of `HEAD` on the branch. A PR that changes only files in `dev/evals/` gives the line of `HEAD`, because `origin/main` then has the same `pr-reviewer.md`. CI fails such a PR until its body holds these lines. A score is missing when it is `none`, or when its run of the script exits non-zero. If a score is missing, or a `HEAD` score is lower than the `origin/main` score, a human reviews the PR.
 
 ## Workflows
 
@@ -34,7 +34,7 @@ Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree
 Per session:
 - Create a worktree on a feature branch — `import/<target-name>` for imports, `refresh/<date>` for refreshes.
 - Do all file edits in the worktree.
-- On successful validation: commit, push the branch, open a PR with the body shape from `write-a-skill` (Why, What, Verified, Links). CI on the feature branch is the actual gate.
+- On successful validation: commit, push the branch, open a PR with a body by the PR body rule of `personal:code-like-mehrdad`. CI on the feature branch is the actual gate.
 - On validation failure: leave the worktree dirty for inspection. Don't commit, don't push.
 - After the merge, leave the worktree with `ExitWorktree` and `action: "remove"`. If the tool refuses and lists changes, show the list to the user and ask before you discard anything. `ExitWorktree` acts only on a worktree that the same session made with `EnterWorktree`. For a worktree from an earlier session, give the user `git worktree remove <path>` to run with `!`. `git worktree remove` fails in the sandbox.
 
@@ -52,7 +52,7 @@ A skill is a deprecation candidate when both conditions hold:
 1. No session invoked it in the last 30 days. Claude Code deletes transcripts after 30 days, so this window is the whole visible history. Count sessions, not calls. Count subagent transcripts too, because research and review run in agents.
 2. No skill or agent file calls it. A dependency never shows in a direct count. `research` is called by `orchestrate`, and `verification-before-completion` by `systematic-debugging`.
 
-`scripts/skill-usage.sh` prints both numbers for every skill on the branch, with the callers. Run it before you deprecate a skill. A skill younger than the window is exempt. A `meta/` skill is a maintenance tool, so a quiet month is not a verdict on it. Deprecation moves the skill to `deprecated/`. Removal deletes the skill and its lines in `README.md`, `marketplace.json`, and `NOTICES.md`.
+`scripts/skill-usage.sh` prints both numbers for every skill on the branch, with the callers. Run it before you deprecate a skill. A skill younger than the window is exempt. A `meta/` skill is a maintenance tool, so a quiet month is not a verdict on it. Deprecation moves the skill to `deprecated/`. Removal deletes the skill and its lines in `marketplace.json` and `NOTICES.md`.
 
 ## Drift bands and attribution language
 

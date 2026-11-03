@@ -13,7 +13,7 @@ This skill pairs with [`refresh-vendored`](../refresh-vendored/SKILL.md). All th
 
 This skill runs in a **dedicated git worktree per session**. It never runs directly on `main`. The worktree is created after Step 4, when the target name is resolved. All later file edits happen in the worktree. On success, the skill commits and pushes the branch. On a validation failure, the worktree stays dirty for inspection. See AGENTS.md, section Worktree workflow, for the details.
 
-First actions: call the Skill tool with `productivity:settle-decisions`. Record each decision you make in the PR body.
+First actions: call the Skill tool with `productivity:settle-decisions`. Record each decision you make in the `<details>` block of the PR body.
 
 ## Process
 
@@ -26,8 +26,6 @@ Get two items from the request.
 2. The **upstream path** inside that repo, for example `skills/productivity/grill-me`.
 
 If the request is vague, for example "vendor grill-me from mattpocock," find the skill. Run `gh search code`. You can also clone the repo and run `find … -name SKILL.md`. If the request names no skill, ask the user which skill to import.
-
-Write a **README one-liner**, a short description for the entry in the top-level `README.md` plugin list. Base it on the upstream's `SKILL.md` frontmatter. Keep it under 80 characters. Match the existing terse style, for example `vendor a new skill from a GitHub upstream`.
 
 ### 2. Verify the upstream path
 
@@ -53,8 +51,8 @@ Pick a plugin based on the nature of the skill:
 Use the upstream skill's directory name as the default, for example `grill-me`. The naming rule is **verb-first hyphenated**. Do not try to improve the upstream name. The user can override the name.
 
 Check `<target_plugin>/skills/<name>/` for the target name.
-- **No conflict.** Go to the **Fresh import** path, Steps 5 to 10.
-- **Conflict.** A skill with that name already exists. It can come from a different upstream. Merge into the existing skill. Go to the **Merge path**, Step 11. Do not make a renamed parallel variant. The duplicate-skills policy forbids two forks of the same concept side by side.
+- **No conflict.** Go to the **Fresh import** path, Steps 5 to 9.
+- **Conflict.** A skill with that name already exists. It can come from a different upstream. Merge into the existing skill. Go to the **Merge path**, Step 10. Do not make a renamed parallel variant. The duplicate-skills policy forbids two forks of the same concept side by side.
 
 ### 5. Capture upstream metadata (fresh import path)
 
@@ -80,21 +78,7 @@ node meta/skills/import-skill/scripts/import.mjs \
 
 If the script exits with a non-zero code, show the error and stop.
 
-### 7. Update README.md (fresh import path)
-
-The import script does **not** touch `README.md`. Add the entry by hand, using the one-liner from Step 1:
-
-- Locate the `- **<target_plugin>** — …` line in the `## Plugins` section.
-- If the line ends with `_(empty for now)_`, remove that suffix.
-- Insert a new indented bullet directly under it:
-
-  ```
-    - `<target_name>` — <readme one-liner>
-  ```
-
-Keep the order of skills in a plugin section stable. Add the new bullet at the end of that group.
-
-### 8. Structural review (fresh import path)
+### 7. Structural review (fresh import path)
 
 The script copies upstream files exactly, in the layout the upstream author used. This keeps the imported skill an exact mirror of upstream, so any later edit is clearly your own drift. But the layout does not always match local conventions.
 
@@ -103,13 +87,13 @@ Check the newly imported skill directory. Fix each structural mismatch. Here are
 - **Doc files next to `SKILL.md`**, such as `REFERENCE.md`, `EXAMPLES.md`, or `FORMS.md`. Move them into `references/`. Local convention puts doc files in `references/`, not at the skill root.
 - **Loose scripts at the skill root**. Move them into `scripts/`.
 - **Asset files**, such as `.png`, `.svg`, or templates. Move them into `assets/`.
-- **An unusual order in the `SKILL.md` body**, such as a missing `## When to use` section. Flag this in the PR body only. Do not rewrite the content yourself.
+- **An unusual order in the `SKILL.md` body**, such as a missing `## When to use` section. Flag this in the `<details>` block of the PR body only. Do not rewrite the content yourself.
 
 If you moved a file, update the matching link in `SKILL.md`. For example, change `[REFERENCE.md](REFERENCE.md)` to `[references/REFERENCE.md](references/REFERENCE.md)`.
 
 If nothing moves, the skill stays an exact mirror of upstream. This is fine.
 
-### 9. Validate (fresh import path)
+### 8. Validate (fresh import path)
 
 Run the official validator on the target plugin. This confirms that the newly imported skill, with any restructuring, is well-formed:
 
@@ -119,7 +103,7 @@ claude plugin validate <target_plugin>
 
 If validation shows an error, show the message and stop. Do not report the import as successful. The user must fix the problem, usually in the footer or the frontmatter, before committing.
 
-### 10. Commit and report (fresh import path)
+### 9. Commit and report (fresh import path)
 
 Commit in the worktree with a message in this form:
 
@@ -127,7 +111,7 @@ Commit in the worktree with a message in this form:
 vendor: import productivity/grill-me from mattpocock-skills
 ```
 
-Push the branch. Open the PR with the body shape from `write-a-skill`. Show the files you created and the files you changed.
+Push the branch. Open the PR with a body by the PR body rule of `personal:code-like-mehrdad`. Show the files you created and the files you changed.
 
 Tell the user that the installed copy changes only after the PR merges. The marketplace clone auto-updates. Then this command fetches the new plugin version:
 
@@ -135,7 +119,7 @@ Tell the user that the installed copy changes only after the PR merges. The mark
 claude plugin update <target_plugin>@skills
 ```
 
-### 11. Merge path: delegate to merge-skill
+### 10. Merge path: delegate to merge-skill
 
 Follow these steps when Step 4 finds a conflict.
 
@@ -147,7 +131,7 @@ Follow these steps when Step 4 finds a conflict.
 3. `merge-skill` handles the comparison, the decisions, the file edits, and the footer rewrite. This skill's work ends here. Show its output exactly as it is.
 4. Check the existing local skill's footer. If it points to a *different* upstream than the one you are merging in, keep the existing footer's upstream as the primary source. Name the merged-in source as an extra contributor in `NOTICES.md`.
 
-After `merge-skill` returns, bump the patch version in `<target_plugin>/.claude-plugin/plugin.json` by hand. The script in Step 6 does not run on this path. Then commit, push, and open the PR as in Step 10, with a message like this:
+After `merge-skill` returns, bump the patch version in `<target_plugin>/.claude-plugin/plugin.json` by hand. The script in Step 6 does not run on this path. Then commit, push, and open the PR as in Step 9, with a message like this:
 
 ```
 merge: absorb superpowers/tdd into productivity/tdd
