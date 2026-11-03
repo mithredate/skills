@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Use in a repo with `.orchestrate/`, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
+description: Use in a `.orchestrate/` repo, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
 ---
 
 # Orchestrate
