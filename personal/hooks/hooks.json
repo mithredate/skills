@@ -1,0 +1,16 @@
+{
+  "description": "When a code file changes, tell the agent to load personal:code-like-mehrdad and to read the rubric that matches the file.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-code-like-mehrdad-on-code-edit.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}
