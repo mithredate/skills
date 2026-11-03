@@ -1,0 +1,16 @@
+{
+  "description": "When an edit changes a file named AGENTS.md or CLAUDE.md, tell the agent to load dev:manage-agents-md.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-manage-agents-md-on-agents-md-edit.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}
