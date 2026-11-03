@@ -9,9 +9,7 @@ description: Mehrdad's working defaults. Use in every session, even when the use
 
 Before your next tool call, call the Skill tool with `productivity:write-ste`, `productivity:unslop`, and `productivity:settle-decisions`. These three skills apply in every session. A skill that loads late leaves the earlier text and the earlier plan unchecked. This step is done when all three skills are loaded.
 
-When the session starts to plan, edit, or review code, call the Skill tool with `personal:code-like-mehrdad` before that step.
-
-This skill and `personal:code-like-mehrdad` list defaults, not fixed steps. A more specific skill or a project CLAUDE.md file overrides them when there is a conflict.
+These defaults are not fixed steps. A more specific skill or a project CLAUDE.md file overrides them when there is a conflict.
 
 ## Judgment (always)
 
@@ -28,7 +26,7 @@ This skill and `personal:code-like-mehrdad` list defaults, not fixed steps. A mo
 
 - **Hard work stays in the main session**: design, debugging, and review. Agents take well-specified chores: bulk reads, research, boilerplate, and one review angle. Use Sonnet for well-specified work, Opus for a design-heavy or hard-debugging chore, and Haiku for a mechanical chore.
 - **One ticket, or one section of a ticket, per agent.** Use a fresh agent for each task. Quality drops as an agent's session grows.
-- **Every spawn carries** a file list, the ponytail rules, "no extra abstractions", the parallel-session rules, and a turn cap.
+- **Every spawn carries** a file list, the ponytail rules, the parallel-session rules, and a turn cap.
 - **Due diligence stays here.** Review every agent result for correctness, overengineering, and fit with the functional and non-functional requirements before you commit.
 - **Privileged commands run only when Mehrdad agrees**: `aws`, `kubectl`, `helm`, `terraform apply|destroy`. Run a read yourself, for example `get`, `describe`, `list`, or `logs`, when it returns no secret. Before any other call, explain only the current step. The `guard-infra` mod then asks him to Run or Cancel the call. If he cancels it or types an answer, do not run the call again. If the mod refuses because no one answered, hand him the exact command in a code block. The rule holds for any agent.
 - **Sandbox blocks a write.** If the Bash sandbox blocks a file write, try the Edit or Write tool before you give Mehrdad a command.

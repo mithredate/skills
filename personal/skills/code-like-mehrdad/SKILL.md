@@ -7,12 +7,12 @@ description: Mehrdad's code defaults. Use when you plan, edit, debug, or review 
 
 ## First actions
 
-Before your next tool call, call the Skill tool with `personal:work-like-mehrdad` and `dev:ponytail`. Skip a skill that this session already loaded. This step is done when both skills are loaded.
+Before your next tool call, call the Skill tool with `personal:work-like-mehrdad` and `dev:ponytail`. This step is done when both skills are loaded.
 
 ## Judgment
 
-- **Ponytail is the standing lens.** `dev:ponytail` sets how much to build. It does not replace "Plan before code" of `personal:work-like-mehrdad` or the testing rubric. Apply it before you propose an approach, not after the code exists. Its first question, "Does it need to exist?", changes the plan. At edit time, it can only trim the diff. Scope must match the ticket. A simple ticket with a large diff is a sign to cut the scope. Check for overengineering and propose removals.
-- **Craft baseline.** Use precise, domain-correct names. Rename a bad name when you see it. Use named constants instead of magic literals, and replace every usage. Use configurable values instead of hardcoded environment values. A stale comment, a dead conditional, and an AGENTS.md or CLAUDE.md line that the environment contradicts are all defects. For a contradicted line, call the Skill tool with `dev:manage-agents-md` to fix it. Never work around it. Add a comment only when an intention-revealing name cannot say it. A comment that stays in the code explains only the reason. A why comment that you add has two lines at most and points to the spec for the rest. In a PR about something else, do not shorten a comment that another person wrote.
+- **Ponytail is the standing lens.** Apply `dev:ponytail` to the plan before you propose an approach, not only to the code. A simple ticket with a large diff is a sign to cut the scope.
+- **Craft baseline.** Use precise, domain-correct names. Rename a bad name when you see it. Use named constants instead of magic literals, and replace every usage. Use configurable values instead of hardcoded environment values. A stale comment, a dead conditional, and an AGENTS.md or CLAUDE.md line that the environment contradicts are all defects. For a contradicted line, call the Skill tool with `dev:manage-agents-md` to fix it. Never work around it. In a PR about something else, do not shorten a comment that another person wrote.
 
 ## When building
 
