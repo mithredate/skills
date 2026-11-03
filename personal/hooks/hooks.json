@@ -1,5 +1,5 @@
 {
-  "description": "When a code file changes, tell the agent to load personal:code-like-mehrdad and to read the rubric that matches the file.",
+  "description": "When a code file changes, name the rubric that matches the file. Outside an agent, also tell the session to load personal:code-like-mehrdad. When a general-purpose or claude agent starts, give it the spawn rules.",
   "hooks": {
     "PostToolUse": [
       {
@@ -8,6 +8,17 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-code-like-mehrdad-on-code-edit.mjs\""
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "general-purpose|claude",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/give-spawn-rules-on-agent-start.mjs\""
           }
         ]
       }

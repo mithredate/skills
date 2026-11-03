@@ -74,3 +74,10 @@ test('stays silent and exits 0 when it cannot read a skill file', (t) => {
 
     assert.equal(runHook(join(pluginWithNoSkills, 'hooks/give-spawn-rules-on-agent-start.mjs'), 'general-purpose'), '');
 });
+
+test('hooks.json starts the hook when a general-purpose or claude agent starts, and at no other event', () => {
+    const { hooks } = JSON.parse(readFileSync(new URL('./hooks.json', import.meta.url), 'utf8'));
+    const runsHook = (entry) => entry.hooks.some((handler) => handler.type === 'command' && handler.command === 'node "${CLAUDE_PLUGIN_ROOT}/hooks/give-spawn-rules-on-agent-start.mjs"');
+
+    assert.deepEqual(Object.entries(hooks).flatMap(([event, entries]) => entries.filter(runsHook).map((entry) => [event, entry.matcher])), [['SubagentStart', 'general-purpose|claude']]);
+});
