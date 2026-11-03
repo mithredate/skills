@@ -9,7 +9,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 
 ## Before you write
 
-1. If the skill exists, read every file in its directory. Grep the repo for the skill's name. The hits are its callers: other skills, agent files, the README, and the marketplace manifest. Every caller changes with the skill.
+1. If the skill exists, read every file in its directory. Grep the repo for the skill's name. The hits are its callers: other skills, agent files, and the marketplace manifest. Every caller changes with the skill.
 2. Choose the invocation. Read [references/invocation.md](references/invocation.md). A skill that other skills call, or that the agent must reach on its own, is model-invoked. A skill that only the human types is user-invoked.
 3. Choose the name. A name is verb-first and hyphenated, and one word when one word says it. A flow verb extends the kitchen frame: `cook` works a ticket, `fire` runs the brief. Put the name and the runner-up in the `<details>` block of the PR body.
 4. Write the frontmatter and the headings first. Check them against the sections below before you write the body.
@@ -59,6 +59,6 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 ## Ship
 
 - Work in a worktree off `origin/main`. Make it with the `EnterWorktree` tool, which puts it in `.claude/worktrees/<name>/`. Then run `git switch -c <branch> --no-track` in it. One skill per PR. Stack a dependent skill as a second PR on the first branch.
-- Update the marketplace manifest, the README plugin list, and every caller from step 1. Bump the patch version in the plugin's `plugin.json`. An installer updates a plugin only when the version changes.
+- Update the marketplace manifest and every caller from step 1. Bump the patch version in the plugin's `plugin.json`. An installer updates a plugin only when the version changes.
 - A vendored skill keeps its footer while its drift is 80% or less. Over 80%, delete the footer and the `NOTICES.md` entry. Recompute the verb from the drift band by [../../../meta/skills/import-skill/references/footer-format.md](../../../meta/skills/import-skill/references/footer-format.md). The SHA changes only on a refresh.
 - Use conventional commits. Write the PR body by the PR body rule of `personal:code-like-mehrdad`. Put the verification evidence and the report of `meta:import-skill`, `meta:merge-skill`, `meta:refresh-vendored`, or `dev:manage-agents-md` in the `<details>` block. Keep the Open questions above it.
