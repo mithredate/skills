@@ -52,6 +52,25 @@ test('reminds after an Edit inside the brief of a ticket', () => {
     assert.equal(context, LOAD_PREP);
 });
 
+test('reminds after a Write of a ticket that holds a brief', () => {
+    const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-20.md', TICKET);
+
+    const context = contextFor('Write', { file_path: path, content: TICKET });
+
+    assert.equal(context, LOAD_PREP);
+});
+
+test('reminds after a MultiEdit with one edit inside the brief', () => {
+    const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextFor('MultiEdit', { file_path: path, edits: [
+        { old_string: 'assignee:', new_string: 'assignee: claude' },
+        { old_string: 'example.com', new_string: 'noreply@example.com' },
+    ] });
+
+    assert.equal(context, LOAD_PREP);
+});
+
 test('stays silent after an Edit that claims the ticket, approves it, or records a resolution', () => {
     const path = writeFile('.wayfinder/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
