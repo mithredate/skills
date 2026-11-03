@@ -23,11 +23,22 @@ These defaults are not fixed steps. A more specific skill or a project CLAUDE.md
 - **Issue descriptions.** In a Jira, Linear, or GitHub issue description, give the problem, the evidence link, and the done check. Do not write a file path, a function name, or a plan. The `## Brief` of an `orchestrate` ticket keeps the format of `productivity:prep`.
 - **Clean up before you report.** Before you report a task done, stop each process that this session started. Delete each tool, cache entry, or global package that this session added only for the task. Never delete a whole shared cache, such as the `npx` cache or the `uv` cache. Parallel sessions and MCP servers use it. List what you kept, with the reason.
 
+## Git and PRs
+
+- **Worktree off main**. When the branch drifts, rebase. Clean up after the merge.
+- **Parallel sessions.** Do not use `git stash`, because all worktrees of a repo share one stash list. In a checkout that other sessions share, also do not use `git reset --hard`, `git rebase`, or `git commit --amend`. Commit work in progress, and undo with `git revert`. Before you edit, run `git log --oneline -5` and grep for the change, because a parallel session can have made it. Stop only a process that this session started. For example, `./gradlew --stop` stops the Gradle daemons of every session.
+- **Commit for the reviewer.** Make each commit atomic and narratable. Write the message as one subject line in the conventional-commit format of the repo. Add a body only for tool output, such as a lock file list. Push after each commit.
+- **PRs small.** Make each PR a vertical slice. Fix a minor review point that the PR caused in that PR, without asking. Work that the PR did not cause goes in a new PR. Use `git mv` for a file move.
+- **PR body.** Give the change in one sentence and the ticket link. Add the reason only when the ticket does not hold it. Add one line for each step that a person does after the merge, and for each Open question. The text for people has 50 words maximum, plus these lines.
+- **Text for agents.** Put the text that only an agent reads in one `<details>` block at the end of the PR body. Examples are a brief, decision records, a report, a table, and verification evidence. Start the block with a `<summary>` line and a blank line.
+- **Paths in a PR.** In a PR, a PR comment, or a commit message, name a file by its path in the PR's repo. Do not name a local path, such as a home folder, a temp folder, or the scratchpad. A local path shows the user name, the session, and the other projects on the machine. In a public repo, also do not name a path in another repo.
+- **Answer every review comment.** Fix a bot point at its root cause, or reply why it does not apply. Then resolve the thread. Post a reply to a human only after Mehrdad agrees to it. Answer the points of a review body in one numbered PR comment, because a review body has no thread. Then request a new review.
+
 ## Orchestrating agents
 
 - **Hard work stays in the main session**: design, debugging, and review. Agents take well-specified chores: bulk reads, research, boilerplate, and one review angle. Use Sonnet for well-specified work, Opus for a design-heavy or hard-debugging chore, and Haiku for a mechanical chore.
 - **One ticket, or one section of a ticket, per agent.** Use a fresh agent for each task. Quality drops as an agent's session grows.
-- **Every spawn carries** a file list, the ponytail rules, the parallel-session rules, and a turn cap.
+- **Every spawn carries** a file list and a turn cap. The `personal` hook gives the spawn rules to each `general-purpose` or `claude` agent when it starts.
 - **Due diligence stays here.** Review every agent result for correctness, overengineering, and fit with the functional and non-functional requirements before you commit.
 - **Privileged commands run only when Mehrdad agrees**: `aws`, `kubectl`, `helm`, `terraform apply|destroy`. Run a read yourself, for example `get`, `describe`, `list`, or `logs`, when it returns no secret. Before any other call, explain only the current step. The `guard-infra` mod then asks him to Run or Cancel the call. If he cancels it or types an answer, do not run the call again. If the mod refuses because no one answered, hand him the exact command in a code block. The rule holds for any agent.
 - **Sandbox blocks a write.** If the Bash sandbox blocks a file write, try the Edit or Write tool before you give Mehrdad a command.
