@@ -3,6 +3,11 @@
   "permissions": {
     "deny": ["Read(~/.aws/**)", "Read(~/.kube/**)", "Edit(~/.aws/**)", "Edit(~/.kube/**)"]
   },
+  "env": {
+    "npm_config_min_release_age": "7",
+    "pnpm_config_minimum_release_age": "10080",
+    "UV_EXCLUDE_NEWER": "7 days"
+  },
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
