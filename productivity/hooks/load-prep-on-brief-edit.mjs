@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 let data = '';
 for await (const chunk of process.stdin) data += chunk;
 
-const TRACKER_TICKET = /\/\.wayfinder\/[^/]+\/tickets\/[^/]+\.md$/;
+const TRACKER_TICKET = /\/\.orchestrate\/[^/]+\/tickets\/[^/]+\.md$/;
 const BRIEF = /^## Brief$/m;
 const NEXT_SECTION = /^## /m;
 
