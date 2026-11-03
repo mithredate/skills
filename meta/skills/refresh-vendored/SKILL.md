@@ -81,12 +81,11 @@ For each vendored skill whose upstream path is resolved or retargeted, run `merg
 
 If `merge-skill` reports "no changes," skip that skill. Add one line about it to the final summary.
 
-### 5. NOTICES.md and README.md sync
+### 5. NOTICES.md sync
 
 After all skills are processed:
 - If an upstream entry exists in `NOTICES.md`, but no skill in the repo still points to it, remove that entry.
 - If rename detection changes a vendored skill's upstream owner or repo, update the entry. This is rare, and different from a path rename within the same repo.
-- Check the `## Plugins` section in `README.md` against the actual skill set. Every `<plugin>/skills/<name>/` directory must have a bullet under its plugin. Remove any stale bullet. Restore the `_(empty for now)_` suffix on any plugin with no skills left.
 
 ### 6. Report and commit
 
