@@ -45,6 +45,8 @@ Use for ANY technical issue:
 
 Find the root cause before you propose a fix. The root cause is the first place where the value or the state goes wrong.
 
+95% of "no root cause" cases are incomplete investigation.
+
 ## Phase 2: Hypothesis and Testing
 
 1. **Test Minimally**
@@ -121,10 +123,6 @@ If you catch yourself thinking:
 - "We're stuck?" (frustrated) - Your approach isn't working
 
 **When you see these:** STOP. Return to Phase 1.
-
-## When Process Reveals "No Root Cause"
-
-95% of "no root cause" cases are incomplete investigation.
 
 ---
 _Adapted from [obra/superpowers/skills/systematic-debugging](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging) — MIT © 2025 Jesse Vincent._
