@@ -11,7 +11,7 @@ This rubric states conventions for TypeScript code. Use it when you write TypeSc
 ## Constants and naming
 
 - **No magic literals.** Extract a string or numeric literal with meaning to a named constant. Replace *every* usage, not just the new one.
-- Use precise, domain-correct names. Rename a name that misstates what the thing is. For example, rename `variables` used for a config map, or `actor` used for a user id.
+- Use precise, domain-correct names. In the code that you change, rename a name that misstates what the thing is. For example, rename `variables` used for a config map, or `actor` used for a user id.
 
 ## Structure
 
