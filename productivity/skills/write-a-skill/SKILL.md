@@ -53,7 +53,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 1. Run the `write-ste` check list on every changed file.
 2. Check every changed description for a colon followed by a space.
 3. Run `scripts/validate.sh` from the repository root.
-4. If the skill starts agents or runs a script, run it once against a throwaway repo. Put the result in the PR body under Verified.
+4. If the skill starts agents or runs a script, run it once against a throwaway repo. Put the result in the `<details>` block of the PR body.
 5. For a rewrite of an existing skill in STE: keep every heading, link, code block, file name and path. Keep every rule. Keep the line count within 20 percent of the original. List an ambiguity you find under "Open questions" in the PR body. Do not resolve it.
 
 ## Ship
@@ -61,4 +61,4 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 - Work in a worktree off `origin/main`. Make it with the `EnterWorktree` tool, which puts it in `.claude/worktrees/<name>/`. Then run `git switch -c <branch> --no-track` in it. One skill per PR. Stack a dependent skill as a second PR on the first branch.
 - Update the marketplace manifest, the README plugin list, and every caller from step 1. Bump the patch version in the plugin's `plugin.json`. An installer updates a plugin only when the version changes.
 - A vendored skill keeps its footer while its drift is 80% or less. Over 80%, delete the footer and the `NOTICES.md` entry. Recompute the verb from the drift band by [../../../meta/skills/import-skill/references/footer-format.md](../../../meta/skills/import-skill/references/footer-format.md). The SHA changes only on a refresh.
-- Use conventional commits. Open the PR body with Why, then What, Verified, and Links.
+- Use conventional commits. Write the PR body by the PR body rule of `personal:code-like-mehrdad`. Put the verification evidence and the report of `meta:import-skill`, `meta:merge-skill`, `meta:refresh-vendored`, or `dev:manage-agents-md` in the `<details>` block. Keep the Open questions above it.
