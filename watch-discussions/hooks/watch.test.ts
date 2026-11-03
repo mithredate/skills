@@ -332,7 +332,7 @@ test('watches a Slack thread by the ts in its text, and reports each new reply o
   expect(submitted[0]).toContain('The queue drains now.')
   expect(submitted[0]).toContain('From: Lea Park')
   expect(submitted[0]).toContain('Thanks, closing this.')
-  const reply2 = submitted[0].split('\n').find(line => line.includes('"ts":"1700000000.000300"'))
+  const reply2 = submitted[0]?.split('\n').find(line => line.includes('"ts":"1700000000.000300"'))
   expect(reply2).toContain('The queue drains now.')
   expect(reply2).toContain('It took 4 s.')
   expect(reply2).not.toContain('Thanks, closing this.')
