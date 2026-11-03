@@ -111,7 +111,7 @@ Commit in the worktree with a message in this form:
 vendor: import productivity/grill-me from mattpocock-skills
 ```
 
-Push the branch. Open the PR with a body by the PR body rule of `personal:code-like-mehrdad`. Show the files you created and the files you changed.
+Push the branch. Open the PR with a body by the PR body rule of `personal:work-like-mehrdad`. Show the files you created and the files you changed.
 
 Tell the user that the installed copy changes only after the PR merges. The marketplace clone auto-updates. Then this command fetches the new plugin version:
 

@@ -34,7 +34,7 @@ Both `import-skill` and `refresh-vendored` operate in a **dedicated git worktree
 Per session:
 - Create a worktree on a feature branch — `import/<target-name>` for imports, `refresh/<date>` for refreshes.
 - Do all file edits in the worktree.
-- On successful validation: commit, push the branch, open a PR with a body by the PR body rule of `personal:code-like-mehrdad`. CI on the feature branch is the actual gate.
+- On successful validation: commit, push the branch, open a PR with a body by the PR body rule of `personal:work-like-mehrdad`. CI on the feature branch is the actual gate.
 - On validation failure: leave the worktree dirty for inspection. Don't commit, don't push.
 - After the merge, leave the worktree with `ExitWorktree` and `action: "remove"`. If the tool refuses and lists changes, show the list to the user and ask before you discard anything. `ExitWorktree` acts only on a worktree that the same session made with `EnterWorktree`. For a worktree from an earlier session, give the user `git worktree remove <path>` to run with `!`. `git worktree remove` fails in the sandbox.
 
