@@ -19,15 +19,16 @@ If the stated goal of the human implies a choice inside that goal, the goal is t
 
 A decision is **critical** when a wrong choice causes harm that a code fix cannot contain:
 
-- It changes access, secrets, personal data, or cost.
-- It reaches customers or other people.
-- It has a side effect that a revert does not undo, such as a sent message or lost data.
-- It weakens a safety net, such as a test, a CI check, or access control.
-- It is an architecture decision.
-- It is a design decision, unless it is minor and a revert does not touch the critical path.
+- It loses data that git or a backup cannot restore.
+- It breaks a contract that other people or teams use, or it sends something to people.
+- It adds, removes, or replaces a service, a datastore, a framework, or a boundary between systems. In one codebase, it adds a layer, a cross-cutting mechanism, or a new category of dependency.
 - It reverses a decision that an ADR or the human made.
+- It changes access, secrets, personal data, or cost.
 - It changes the agreed destination, scope, or priority.
 - It adds the first file of a kind to a repo that other people use, such as the first ADR.
+- It has another side effect that a revert does not undo, such as a call to an external system.
+- It weakens a safety net, such as a test, a CI check, or access control.
+- It is a design decision, unless it is minor and a revert does not touch the critical path.
 
 A contained bug is not critical. A bug that can send a wrong invoice is critical. If you cannot tell whether a decision is critical, ask.
 
