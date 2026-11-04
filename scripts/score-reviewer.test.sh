@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Test scripts/score-reviewer.sh against a fake `claude` that writes a fixed
 # aggregate-result.json and exits with a fixed code. Test dev/evals/scaffold.sh
-# against a bundle of a small git repo. The test needs no network and no real
-# claude. Every file goes to a temp folder that the test deletes.
+# against a bundle of a small git repo, and the scaffold of each blast-radius
+# case. The test needs no network and no real claude. Every file goes to a temp
+# folder that the test deletes.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -13,6 +14,8 @@ mkdir "$tmp/bin"
 cat > "$tmp/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 # Copy $FAKE_JSON, if set, to <--output-dir>/aggregate-result.json. Exit $FAKE_STATUS.
+# Write the arguments, one per line, to $FAKE_ARGS.
+printf '%s\n' "$@" > "$FAKE_ARGS"
 out=
 while (( $# )); do [[ $1 == --output-dir ]] && out=$2; shift; done
 if [[ -n $FAKE_JSON ]]; then mkdir -p "$out" && cp "$FAKE_JSON" "$out/aggregate-result.json"; fi
@@ -85,11 +88,24 @@ cat > "$tmp/clean-only.json" <<'EOF'
 ]}
 EOF
 
+# The cases of another agent start with its name. A pr-reviewer case in the
+# result does not count in the score of blast-radius.
+cat > "$tmp/blast-radius.json" <<'EOF'
+{"partial": false, "cases": [
+ {"name": "blast-radius-recall-a", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null},
+   {"graders": [{"passed": false}, {"passed": true}], "error": null}]}},
+ {"name": "blast-radius-clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": false}], "error": null}]}},
+ {"name": "recall-b", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}}
+]}
+EOF
+
 failed=0
-check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted text
+check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted text, [script arguments]
   local name=$1 code=0 out
-  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 \
-    scripts/score-reviewer.sh HEAD 2>&1) || code=$?
+  local -a args=("${@:6}")
+  (( ${#args[@]} )) || args=(HEAD)
+  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 FAKE_ARGS=$tmp/args \
+    scripts/score-reviewer.sh "${args[@]}" 2>&1) || code=$?
   if [[ $code == "$4" && $out == *"$5"* ]]; then
     echo "  ✓ $name"
   else
@@ -117,6 +133,25 @@ check "eval exits 0, no result" "" 0 1 "HEAD: no score"
 check "eval exits 1, no result" "" 1 1 "HEAD: no score"
 check "eval exits 143, no result" "" 143 143 "HEAD: no score"
 
+# The eval runs only the cases with the tag of the agent.
+tagged() { # name, wanted tag
+  if [[ $(grep -A1 -x -- --tag "$tmp/args" | tail -1) == "$2" ]]; then
+    echo "  ✓ $1"
+  else
+    echo "  ✘ $1: want --tag $2 in the eval arguments"
+    sed 's/^/    /' "$tmp/args"
+    failed=1
+  fi
+}
+check "pr-reviewer is the default agent" "$tmp/clean-only.json" 0 0 "HEAD: recall none"
+tagged "the default agent runs the pr-reviewer cases" pr-reviewer
+check "another agent counts its own cases" "$tmp/blast-radius.json" 0 0 \
+  "HEAD: blast-radius recall 0.5 (1 of 2 runs), clean 0 (0 of 1 runs), runs with an error 0" \
+  --agent blast-radius HEAD
+tagged "another agent runs its own cases" blast-radius
+check "an agent with no file at the ref" "" 0 128 "dev/agents/no-such-agent.md" \
+  --agent no-such-agent HEAD
+
 # The scaffold of a head that holds dev/evals/ writes a repo/ with no
 # dev/evals/. The pr.diff still holds the full diff.
 src=$tmp/scaffold/src
@@ -142,6 +177,26 @@ else
   echo "  ✘ scaffold of a head with dev/evals/: want repo/ with dev/agents/ and no dev/evals/, and the full pr.diff"
   failed=1
 fi
+
+# The scaffold of a blast-radius case writes a git repo with the branch `base`
+# at the base commit, and HEAD at the head commit. The tests of the repo pass
+# at HEAD, as the brief of the case says.
+blast_scaffold() { # case name
+  local run=$tmp/blast/$1 case_dir=$PWD/dev/evals/$1
+  mkdir -p "$run"
+  if (cd "$run" && bash "$case_dir/scaffold.sh") \
+    && git -C "$run/repo" rev-parse -q --verify base >/dev/null \
+    && [[ -s $run/pr.diff ]] && git -C "$run/repo" diff base HEAD | cmp -s - "$run/pr.diff" \
+    && cmp -s "$case_dir/brief.md" "$run/brief.md" \
+    && (cd "$run/repo" && node --test >/dev/null 2>&1); then
+    echo "  ✓ scaffold of $1"
+  else
+    echo "  ✘ scaffold of $1: want repo/ with the branch base, a pr.diff of base to HEAD, the brief, and passing tests"
+    failed=1
+  fi
+}
+blast_scaffold blast-radius-recall-role-grant
+blast_scaffold blast-radius-clean-report-group
 
 if [ "$failed" -ne 0 ]; then
   echo "✘ score-reviewer.sh or scaffold.sh failed one or more checks."

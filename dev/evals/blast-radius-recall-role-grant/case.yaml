@@ -1,0 +1,39 @@
+schema_version: "1.1"
+name: blast-radius-recall-role-grant
+tags: [blast-radius]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:blast-radius` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Find the blast radius of one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title and the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, a git repo at the head commit of the change.
+    - Base commit: the branch `base` of that repo.
+    - Repo rules: `AGENTS.md` at the repo root.
+
+    Return your JSON.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: names-a-break-outside-the-diff
+    type: llm
+    criteria: |
+      The reply holds the JSON of a blast-radius analyst. Judge only its `blocking` and `discrepancy` entries. An entry can be a string or an object. A `quality_note` entry does not count.
+
+      The change adds `booking.refund` to the booking group of `shared/permissions.js`. Two breaks are outside the diff. The `support` role takes every permission of the booking group, so it gains `booking.refund`. A user can grant a role only when the user holds every permission of that role, so a team lead can no longer grant `support`.
+
+      PASS if one entry names at least one of these two breaks.
+
+      FAIL otherwise.
+  - name: agent-ran
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type"\s*:\s*"dev:blast-radius"'

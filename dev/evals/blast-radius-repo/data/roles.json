@@ -1,0 +1,6 @@
+{
+  "admin": { "groups": ["*"], "permissions": [] },
+  "support": { "groups": ["BOOKING"], "permissions": ["invoice.read"] },
+  "team-lead": { "groups": [], "permissions": ["booking.read", "booking.write", "invoice.read", "role.grant"] },
+  "agent": { "groups": [], "permissions": ["booking.read"] }
+}

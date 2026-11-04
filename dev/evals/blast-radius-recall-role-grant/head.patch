@@ -1,0 +1,57 @@
+diff --git a/server/bookings.js b/server/bookings.js
+index 8f73b0b..55b4b16 100644
+--- a/server/bookings.js
++++ b/server/bookings.js
+@@ -5,4 +5,9 @@ function updateBooking(actor, booking, changes) {
+   return { ...booking, ...changes };
+ }
+ 
+-module.exports = { updateBooking };
++function refundBooking(actor, booking) {
++  if (!can(actor, 'booking.refund')) throw new Error('forbidden');
++  return { ...booking, status: 'refunded' };
++}
++
++module.exports = { updateBooking, refundBooking };
+diff --git a/shared/permissions.js b/shared/permissions.js
+index d6f615e..d568bcf 100644
+--- a/shared/permissions.js
++++ b/shared/permissions.js
+@@ -1,5 +1,5 @@
+ const PERMISSION_GROUPS = {
+-  BOOKING: ['booking.read', 'booking.write'],
++  BOOKING: ['booking.read', 'booking.write', 'booking.refund'],
+   INVOICE: ['invoice.read', 'invoice.write'],
+   ROLE: ['role.grant'],
+ };
+diff --git a/test/bookings.test.js b/test/bookings.test.js
+index 348c73c..436b1c3 100644
+--- a/test/bookings.test.js
++++ b/test/bookings.test.js
+@@ -1,6 +1,6 @@
+ const test = require('node:test');
+ const assert = require('node:assert');
+-const { updateBooking } = require('../server/bookings');
++const { updateBooking, refundBooking } = require('../server/bookings');
+ 
+ test('support updates a booking', () => {
+   const support = { roles: ['support'] };
+@@ -16,3 +16,18 @@ test('an agent cannot update a booking', () => {
+ 
+   assert.throws(() => updateBooking(agent, { id: 1, seats: 1 }, { seats: 2 }), /forbidden/);
+ });
++
++test('an admin refunds a booking', () => {
++  const admin = { roles: ['admin'] };
++  const expected = { id: 1, seats: 1, status: 'refunded' };
++
++  const sut = refundBooking(admin, { id: 1, seats: 1 });
++
++  assert.deepStrictEqual(sut, expected);
++});
++
++test('a team lead cannot refund a booking', () => {
++  const teamLead = { roles: ['team-lead'] };
++
++  assert.throws(() => refundBooking(teamLead, { id: 1, seats: 1 }), /forbidden/);
++});

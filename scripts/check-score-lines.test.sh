@@ -46,6 +46,25 @@ check "case change, a path that git quotes" 'AGENTS.md
 "dev/evals/recall-caf\303\251/case.yaml"' "## Why" 1 "no score line for: HEAD."
 check "no reviewer or case change" $'AGENTS.md\ndev/skills/fire/SKILL.md' "" 0 ""
 
+# blast-radius has its own score lines, and its cases start with its name.
+blast_main='origin/main: blast-radius recall 0.5 (3 of 6 runs), clean 0 (0 of 3 runs), runs with an error 0'
+blast_head='HEAD: blast-radius recall 0.67 (4 of 6 runs), clean 0 (0 of 3 runs), runs with an error 0'
+blast_agent=$'dev/agents/blast-radius.md\ndev/.claude-plugin/plugin.json'
+blast_cases=$'dev/evals/blast-radius-recall-a/case.yaml\ndev/evals/blast-radius-repo/package.json'
+check "blast-radius change, no score line" "$blast_agent" "## Why" 1 \
+  "no blast-radius score line for: origin/main HEAD."
+check "blast-radius change, both blast-radius score lines" "$blast_agent" "$blast_main"$'\n'"$blast_head" 0 ""
+check "blast-radius change, only the pr-reviewer score lines" "$blast_agent" "$main"$'\n'"$head" 1 \
+  "no blast-radius score line for: origin/main HEAD."
+check "blast-radius case change, the blast-radius HEAD line" "$blast_cases" "$blast_head" 0 ""
+check "blast-radius case change, the message names the agent option" "$blast_cases" "## Why" 1 \
+  $'    scripts/score-reviewer.sh --agent blast-radius HEAD\n'
+check "blast-radius case change, the message names the blast-radius line" "$blast_cases" "## Why" 1 \
+  "    HEAD: blast-radius recall ..., clean ..., runs with an error ..."
+check "case change of both agents, only the blast-radius line" "$blast_cases"$'\n'"$cases" "$blast_head" 1 \
+  "no score line for: HEAD."
+check "case change of both agents, both HEAD lines" "$blast_cases"$'\n'"$cases" "$head"$'\n'"$blast_head" 0 ""
+
 # The body is untrusted. A command in it runs nothing.
 check "a command in the body" "$cases" "\$(touch \"$tmp/pwned\") \`touch \"$tmp/pwned\"\`" 1 \
   "    HEAD: recall ..., clean ..., runs with an error ..."

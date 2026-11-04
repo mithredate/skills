@@ -1,0 +1,50 @@
+diff --git a/server/reports.js b/server/reports.js
+new file mode 100644
+index 0000000..97bca4b
+--- /dev/null
++++ b/server/reports.js
+@@ -0,0 +1,8 @@
++const { can } = require('./acl');
++
++function exportBookings(actor, bookings) {
++  if (!can(actor, 'report.export')) throw new Error('forbidden');
++  return JSON.stringify(bookings);
++}
++
++module.exports = { exportBookings };
+diff --git a/shared/permissions.js b/shared/permissions.js
+index d6f615e..6ceba22 100644
+--- a/shared/permissions.js
++++ b/shared/permissions.js
+@@ -2,6 +2,7 @@ const PERMISSION_GROUPS = {
+   BOOKING: ['booking.read', 'booking.write'],
+   INVOICE: ['invoice.read', 'invoice.write'],
+   ROLE: ['role.grant'],
++  REPORT: ['report.export'],
+ };
+ 
+ module.exports = { PERMISSION_GROUPS };
+diff --git a/test/reports.test.js b/test/reports.test.js
+new file mode 100644
+index 0000000..9a7a2cb
+--- /dev/null
++++ b/test/reports.test.js
+@@ -0,0 +1,18 @@
++const test = require('node:test');
++const assert = require('node:assert');
++const { exportBookings } = require('../server/reports');
++
++test('an admin exports the bookings', () => {
++  const admin = { roles: ['admin'] };
++  const expected = '[{"id":1,"seats":2}]';
++
++  const sut = exportBookings(admin, [{ id: 1, seats: 2 }]);
++
++  assert.strictEqual(sut, expected);
++});
++
++test('support cannot export the bookings', () => {
++  const support = { roles: ['support'] };
++
++  assert.throws(() => exportBookings(support, [{ id: 1, seats: 2 }]), /forbidden/);
++});
