@@ -52,15 +52,15 @@ Return only this JSON. Return every array. Leave an array empty when there is no
 
 ```json
 {
-  "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <what the code shows>"], "blast_radius": "<who hits the bad case, how often in normal use, and what it costs>"}],
-  "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"], "blast_radius": "<who hits the bad case, how often in normal use, and what it costs>"}],
+  "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <what the code shows>"], "chance_and_cost": "<who hits the bad case, how often in normal use, and what it costs>"}],
+  "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"], "chance_and_cost": "<who hits the bad case, how often in normal use, and what it costs>"}],
   "quality_note": ["<path:line> <one sentence>"],
   "nit":          ["<path:line> <one sentence>"],
   "pre_existing": ["<path:line> <one sentence>"]
 }
 ```
 
-The **blast radius** of a finding is who hits the bad case, how often in normal use, and what it costs. The blast radius sets the label of every finding, also when a lens item names a label. If you cannot prove a wrong result, the finding keeps the label of its blast radius.
+The **chance and cost** of a finding is who hits the bad case, how often in normal use, and what it costs. The chance and cost set the label of every finding, also when a lens item names a label. If you cannot prove a wrong result, the finding keeps the label of its chance and cost.
 
 - `blocking` is a finding with a real chance and a real cost.
 - `discrepancy` is a finding with a real chance and a real cost, when the plan itself is wrong. New code to the same plan cannot fix it.
