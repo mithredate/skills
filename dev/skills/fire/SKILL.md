@@ -29,9 +29,9 @@ Start one agent with the Agent tool, on Opus. If a target is a git repo, start t
 - the kind
 - each target: the directory and the base commit of a git repo, or the name of a system
 - a diff file path in the scratchpad
-- in a patch round, the red checks and the open findings of the prior round
+- in a patch round, the red checks and the open findings of the prior round, each one verbatim, as the reviewer wrote it
 
-A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`.
+A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`. Add no fix, example, or wording of your own. An added example once held the answers of two eval cases, and the reviewer flagged the patch as `blocking`.
 
 The step is done when the agent returns its JSON. If the outcome is `plan_broken` or `setup_blocked`, stop with the status `blocked` and its evidence.
 
