@@ -1,0 +1,40 @@
+schema_version: "1.1"
+name: blast-radius-clean-report-group
+tags: [blast-radius]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:blast-radius` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Find the blast radius of one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title and the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, a git repo at the head commit of the change.
+    - Base commit: the branch `base` of that repo.
+    - Repo rules: `AGENTS.md` at the repo root.
+
+    Return your JSON.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: no-blocking-or-discrepancy
+    type: regex
+    pattern: '^(?=[\s\S]*"blocking"\s*:\s*\[\s*\])(?=[\s\S]*"discrepancy"\s*:\s*\[\s*\])'
+  - name: proof-ran
+    type: llm
+    criteria: |
+      The reply holds the JSON of a blast-radius analyst. Judge only its `safety_fact` object.
+
+      PASS if `step` is 4 or 5, and `proof` holds a command that ran and the output that the command printed.
+
+      FAIL otherwise. A step of 1, 2, or 3 fails. A proof that names a command but quotes no output fails.
+  - name: agent-ran
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type"\s*:\s*"dev:blast-radius"'

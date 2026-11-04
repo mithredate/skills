@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Test scripts/score-reviewer.sh against a fake `claude` that writes a fixed
 # aggregate-result.json and exits with a fixed code. Test dev/evals/scaffold.sh
-# against a bundle of a small git repo. The test needs no network and no real
-# claude. Every file goes to a temp folder that the test deletes.
+# against a bundle of a small git repo, and the scaffold of each blast-radius
+# case. The test needs no network and no real claude. Every file goes to a temp
+# folder that the test deletes.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -176,6 +177,26 @@ else
   echo "  ✘ scaffold of a head with dev/evals/: want repo/ with dev/agents/ and no dev/evals/, and the full pr.diff"
   failed=1
 fi
+
+# The scaffold of a blast-radius case writes a git repo with the branch `base`
+# at the base commit, and HEAD at the head commit. The tests of the repo pass
+# at HEAD, as the brief of the case says.
+blast_scaffold() { # case name
+  local run=$tmp/blast/$1 case_dir=$PWD/dev/evals/$1
+  mkdir -p "$run"
+  if (cd "$run" && bash "$case_dir/scaffold.sh") \
+    && git -C "$run/repo" rev-parse -q --verify base >/dev/null \
+    && [[ -s $run/pr.diff ]] && git -C "$run/repo" diff base HEAD | cmp -s - "$run/pr.diff" \
+    && cmp -s "$case_dir/brief.md" "$run/brief.md" \
+    && (cd "$run/repo" && node --test >/dev/null 2>&1); then
+    echo "  ✓ scaffold of $1"
+  else
+    echo "  ✘ scaffold of $1: want repo/ with the branch base, a pr.diff of base to HEAD, the brief, and passing tests"
+    failed=1
+  fi
+}
+blast_scaffold blast-radius-recall-role-grant
+blast_scaffold blast-radius-clean-report-group
 
 if [ "$failed" -ne 0 ]; then
   echo "✘ score-reviewer.sh or scaffold.sh failed one or more checks."
