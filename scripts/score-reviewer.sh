@@ -5,8 +5,9 @@
 # runs only the cases with the agent's name in their tags. Extra arguments go
 # to `claude plugin eval`, for example -j 4.
 # A clean case of blast-radius passes only on a proof that ran, so it needs
-# --allow-tools Bash. The eval refuses each run that grants Bash when the
-# managed settings of the machine weaken the sandbox.
+# --allow-tools Bash, outside the sandbox. The eval refuses each run that
+# grants Bash in a sandboxed session, or when the managed settings of the
+# machine weaken the sandbox.
 # A run passes when it has grader results and every grader passed. A run with
 # an error, such as a timeout or an API error, counts in its score too.
 # Recall is the share of the recall-* case runs that passed. Clean is the same
