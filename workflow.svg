@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="730" viewBox="0 0 760 730">
+  <!-- This picture shows only the main path from a request to a merged PR, in about 10 boxes. The owner rejected a picture of every skill, agent, and mod as too complex for a reader. -->
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; text-anchor: middle; }
     .bg { fill: #f6f8fa; stroke: #d0d7de; }
