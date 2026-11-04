@@ -11,7 +11,6 @@
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
-    "enableWeakerNetworkIsolation": true,
     "filesystem": {
       "allowWrite": [
         "~/.npm", "~/Library/pnpm/store", "~/go/pkg/mod", "~/Library/Caches/go-build", "~/Library/Caches/composer",
