@@ -13,6 +13,8 @@ mkdir "$tmp/bin"
 cat > "$tmp/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 # Copy $FAKE_JSON, if set, to <--output-dir>/aggregate-result.json. Exit $FAKE_STATUS.
+# Write the arguments, one per line, to $FAKE_ARGS.
+printf '%s\n' "$@" > "$FAKE_ARGS"
 out=
 while (( $# )); do [[ $1 == --output-dir ]] && out=$2; shift; done
 if [[ -n $FAKE_JSON ]]; then mkdir -p "$out" && cp "$FAKE_JSON" "$out/aggregate-result.json"; fi
@@ -85,11 +87,24 @@ cat > "$tmp/clean-only.json" <<'EOF'
 ]}
 EOF
 
+# The cases of another agent start with its name. A pr-reviewer case in the
+# result does not count in the score of blast-radius.
+cat > "$tmp/blast-radius.json" <<'EOF'
+{"partial": false, "cases": [
+ {"name": "blast-radius-recall-a", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null},
+   {"graders": [{"passed": false}, {"passed": true}], "error": null}]}},
+ {"name": "blast-radius-clean-x", "arms": {"with": [{"graders": [{"passed": true}, {"passed": false}], "error": null}]}},
+ {"name": "recall-b", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}}
+]}
+EOF
+
 failed=0
-check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted text
+check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted text, [script arguments]
   local name=$1 code=0 out
-  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 \
-    scripts/score-reviewer.sh HEAD 2>&1) || code=$?
+  local -a args=("${@:6}")
+  (( ${#args[@]} )) || args=(HEAD)
+  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 FAKE_ARGS=$tmp/args \
+    scripts/score-reviewer.sh "${args[@]}" 2>&1) || code=$?
   if [[ $code == "$4" && $out == *"$5"* ]]; then
     echo "  ✓ $name"
   else
@@ -116,6 +131,25 @@ check "only clean cases, recall 0 of 0" "$tmp/clean-only.json" 0 0 \
 check "eval exits 0, no result" "" 0 1 "HEAD: no score"
 check "eval exits 1, no result" "" 1 1 "HEAD: no score"
 check "eval exits 143, no result" "" 143 143 "HEAD: no score"
+
+# The eval runs only the cases with the tag of the agent.
+tagged() { # name, wanted tag
+  if [[ $(grep -A1 -x -- --tag "$tmp/args" | tail -1) == "$2" ]]; then
+    echo "  ✓ $1"
+  else
+    echo "  ✘ $1: want --tag $2 in the eval arguments"
+    sed 's/^/    /' "$tmp/args"
+    failed=1
+  fi
+}
+check "pr-reviewer is the default agent" "$tmp/clean-only.json" 0 0 "HEAD: recall none"
+tagged "the default agent runs the pr-reviewer cases" pr-reviewer
+check "another agent counts its own cases" "$tmp/blast-radius.json" 0 0 \
+  "HEAD: blast-radius recall 0.5 (1 of 2 runs), clean 0 (0 of 1 runs), runs with an error 0" \
+  --agent blast-radius HEAD
+tagged "another agent runs its own cases" blast-radius
+check "an agent with no file at the ref" "" 0 128 "dev/agents/no-such-agent.md" \
+  --agent no-such-agent HEAD
 
 # The scaffold of a head that holds dev/evals/ writes a repo/ with no
 # dev/evals/. The pr.diff still holds the full diff.
