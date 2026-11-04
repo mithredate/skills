@@ -25,6 +25,8 @@ Review stance, order of findings, and the verify-don't-trust rule come from `per
 
 ## Inline: the main session reviews
 
+**Design baseline.** The repo, the ticket, or the PR can name an ADR or a design document. If one does, judge the design of the change against it first. A review that only checks the fit with the ticket says nothing about whether the design is sound. Fit with the ticket is one line of the review.
+
 Apply both lenses of `pr-reviewer.md` to the diff yourself. Then apply `security-reviewer.md` as a second checklist. Read outside the diff only for the reasons that the checklists name. Use `grep` for this, not whole-file reads. If the branch is checked out, run the declared commands yourself. For a command that fails, follow the Base run section of [../../agents/verifier.md](../../agents/verifier.md) with the base commit. If the branch is not checked out, state that verification did not run.
 
 ## Fresh: two reviewers, one verifier

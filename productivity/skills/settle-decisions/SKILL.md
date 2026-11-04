@@ -35,6 +35,8 @@ When the human reports a meeting, record what the others said as reported. Each 
 
 Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent with a fresh context for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
+Before you measure or research a criterion, state the threshold at which it changes the decision. If no threshold exists, drop the criterion. When the result is in, start with the finding that decided the question. Precision that decides nothing hides the finding that does.
+
 Write each record, round, and message for a reader who has not read the sources. Say what a thing is, not its label from a source, such as "option A" or "milestone 2".
 
 ## Record
@@ -49,6 +51,8 @@ After the deploy, read the signal. If the hypothesis is false, the fix is a new 
 ## The round
 
 Put at most four questions in one round. Write each question so that a yes accepts your recommendation. Put first the questions that block the most decisions. A question that depends on another open question waits for a later round. Then wait for the answers. Each answer settles part of the tree. Recompute the frontier, settle what you can, and ask the next round.
+
+If a question reopens a decision of the human, start it with the facts that changed since that decision. Give one line for each fact. Without those facts, a reversal reads as a bare simplification. The human then cannot judge it.
 
 Format a round like so:
 

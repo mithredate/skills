@@ -9,6 +9,9 @@ This rubric states how to write and judge tests. Use it when you write tests, ch
 - Use mock libraries sparingly. Before you choose a mock, ask whether a real fixture and a real call path cover it.
 - **DAMP over DRY** in test code: a test must read as a self-contained story. Duplication that aids readability beats an abstraction that hides the scenario.
 - Put each expected value in a named variable, such as `expected`, and assert against it. Do not build the expected value inside the assertion.
+- Name the result of the act step `sut`. In a class test, `sut` is the instance. In an exception test, put the call inside `expect` and bind no `sut`.
+- Assert whole objects with `toEqual`. Use a partial match only when the rest of the object is not relevant to the behavior.
+- Test one behavior per test. For several data rows, use `it.each`. Put no condition inside a test body or an `it.each` callback. If the arrange step differs by row, write separate tests, because a branch makes the reader simulate the setup.
 
 ## Fixtures
 
@@ -16,6 +19,8 @@ This rubric states how to write and judge tests. Use it when you write tests, ch
 - **Placement follows usage scope**: a builder used by multiple test files lives in the shared fixtures folder. Builders there are organized per layer. A builder used by a single test file stays local to that file.
 - **Compose, don't fork.** Derive a variant from an existing builder, for example `toUserDTO(makeUser(...))`. Do not write a sibling builder.
 - **Name by layer.** A fixture's name states what layer it builds: `makeUser` for a domain entity, `makeUserResponseDto` for the API DTO. "Record", "data", "obj" are not layers.
+- **Variant seeders.** When the domain type is a discriminated union, give the seed helpers one function for each variant. Examples are `seedDraftOrder` and `seedApprovedOrder`. Each function fills the fields that its state requires. A test then does not need to know the rules of each state.
+- **Test-database guard.** The test config refuses a database whose name does not contain "test". A destructive helper, such as one that truncates every table, then cannot reach a real database through a wrong env var.
 
 ## Coverage
 
