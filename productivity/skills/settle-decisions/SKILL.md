@@ -35,7 +35,7 @@ When the human reports a meeting, record what the others said as reported. Each 
 
 Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent with a fresh context for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
-Before you measure or research a criterion, state the threshold at which it changes the decision. If no threshold exists, drop the criterion. When the result is in, start with the finding that decided the question. Precision that decides nothing hides the finding that does.
+Before you measure or research a criterion, state which result would change the decision. If no result would change it, drop the criterion. When the result is in, start with the finding that decided the question. Mark the other findings as context, because precision that decides nothing hides the finding that does. For example, exact model prices of $8.35, $12.52, and $20.87 once decided nothing in a benchmark. The deciding facts were that the SCIP indexer has no incremental mode and that the sample PR changed 4% of the files.
 
 Write each record, round, and message for a reader who has not read the sources. Say what a thing is, not its label from a source, such as "option A" or "milestone 2".
 
