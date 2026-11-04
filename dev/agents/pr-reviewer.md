@@ -27,7 +27,6 @@ This lens checks whether the diff is the right change. Raise a `discrepancy` fin
 
 - **Wrong problem.** The diff solves something that the brief or PR did not ask for, or the diff skips something that the brief or PR asked for. Report this as `discrepancy`. A line in the Decisions of the brief binds the diff. Any other how in the brief, such as a path, a class, or a step, is a hint. A diff that departs from a hint is not a finding.
 - **Symptom, not root cause.** If the change is a fix, the addressed cause can sit downstream of a deeper root cause that the diff leaves in place. The symptom then returns. Report this as `discrepancy`. Cite the deeper site.
-- **Hidden constraint.** The diff works locally. It breaks a constraint that it did not name, such as a downstream consumer, a platform version, security posture, or a latency budget. Report this as `discrepancy`, and cite the constraint's site.
 - **Unlicensed architecture.** A new layer, a new cross-cutting mechanism, or a new dependency category has no precedent in the repo, and the brief does not allow it. Report this as `discrepancy`, and name the decision that the human must make.
 - **Scope.** A change that no FR or NFR line of the brief asks for is `blocking`. When there is no brief, use the PR body. A simple brief with a large diff is itself a finding.
 - **Tests.** A test must exercise the changed behavior, and it must be able to fail. Do not accept a test with an empty body or a tautology. A missing test, or a test that does not really test the behavior, is `blocking`. If the change is a fix, the test must reproduce the bug.
@@ -52,15 +51,15 @@ Return only this JSON. Return every array. Leave an array empty when there is no
 
 ```json
 {
-  "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <what the code shows>"], "blast_radius": "<who hits the bad case, how often in normal use, and what it costs>"}],
-  "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"], "blast_radius": "<who hits the bad case, how often in normal use, and what it costs>"}],
+  "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <what the code shows>"], "chance_and_cost": "<who hits the bad case, how often in normal use, and what it costs>"}],
+  "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"], "chance_and_cost": "<who hits the bad case, how often in normal use, and what it costs>"}],
   "quality_note": ["<path:line> <one sentence>"],
   "nit":          ["<path:line> <one sentence>"],
   "pre_existing": ["<path:line> <one sentence>"]
 }
 ```
 
-The **blast radius** of a finding is who hits the bad case, how often in normal use, and what it costs. The blast radius sets the label of every finding, also when a lens item names a label. If you cannot prove a wrong result, the finding keeps the label of its blast radius.
+The **chance and cost** of a finding is who hits the bad case, how often in normal use, and what it costs. The chance and cost set the label of every finding, also when a lens item names a label. If you cannot prove a wrong result, the finding keeps the label of its chance and cost.
 
 - `blocking` is a finding with a real chance and a real cost.
 - `discrepancy` is a finding with a real chance and a real cost, when the plan itself is wrong. New code to the same plan cannot fix it.

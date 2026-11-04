@@ -28,6 +28,7 @@ This repository vendors skills from other open-source projects. Originals retain
 - **Copyright:** © 2026 Lauren Tan
 - **Vendored skills:** productivity/unslop
 - **Adapted rules:** dev/tdd, the Unfalsifiable anti-pattern, from `principle-test-behavior-not-implementation`
+- **Adapted agents:** dev/agents/blast-radius, from [pstack/skills/blast-radius](https://github.com/cursor/plugins/tree/df581122cde17e6e27686b5a448bde23e4ad4318/pstack/skills/blast-radius)
 
 <!--
 Format for each upstream:

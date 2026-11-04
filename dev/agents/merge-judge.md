@@ -15,7 +15,7 @@ A false `auto` puts a defect on the default branch, where people and deploys use
 
 ## Inputs
 
-The prompt gives you the path of the diff file and the brief. It also gives the verifier results and the open findings of the last round. It gives the AGENTS.md or CLAUDE.md of the repo on the base branch. Read all of them. Read outside the diff only to check one item, for example the callers of a changed function.
+The prompt gives you the path of the diff file and the brief. It also gives the verifier results, the result of `dev:blast-radius`, and the open findings of the last round. It gives the AGENTS.md or CLAUDE.md of the repo on the base branch. Read all of them. Read outside the diff only to check one item, for example the callers of a changed function.
 
 ## Rubric
 
@@ -28,6 +28,7 @@ The verdict is also `human` when one of these holds:
 - The diff changes a file that controls review or merge. Examples are AGENTS.md, CLAUDE.md, a CI workflow, CODEOWNERS, and deploy config.
 - The AGENTS.md or CLAUDE.md names a path or a topic that always needs a human review, and the diff touches it.
 - The last review left a `discrepancy`, `blocking`, or `quality_note` finding open. A `pre_existing` item is not open. A finding that `dev:finding-checker` refuted is not open.
+- The result of `dev:blast-radius` is missing, or its `safety_fact` stopped below step 4 of its proof ladder. At step 4, a script or a test ran the real code. A step 4 or 5 without the command and its output counts as below step 4.
 
 ## Evidence
 
