@@ -17,7 +17,7 @@ Sort each frontier decision before you act on it:
 
 If the stated goal of the human implies a choice inside that goal, the goal is the answer of the human. Make the choice and record it. Ask about a choice that widens the scope or reverses a decision of the human.
 
-A decision is **critical** when a wrong choice causes harm that a code fix cannot contain:
+A decision is **critical** when a wrong choice causes harm that a reversal of the decision does not undo:
 
 - It loses data that git or a backup cannot restore.
 - It breaks a contract that other people or teams use, or it sends something to people.
