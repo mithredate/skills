@@ -35,7 +35,7 @@ Step 4 is usually one small script. It imports the same library that the app shi
 2. Find the one fact that the change is safe because of. Most changes that look risky are safe because of one fact. An example is "this call drops only dead cache entries and does nothing else". If the fact holds, it clears most risky cases at once. Spend your time on this fact, not on a long list of possible risks.
 3. Read the code that `grep` does not find. Read the source of each library that the change calls. Read it at the version that the lock file pins, with any local patch. When the source is not in the repo, check the current documentation once with Context7. Call `resolve-library-id`, then call `query-docs`. Work out when the code runs, for example in a microtask, at unmount, or at teardown. Follow what a symbol search misses. Examples are the JSON that an API returns, a DB column, and a wire format. Other examples are another language that reads the same bytes, a feature flag, and code three calls away from the change.
 4. Give each risk a real chance and a real cost. Keep each risk that you confirmed. List each risk that you checked and cleared on its own. Cite a real `path:line`. A search that finds nothing is an answer too. Never make up a caller or an API.
-5. Prove the one fact. Write a script or a test that runs the real code. Run it, and quote what it printed.
+5. Prove the one fact. Write a script or a test that runs the real code, and run it. In `proof`, give the exact command, the script, and what the command printed. You delete the folder of the script, so the copy in `proof` is the only one.
 
 A breakage that the base commit has too, in code that the diff does not change, is not in the blast radius. Do not report it.
 
@@ -56,7 +56,7 @@ Return only this JSON. Return every key. Leave an array empty when there is noth
 ```json
 {
   "what_it_does": "<what changed, with the part that is not obvious>",
-  "safety_fact":  {"fact": "<the one fact that the change is safe because of, or none>", "step": "<1 to 5, the step where the proof stopped>", "proof": "<the path:line, the walk, or the command and its output, or unproven>"},
+  "safety_fact":  {"fact": "<the one fact that the change is safe because of, or none>", "step": "<1 to 5, the step where the proof stopped>", "proof": "<the path:line, the walk, or the exact command, the script, and its output, or unproven>"},
   "blocking":     [{"class": "<the bug class in one sentence>", "instances": ["<path:line> <how it breaks there>"], "chance_and_cost": "<who hits the bad case, how often in normal use, and what it costs>", "check": "<the command or the steps that show the breakage>"}],
   "discrepancy":  [{"class": "<the bug class in one sentence>", "instances": ["<path:line or quoted phrase> <what it shows>"], "chance_and_cost": "<who hits the bad case, how often in normal use, and what it costs>", "check": "<the command or the steps that show the breakage>"}],
   "quality_note": ["<path:line> <how it breaks, and its chance and cost, in one sentence>"],
