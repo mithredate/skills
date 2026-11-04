@@ -23,7 +23,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 - Put a Skill call that every run needs in a "First actions" line at the top of the body. If the call depends on a fact found later, add a hook on the event that shows the fact. An agent skips a Skill call inside a numbered step about half the time. A skill list in a file that the agent reads is skipped in the same way.
 - To change a vendored skill, edit it in place. A thin skill that wraps it is a parallel skill.
 - Write the goal and what only the human knows. Write the convention, the reason, and the trap that the environment does not show.
-- Do not write a line that the agent can find with `ls`, with `--help`, or in a config file.
+- Do not write a line that the agent can find with `ls`, with `--help`, or in a config file. Do not write a step that the agent's runtime does by default. Before you write a step about a tool or the runtime, read the docs of each runtime that the repo supports.
 - Do not write a method that the agent can work out from the goal. An example is the steps of a root-cause search. Keep a step of a method only if people or other sessions depend on it. Also keep a step that the agent gets wrong without it.
 - Give a rule at most one example, next to the rule. An example without its rule hides the scope of the rule.
 - Delete a sentence that the agent obeys without it.
