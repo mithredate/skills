@@ -81,7 +81,7 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the goal, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If a ticket without a brief that is not a `gate` is now ready, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the one-line state in the index row of this initiative. Change no other row. Name each ready build ticket as approved or as waiting for a yes. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
-8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
+8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the digest and the sweep table are in your final message.
 
 The user can run other sessions on other ready tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the initiative, and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
 

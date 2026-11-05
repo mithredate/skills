@@ -48,7 +48,7 @@ Write each record, round, and message for a reader who has not read the sources.
 
 ## Record
 
-Record each decision in the ticket, or in the `<details>` block of the PR body, one line each. Show the new records at the top of your next message, so that the human can overrule one.
+Record each decision in the ticket, or in the `<details>` block of the PR body, one line each. Show the new records after the digest of your next message, so that the human can overrule one.
 
 - `Decided: <choice>. Because: <the evidence with a link, or the answer of the human>. Revisit if: <condition>.`
 - `Decided: <choice>. Hypothesis: <what is true after the deploy if the choice is right>. Check: <the signal, and when to read it>.`
