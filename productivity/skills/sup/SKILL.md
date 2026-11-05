@@ -39,7 +39,7 @@ Mark each initiative that has no `Closes when` sentence. Put no prose between th
 
 ## Propose
 
-1. Propose the first row in index order that is `open` and whose state names a next step. Orchestrate writes that step into the row. A ready ticket alone is no reason, because orchestrate claims only the tickets that the next step needs. Give the reason in one sentence.
+1. Propose the first row in index order that is `open` and has a ready ticket. Give the reason in one sentence.
 2. If a row is not `paused` and one of these holds, propose that the user names its initiative in orchestrate:
    - The row is `waiting`, and the sweep table shows that its dependency is resolved.
    - The initiative has claims.
