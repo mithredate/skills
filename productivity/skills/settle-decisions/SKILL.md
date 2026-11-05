@@ -5,7 +5,7 @@ description: Use before you make or ask about a decision, even when the user doe
 
 Settle every decision of a plan. Make most decisions yourself. Put to the human only the decisions that need the human, in short rounds.
 
-Map the decisions as a **design tree**. In the tree, each decision branches into the decisions that depend on it. The **frontier** is every decision whose prerequisites are settled.
+Map the decisions as a **design tree**. In the tree, each decision branches into the decisions that depend on it. The **frontier** is every decision whose prerequisites are settled. When a caller names the step that it works, the frontier holds only the decisions that this step needs.
 
 ## Who decides
 
