@@ -1,11 +1,8 @@
 let data = '';
 for await (const chunk of process.stdin) data += chunk;
 
-const ROUND_RULES = [
-    'The next-step box shows your question without context. Your closing message must give that context.',
-    'Start it with the digest of `personal:work-like-mehrdad`: line 1 says why this session exists, line 2 says what is true now, line 3 says what the user must do and what happens on a yes.',
-    'Then give the question as a round of `productivity:settle-decisions`: the facts, each option with its gain and its cost, and your recommendation with its reason.',
-].join(' ');
+// The rules live in the two skills. The test checks that both anchors still exist there.
+const ROUND_RULES = 'You put a question in the next-step box. The box shows only the question. Before you write your closing message, apply the rule **Report to Mehrdad.** of `personal:work-like-mehrdad` and the section "The round" of `productivity:settle-decisions`. Do not ask the question again in the message. Give its context: the facts, each option with its gain and its cost, and your recommendation.';
 
 try {
     const { tool_input: input } = JSON.parse(data);
