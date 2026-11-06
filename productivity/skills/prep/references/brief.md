@@ -9,7 +9,8 @@ A brief is one `## Brief` section. A build `task` ticket of `orchestrate` holds 
 - Goal: <what is true when the session hands back>
 - Targets: <each git repo with its base branch, or each other system, for example an n8n instance>
 - Decisions: <each closed decision that the build must follow, one line each, with a link to its ticket or ADR. Optional>
-- FR: <behavior that a caller, a user, or a test can see, one sub-bullet for each requirement>
+- Terms: <each domain term that the change adds, renames, or relies on. If the target repo has a glossary or context file, link it. Give the meaning of a term that the glossary does not hold. Write `none` if the change touches no domain term>
+- FR: <behavior that a caller, a user, or a test can see, one sub-bullet for each requirement. Add one sub-bullet for each edge case that the change must handle. An edge case is an unusual input or state, with the result that a test checks>
 - NFR: <limits, one sub-bullet for each limit: security, performance, allowed new dependencies, what stays unbuilt>
 - Verification: <how the session proves it, with real commands and data, and the checks that pass before the hand-back. For a bugfix, the failing test first. Start a check that runs after the merge with "After merge:">
 ```
@@ -24,6 +25,10 @@ Good: `- Why: The Damage Dispute agent reads bookings through a shared admin log
 <example>
 Bad: `- FR: A custom authenticator in src/AgentApiModule/ checks the token against the JWKS.`
 Good: `- FR: A call with an expired token, or a token for another audience, returns 401.`
+</example>
+<example>
+Bad: `- FR: The replacement handover rejects a wrong start_km.` No test can fail on "wrong".
+Good: `- FR: A start_km of the new car below the end_km of its latest log book returns a validation error. Example: 8500 when the log book ends at 85,000.`
 </example>
 <example>
 Bad: `- Read first: AzureLoginService.php. Copy the JWKS check, not the appid check.`
