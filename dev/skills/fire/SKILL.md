@@ -30,6 +30,7 @@ Start one agent with the Agent tool, on Opus. If a target is a git repo, start t
 - each target: the directory and the base commit of a git repo, or the name of a system
 - a diff file path in the scratchpad
 - in a patch round, the red checks and the open findings of the prior round, each one verbatim, as the reviewer wrote it
+- in a patch round, the `choices` of the prior round, verbatim
 
 A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`. Add no fix, example, or wording of your own. An added example once held the answers of two eval cases, and the reviewer flagged the patch as `blocking`.
 
@@ -67,6 +68,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 1. If the status is `pass`, push each branch that has a commit after its base. Open one draft PR in each changed repo. The title follows the repo's PR rule. Write the body by the PR body rule of `personal:work-like-mehrdad`.
    - The body names the ticket by title and by its path from the repo root, such as `.initiatives/<initiative>/tickets/<file>.md`, because `productivity:sweep` finds the PR by that path. A clone in the scratchpad does not change that path. Without a ticket, the body gives the change in one sentence.
    - The body lists each Verification check that the brief puts after the merge.
+   - If the implementer of the last round returned `choices`, a section `Choices made while building` lists them, one line each. The section stays above the `<details>` block, and it does not count in the 50 words.
    - One `<details>` block at the end holds the `what_it_does`, `safety_fact`, `cleared`, and `before_merge` of `dev:blast-radius` in the last round. It holds the verifier evidence, each open `quality_note`, and each `pre_existing` item. It holds each refuted finding with the evidence of `dev:finding-checker`. Without a ticket, it also holds the brief.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
