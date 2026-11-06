@@ -1,5 +1,5 @@
 {
-  "description": "When a code file changes, name the rubric that matches the file. Outside an agent, also tell the session to load personal:code-like-mehrdad. When a general-purpose or claude agent starts, give it the spawn rules.",
+  "description": "When a code file changes, name the rubric that matches the file. Outside an agent, also tell the session to load personal:code-like-mehrdad. When a general-purpose or claude agent starts, give it the spawn rules. When the session asks the user a question in the next-step box, remind it to give the digest and the decision round in its closing message.",
   "hooks": {
     "PostToolUse": [
       {
@@ -8,6 +8,15 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/load-code-like-mehrdad-on-code-edit.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__ccd_turn__wrap_up",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/give-round-rules-on-wrap-up-ask.mjs\""
           }
         ]
       }
