@@ -10,7 +10,7 @@ A brief is one `## Brief` section. A build `task` ticket of `orchestrate` holds 
 - Targets: <each git repo with its base branch, or each other system, for example an n8n instance>
 - Decisions: <each closed decision that the build must follow, one line each, with a link to its ticket or ADR. Optional>
 - Terms: <each domain term that the change adds, renames, or relies on. If the target repo has a glossary or context file, link it. Give the meaning of a term that the glossary does not hold. Write `none` if the change touches no domain term>
-- FR: <behavior that a caller, a user, or a test can see, one sub-bullet for each requirement. Also one sub-bullet for each edge case that the change must handle. An edge case is an unusual input or state, with the result that a test checks>
+- FR: <behavior that a caller, a user, or a test can see, one sub-bullet for each requirement. Add one sub-bullet for each edge case that the change must handle. An edge case is an unusual input or state, with the result that a test checks>
 - NFR: <limits, one sub-bullet for each limit: security, performance, allowed new dependencies, what stays unbuilt>
 - Verification: <how the session proves it, with real commands and data, and the checks that pass before the hand-back. For a bugfix, the failing test first. Start a check that runs after the merge with "After merge:">
 ```

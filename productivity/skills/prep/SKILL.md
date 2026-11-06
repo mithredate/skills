@@ -34,6 +34,7 @@ Check the brief before you write it to its file:
 1. Each decision of this session that the build needs is in the Decisions line. In a hand-off, the line also links each ticket that holds an open question.
 2. Each FR is behavior that a caller, a user, or a test can see.
 3. Each Verification check is a real command with real data.
+4. The Terms line names each domain term that the change touches, or says `none`. Each edge case of the change is an FR line.
 
 ## Hand off
 

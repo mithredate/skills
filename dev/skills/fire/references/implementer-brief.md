@@ -15,6 +15,7 @@ Read the AGENTS.md or CLAUDE.md of each git target first. They declare the test,
 
 Call the Skill tool with `dev:tdd` before the first edit in a git target. Follow its rules of the loop.
 
+- Write a test for each edge case in the FR lines of the brief.
 - If the kind of change is `bugfix`, the first commit after the base holds only the failing test. The test must fail for the reason the brief describes. After that commit, no test file changes.
 - Make one commit per red-green cycle. Write each commit message as one conventional-commit subject line.
 - Write no code comment, except a one-line reason that the code cannot show, or the `shortcut:` note of `dev:ponytail`.
