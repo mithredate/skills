@@ -18,12 +18,13 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 **The index** is the file `.initiatives/README.md`, with one row for each initiative.
 
 - Every session reads the index before any other step. This rule applies also when the user names an initiative.
-- If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Do this before any other work. Do not work a ticket while the index is not true.
+- If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Leave a `closed` row and its directory as they are, also when the directory still exists. Run `close` for that initiative only when the user names it. If a one-line state is longer than the limit below, cut it to the latest fact and the next step. Do this before any other work. Do not work a ticket while the index is not true.
 - Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked. `orchestrate fire` skips this sweep.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. Only an `open` row is takeable.
+- The one-line state of an `open`, `waiting`, or `paused` row is one sentence of 25 words maximum. The count includes the text of a link, not its URL. A `closed` row has no state.
 
 ## One directory per initiative
 
@@ -80,7 +81,7 @@ If the user names no initiative, ask the user which initiative to work. Claim no
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the goal, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If a ticket without a brief that is not a `gate` is now ready, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
-7. Update the one-line state in the index row of this initiative. Change no other row. Name each ready build ticket as approved or as waiting for a yes. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
+7. Update the one-line state in the index row of this initiative, in the limit of [The index](#the-index). Change no other row. Give the number of ready build tickets that are approved and the number that wait for a yes, not their titles. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
 8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
 
 The user can run other sessions on other ready tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the initiative, and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
@@ -103,16 +104,16 @@ A new orchestrator repo needs three files: `.initiatives/README.md` with the emp
 
 ## close
 
-An initiative closes when the `Closes when` sentence of its Goal is true, or when the user rules the rest out of scope. If the Goal has no `Closes when` sentence, write it with the user first. Then close. The close step turns the directory into one report and removes the directory. The repo then holds one file for each finished initiative, not a growing tree.
+An initiative closes when the `Closes when` sentence of its Goal is true, or when the user rules the rest out of scope. If the Goal has no `Closes when` sentence, write it with the user first. Then close. The close step turns the directory into one short report and removes the directory.
 
-1. Write `.initiatives/reports/<YYYY-MM-DD>-<slug>.md`. It holds:
-   - the Goal
-   - one entry for each closed ticket, copied from the ticket, with its resolution
+1. Record each change of this close, for example a ticket ruled out of scope. Commit and push the whole directory. The **restore command** is `git checkout <sha> -- .initiatives/<dir>/`, with the full sha of `HEAD` at the end of this step.
+2. Write `.initiatives/reports/<dir>.md`. It copies no ticket body, quotes no asset, and links no file in the directory. It holds:
+   - the Goal, and the lines of Decisions so far, with each ticket title as plain text
    - where the work landed, with links to the PRs, documents, or systems
-   - what was ruled out of scope, and why
-   - each open ticket, with the initiative it moves to, or the reason it is not done. Quote into the report any asset it needs. Keep the rest in git history.
-2. Set the index row to `closed <date>`, and link it to the report. Delete the initiative directory with `git rm`. Git history keeps every ticket.
-3. Commit and push.
+   - each line of Out of scope, with its reason
+   - each open ticket, with the initiative it moves to, or the reason it is not done
+   - the restore command
+3. Set the index row to the closed form of [references/format.md](references/format.md). In each other file under `.initiatives/`, change each link into the directory to a link to the report. Delete the directory with `git rm`. Commit and push.
 
 ## Hand-off: build and gate tickets
 
