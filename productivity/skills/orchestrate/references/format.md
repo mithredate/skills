@@ -21,6 +21,7 @@ This file holds the file shapes of an orchestrator repo. It uses plain files und
 | Initiative | Status | Goal |
 |---|---|---|
 | [<dir>](<dir>/initiative.md) | open; <one-line state> | <Goal in one line> |
+| [<slug>](reports/<YYYY-MM-DD>-<slug>.md) | closed <date> | <Goal in one line> |
 ```
 
 The rows are in priority order. The Status column holds one value:
