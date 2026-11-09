@@ -28,7 +28,7 @@ The rows are in priority order. The Status column holds one value:
 - `open`, takeable
 - `waiting <who> since <date> (<link>)`. The link points to the PR, issue, or thread, so that `productivity:sweep` can check it.
 - `paused <date> (<resume pointer>)`
-- `closed <date>`. The Initiative column then links to the report.
+- `closed <date>`, with the date of the close. The Initiative column then links to the report.
 
 The text after the status is the one-line state of the initiative.
 
