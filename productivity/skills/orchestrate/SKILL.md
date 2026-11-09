@@ -106,7 +106,7 @@ A new orchestrator repo needs three files: `.initiatives/README.md` with the emp
 
 An initiative closes when the `Closes when` sentence of its Goal is true, or when the user rules the rest out of scope. If the Goal has no `Closes when` sentence, write it with the user first. Then close. The close step turns the directory into one short report and removes the directory.
 
-1. Record each ticket change of this close, for example a ticket ruled out of scope. Commit and push. The **restore command** is `git checkout <sha> -- .initiatives/<dir>/`, with the full sha of `HEAD` after this push.
+1. Record each ticket change of this close, for example a ticket ruled out of scope. Commit and push. The **restore command** is `git checkout <sha> -- .initiatives/<dir>/`, with the full sha of `HEAD` at the end of this step.
 2. Write `.initiatives/reports/<YYYY-MM-DD>-<slug>.md`. It copies no ticket body, quotes no asset, and links no file in the directory. It holds:
    - the Goal, and the lines of Decisions so far, with each ticket title as plain text
    - where the work landed, with links to the PRs, documents, or systems
