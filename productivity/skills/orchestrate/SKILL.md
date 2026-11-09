@@ -18,7 +18,7 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 **The index** is the file `.initiatives/README.md`, with one row for each initiative.
 
 - Every session reads the index before any other step. This rule applies also when the user names an initiative.
-- If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Leave a `closed` row and its directory as they are, also when the directory still exists. Run `close` for that initiative only when the user names it. If a one-line state is longer than the limit below, cut it to the latest fact and the next step. Do this before any other work. Do not work a ticket while the index is not true.
+- If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Leave a `closed` row and its directory as they are, also when the directory still exists. Run `close` for that initiative only when the user names it. If a one-line state is longer than the limit below, cut it to the latest fact and the next step. `orchestrate fire` skips this cut. Do this before any other work. Do not work a ticket while the index is not true.
 - Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked. `orchestrate fire` skips this sweep.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
 - The row order is the priority. The first row is the most important initiative.
@@ -110,7 +110,7 @@ An initiative closes when the `Closes when` sentence of its Goal is true, or whe
 2. Write `.initiatives/reports/<dir>.md`. It copies no ticket body, quotes no asset, and links no file in the directory. It holds:
    - the Goal, and the lines of Decisions so far, with each ticket title as plain text
    - where the work landed, with links to the PRs, documents, or systems
-   - each line of Out of scope, with its reason
+   - each line of Out of scope, with its reason, and with each ticket title as plain text
    - each open ticket, with the initiative it moves to, or the reason it is not done
    - the restore command
 3. Set the index row to the closed form of [references/format.md](references/format.md). In each other file under `.initiatives/`, change each link into the directory to a link to the report. Delete the directory with `git rm`. Commit and push.
