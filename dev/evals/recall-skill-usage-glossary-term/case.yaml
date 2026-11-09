@@ -1,0 +1,32 @@
+schema_version: "1.1"
+name: recall-skill-usage-glossary-term
+tags: [pr-reviewer]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:pr-reviewer` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Review one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title, and the brief or the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, at the head commit of the change.
+    - Repo rules: `AGENTS.md` at the repo root.
+
+    Return your structured finding list.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: finds-the-class
+    type: llm
+    criteria: |
+      The reply holds the JSON finding list of a code reviewer. Judge its `blocking`, `discrepancy`, `quality_note`, and `nit` entries. An entry can be a string or an object. A `pre_existing` entry does not count.
+
+      PASS if one entry says that the term "orphan skill" of the change does not match `CONTEXT.md`. Either reason counts. `CONTEXT.md` calls a skill with a session count of 0 and no caller a "deprecation candidate". `CONTEXT.md` also defines an "orphan" as a skill with no caller, whatever its session count.
+
+      FAIL otherwise.

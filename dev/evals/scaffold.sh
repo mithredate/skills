@@ -17,6 +17,14 @@
 #   git -C "$tmp" bundle create "$PWD/dev/evals/repo.bundle" --all
 # To make the bundle again without a case head, run the same commands. Replace
 # the push with: git -C "$tmp" update-ref -d refs/heads/case/<sha>
+# A commit from 6ec0f98 on holds dev/evals/repo.bundle. Its history puts the
+# old bundle inside the new one, so do not push it. Push two new commits
+# instead. The base is a root commit with the tree of the real base. The head
+# is its child with the tree of the real head. Both trees have no dev/evals/.
+# The scaffold.sh of the case names the real commits. To make each commit, run:
+#   idx=$(mktemp); GIT_INDEX_FILE=$idx git read-tree <real commit>
+#   GIT_INDEX_FILE=$idx git rm -rqf --cached dev/evals
+#   git commit-tree "$(GIT_INDEX_FILE=$idx git write-tree)" [-p <base>] -m <message>
 set -euo pipefail
 
 case_dir=$1 base=$2 head=$3
