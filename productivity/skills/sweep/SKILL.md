@@ -54,7 +54,7 @@ An **update** is a state that the host owns, such as a PR merge, a review, the C
 
 For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
 
-If the session has no tool for the host, or the call fails, mark the link "not checked" and give the reason. Do not guess the state.
+If the session has no tool for the host, mark the link "not checked" and give the reason. These calls only read, so a retry needs no approval. If a call fails, retry it, or use another tool for the host. If it still fails, mark the link "not checked" and give the reason. Do not guess the state.
 
 The step is done when each live link has a state or a "not checked" mark, and you have listed each claim.
 

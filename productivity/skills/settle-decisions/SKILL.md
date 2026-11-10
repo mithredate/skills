@@ -38,7 +38,7 @@ A **conflict** is two claims that disagree. A claim or a conflict that the check
 
 When the human reports a meeting, record what the others said as reported. Each commitment of the human, such as time, scope, or role, stays open until the human confirms it.
 
-Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent with a fresh context for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
+Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, you can run it in a subagent. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
 Before you measure or research a criterion, state which result would change the decision. If no result would change it, drop the criterion. When the result is in, start with the finding that decided the question. Mark the other findings as context, because precision that decides nothing hides the finding that does.
 
@@ -83,4 +83,4 @@ Facts: <at most three bullets>
 
 If you ask in an `AskUserQuestion` dialog, put the full context in the question text. The terminal can hide the message above the dialog.
 
-The session is done when the frontier is empty. Every decision has a record, and nothing is assumed silently.
+The settling is done when the frontier is empty. Every decision has a record, and nothing is assumed silently. Then continue with the work that the decisions unblock.
