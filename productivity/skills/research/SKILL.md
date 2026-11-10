@@ -12,4 +12,4 @@ Its job:
 3. Save it where the repo already keeps such notes; match the existing convention, and if there is none, put it somewhere sensible and say where.
 
 ---
-_Adapted from [mattpocock/skills/skills/engineering/research](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/research) — MIT © 2026 Matt Pocock._
+_Inspired by [mattpocock/skills/skills/engineering/research](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/research) — MIT © 2026 Matt Pocock._

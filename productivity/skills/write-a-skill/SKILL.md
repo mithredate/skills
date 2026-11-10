@@ -39,7 +39,7 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 - Keep the description under 150 characters. Every session carries every description in its context.
 - If the agent must load the skill with no request, add "even when the user does not ask". An agent uses a skill less often than it must.
 - Put no step, count, or rule from the body in the description. An agent that reads a workflow summary in the description follows the summary and skips the body.
-- A colon followed by a space inside the value breaks the YAML, unless the whole value is in double quotes. The skill then loads with no metadata. Only CI catches this, so check it by eye.
+- A colon followed by a space inside the value breaks the YAML, unless the whole value is in double quotes. The skill then loads with no metadata. Only `scripts/validate.sh` catches this, so also check it by eye.
 - A user-invoked skill sets `disable-model-invocation: true` and an `argument-hint`. Its description is a one-line summary for the human.
 - Check the field list against https://code.claude.com/docs/en/skills before you ship. The spec changes.
 
@@ -64,4 +64,4 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 - Work in a worktree off `origin/main`. Make it with the `EnterWorktree` tool, which puts it in `.claude/worktrees/<name>/`. Then run `git switch -c <branch> --no-track` in it. One skill per PR. Stack a dependent skill as a second PR on the first branch.
 - Update the marketplace manifest and every caller from step 1. Bump the patch version in the plugin's `plugin.json`. An installer updates a plugin only when the version changes.
 - A vendored skill keeps its footer while its drift is 80% or less. Over 80%, delete the footer and the `NOTICES.md` entry. Recompute the verb from the drift band in the section "Drift bands and attribution language" of `AGENTS.md`. The SHA changes only on a refresh.
-- Use conventional commits. Write the PR body by the PR body rule of `personal:work-like-mehrdad`. Put the verification evidence and the report of `dev:manage-agents-md` in the `<details>` block. Keep the Open questions above it.
+- Use conventional commits. Write the PR body by the PR body rule of `personal:work-like-mehrdad`. Put the verification evidence in the `<details>` block. If the change edits `AGENTS.md`, put the deletion table of `dev:manage-agents-md` in the block too. Keep the Open questions above the block.

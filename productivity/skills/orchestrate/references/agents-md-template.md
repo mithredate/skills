@@ -15,8 +15,6 @@ At the start of every session, load the `productivity:orchestrate` skill.
 
 ## Repos
 
-The sibling repos sit under `~/projects/`.
-
 | Repo | What it is |
 |---|---|
 | `../<sibling>` | <one line> |
