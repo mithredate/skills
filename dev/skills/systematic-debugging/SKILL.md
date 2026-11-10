@@ -9,8 +9,6 @@ description: Use on any bug, failing test, broken build, or unexpected behaviour
 
 **Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
 
-**Violating the letter of this process is violating the spirit of debugging.**
-
 ## The Iron Law
 
 ```
@@ -57,7 +55,7 @@ Find the root cause before you propose a fix. The root cause is the first place 
 2. **When You Don't Know**
    - Say "I don't understand X"
    - Don't pretend to know
-   - Ask for help
+   - Gather evidence for X
 
 ## Phase 3: Implementation
 
@@ -76,7 +74,7 @@ Find the root cause before you propose a fix. The root cause is the first place 
    - Count: How many fixes have you tried?
    - If < 3: Return to Phase 1, re-analyze with new information
    - **If ≥ 3: STOP and question the architecture (step 4 below)**
-   - DON'T attempt Fix #4 without architectural discussion
+   - DON'T attempt Fix #4 before the architecture question is settled
 
 4. **If 3+ Fixes Failed: Question Architecture**
 
@@ -90,7 +88,7 @@ Find the root cause before you propose a fix. The root cause is the first place 
    - Are we "sticking with it through sheer inertia"?
    - Should we refactor architecture vs. continue fixing symptoms?
 
-   **Discuss with your human partner before attempting more fixes**
+   **Sort the architecture question with `productivity:settle-decisions` before attempting more fixes**
 
    This is NOT a failed hypothesis - this is a wrong architecture.
 

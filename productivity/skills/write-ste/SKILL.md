@@ -20,8 +20,10 @@ description: Our writing rules. Use when writing a skill, an agent file, a refer
 
 ## Sentences
 
-- A procedure sentence has 20 words maximum. A description sentence has 25 words maximum.
-- One instruction per sentence. One idea per sentence.
+- Write short sentences. Write one idea per sentence.
+- An **agent text** is a text that agents read, such as a skill, an agent file, a reference, or a brief.
+- In an agent text, a procedure sentence has 20 words maximum. A description sentence has 25 words maximum. Write one instruction per sentence.
+- A text that people read has no word count. Examples are a chat message, a report, a PR body, and a review finding.
 - Use the active voice. Name the actor: "the agent", "the user", "you".
 - Write an instruction in the imperative: "Read the file." Write a description in the present tense: "The file holds the rules."
 - Start a condition with "if" or "when" and put it before the instruction: "If the file is longer than 200 lines, move the section."
@@ -35,13 +37,14 @@ description: Our writing rules. Use when writing a skill, an agent file, a refer
 
 - One topic per paragraph. Six sentences maximum per paragraph.
 - A sequence of actions is a numbered list. A set of items is a bulleted list. One item, one line.
+- In a text that people read, write a short paragraph where the ideas connect. Keep lists for separate items.
 - Every item in one list is a full sentence, or every item is a noun phrase. Do not mix the two.
 - A heading is a noun phrase or an imperative, not a question.
 - Put the warning or the condition before the action it applies to.
 
 ## Check before you finish
 
-1. Read every sentence. Count the words. Split any sentence over the limit.
+1. In an agent text, read every sentence. Count the words. Split any sentence over the limit.
 2. Search the file for each word that the Words section bans. Also search for an arrow, a slash for "or", and a semicolon. Each hit is a defect. A hit inside backticks is not a defect.
 3. Search for figurative words. Each hit is a defect.
 4. Search for two words that name the same thing. Keep one.

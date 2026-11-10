@@ -9,8 +9,6 @@ description: Use before claiming that work is done, fixed, or passing, and befor
 
 **Core principle:** Evidence before claims, always.
 
-**Violating the letter of this rule is violating the spirit of this rule.**
-
 ## The Iron Law
 
 ```
