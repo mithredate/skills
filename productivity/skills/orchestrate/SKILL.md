@@ -33,7 +33,7 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 
 When a change happens to an initiative, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
 
-Refer to an initiative or a ticket by its title in everything the user reads. Put the path inside the title's link. A list of bare ids is not readable.
+In everything the user reads, refer to a ticket by its title and to an initiative by its directory name. Put the path inside the link. A list of bare ids is not readable.
 
 ## The initiative
 
@@ -76,7 +76,7 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 1. Read `initiative.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Start from the goal. Name the next step toward it that a person or an agent can take now. Claim the open tickets that this step cannot start without, or the tickets that the user names. Check that need against the step itself, because a `blocked-by` edge can be stale. Do not claim a `gate`, or a build ticket for a git repo. List the other open tickets as "not needed now", with no question to the user. If the next step is a gate, give the user its checklist. List each ready build ticket as approved or as waiting for a yes. Show the brief of each waiting ticket. Ask the user for a yes. Then go to step 7.
    - Only the user's yes to a brief that you showed in this session adds `approved:`. A request to cook or to build is not a yes.
-3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
+3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in the rounds of `productivity:settle-decisions`.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under Decisions so far in `initiative.md`. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.
