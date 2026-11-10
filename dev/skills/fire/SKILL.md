@@ -18,7 +18,7 @@ The session does not edit code or a target system. Agents build, review, and ver
 
 The step is done when each git target has its branch checked out in a known directory, and has its base commit.
 
-The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
+The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`. In `orchestrate fire`, no user is there. Stop with the status `blocked`, and name the missing agents.
 
 ## Build
 

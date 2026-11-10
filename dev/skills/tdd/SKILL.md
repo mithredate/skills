@@ -19,7 +19,7 @@ See [tests.md](references/tests.md) for examples and [mocking.md](references/moc
 
 A **seam** is the public boundary you test at: the interface where you observe behavior without reaching inside. Tests live at seams, never against internals.
 
-**Test only at seams chosen up front.** Before writing any test, write down the seams under test. Use the seams that the brief or the user names. Otherwise choose them yourself, and list them in the `<details>` block of the PR body. No test is written at a seam that is not on the list. Each edge case that the brief lists gets a test, so its seam goes on the list. You can't test everything, so choosing the seams up front is how testing effort lands on the critical paths and complex logic.
+**Test only at seams chosen up front.** Before writing any test, write down the seams under test. Use the seams that the brief or the user names. Otherwise choose them yourself, and list them in the `<details>` block of the PR body. In a `dev:fire` run, list them in `choices` instead. No test is written at a seam that is not on the list. Each edge case that the brief lists gets a test, so its seam goes on the list. You can't test everything, so choosing the seams up front is how testing effort lands on the critical paths and complex logic.
 
 When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface should expose), apply these rules:
 
