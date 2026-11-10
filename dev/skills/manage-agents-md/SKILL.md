@@ -5,13 +5,14 @@ description: Use when creating, improving, or fixing a repo's `CLAUDE.md` or `AG
 
 # Agent instructions
 
+First actions: call the Skill tool with `productivity:write-a-skill`, and apply its Shape rules to every line you write or delete. They are the general rules of writing for agents, such as pointers, hierarchy, pruning, and no-ops.
+
 The instruction file is `AGENTS.md`. Put a Claude-only line in `.claude/rules/claude-code.md`. Add no `CLAUDE.md`, because Claude Code then skips `AGENTS.md`.
 
 ## Principles
 
 - **Do not repeat what the environment already states.** The manifest lists the scripts or targets. The config holds the values. The tree shows the layout. `--help` prints the flags. The file states what the environment cannot state: how a command runs, the convention no linter enforces, the reason behind a choice, and the known problem no config states. For example, the file can state that a command runs inside the `app` container after a fixture is built. `pnpm test` is the manifest's line. `docker compose exec app pnpm test` is the file's line. The same split applies to `make`, `dotnet`, `pytest`, and every other stack.
 - **Keep the file under 200 lines.** Adherence drops past that length. Imports still load at launch, so splitting the file organizes it but does not shrink the load. An agent that joins nested instruction files counts them all against the same budget.
-- For the general rules of writing for agents, such as pointers, hierarchy, pruning, and no-ops, call the Skill tool with `productivity:write-a-skill`.
 
 ## Write or improve
 

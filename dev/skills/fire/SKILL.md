@@ -32,7 +32,7 @@ Start one agent with the Agent tool, on Opus. If a target is a git repo, start t
 - in a patch round, the red checks and the open findings of the prior round, each one verbatim, as the reviewer wrote it
 - in a patch round, the `choices` of the prior round, verbatim
 
-A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`. Add no fix, example, or wording of your own. An added example once held the answers of two eval cases, and the reviewer flagged the patch as `blocking`.
+A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`. Add no fix, example, or wording of your own. An example of your own can put the expected answer of a test into the patch, and the reviewer then flags the patch as `blocking`.
 
 The step is done when the agent returns its JSON. If the outcome is `plan_broken` or `setup_blocked`, stop with the status `blocked` and its evidence.
 

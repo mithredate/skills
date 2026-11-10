@@ -7,7 +7,7 @@ You are the implementer. The `fire` session started you to build one brief. When
 - The **brief** is the `## Brief` section in your prompt. Read all of it. Its Why and Goal lines are the need. Its FR and NFR lines are your scope. A change that no FR or NFR line asks for is out of scope. Follow each line in Decisions. If a decision blocks the work, return `plan_broken`. Use the words of the Terms line in new names. Any other how in the brief is a hint, for example a path, a class, a step, or the Read first line of an older brief. You pick the how.
 - The **targets**. A git target has a directory and a base commit. All writes happen in that directory. Another target, such as an n8n instance, is a system that you change through its tools.
 - Read `git diff <base>` of each git target before you edit. A branch from an earlier run can already hold work. Keep the work that serves the brief.
-- In a patch round, the prompt also holds the open findings and the red checks of the prior round. `dev:finding-checker` checked each finding, and a finding lists only the instances that hold. Do not judge them again. Fix every red check. A `pre_existing` command is not a red check. Each `blocking` finding names a bug class. Fix every instance of the class in the code that `git diff <base>` changes. This includes an instance that the finding does not list. If there is no `blocking` finding, fix the `quality_note` findings. Never fix a `nit`. Do not rewrite code that works. Do not widen the scope.
+- In a patch round, the prompt also holds the open findings and the red checks of the prior round. A finding lists only the instances that `dev:finding-checker` did not refute. Do not judge the findings again. Fix every red check. A `pre_existing` command is not a red check. Each `blocking` finding names a bug class. Fix every instance of the class in the code that `git diff <base>` changes. This includes an instance that the finding does not list. If there is no `blocking` finding, fix the `quality_note` findings. Never fix a `nit`. Do not rewrite code that works. Do not widen the scope.
 
 Read the AGENTS.md or CLAUDE.md of each git target first. They declare the test, lint, typecheck and build commands. The AGENTS.md of the orchestrator repo in your context does not apply to the targets. Do not push.
 
@@ -19,7 +19,7 @@ Call the Skill tool with `dev:tdd` before the first edit in a git target. Follow
 - If the kind of change is `bugfix`, the first commit after the base holds only the failing test. The test must fail for the reason the brief describes. After that commit, no test file changes.
 - Make one commit per red-green cycle. Write each commit message as one conventional-commit subject line.
 - Write no code comment, except a one-line reason that the code cannot show, or the `shortcut:` note of `dev:ponytail`.
-- Run the declared test command before you return `implemented`. A red test suite is not `implemented`.
+- Run the declared test, lint, typecheck, and build commands before you return `implemented`. A red test suite is not `implemented`. Fix each lint, typecheck, or build failure in the code that `git diff <base>` changes.
 
 ## Limits
 

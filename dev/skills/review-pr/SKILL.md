@@ -6,14 +6,16 @@ argument-hint: "<PR number | branch> [--inline | --fresh]"
 
 # Review a PR
 
+First actions: call the Skill tool with `personal:work-like-mehrdad` and `personal:code-like-mehrdad`.
+
 **Arguments:** $ARGUMENTS. The argument is a PR number or a branch name. Add `--inline` or `--fresh` to force a mode. When no flag is given, the mode follows the author.
 
-Review stance, order of findings, and the verify-don't-trust rule come from `personal:code-like-mehrdad`. Call the Skill tool with `personal:work-like-mehrdad` and `personal:code-like-mehrdad` first. The checklists are [../../agents/pr-reviewer.md](../../agents/pr-reviewer.md), [../../agents/security-reviewer.md](../../agents/security-reviewer.md), and [../../agents/blast-radius.md](../../agents/blast-radius.md). Each file is also the system prompt of its agent. The human decides whether to merge.
+Review stance, order of findings, and the verify-don't-trust rule come from `personal:code-like-mehrdad`. The checklists are [../../agents/pr-reviewer.md](../../agents/pr-reviewer.md), [../../agents/security-reviewer.md](../../agents/security-reviewer.md), and [../../agents/blast-radius.md](../../agents/blast-radius.md). Each file is also the system prompt of its agent. The human decides whether to merge.
 
 ## Gather
 
-1. Run `gh pr view <n> --json title,body,author,baseRefName,headRefName,headRefOid`. Write the diff to a file with `gh pr diff <n> > <scratch>/pr-<n>.diff`. When there is no PR for the branch, use `git diff main...<branch>` instead. A reviewer reads this file.
-2. Get the **base commit**, the merge base of the PR head and the base branch. Run `gh api 'repos/{owner}/{repo}/compare/<baseRefName>...<headRefOid>' --jq .merge_base_commit.sha`. When there is no PR, run `git merge-base main <branch>`.
+1. Run `gh pr view <n> --json title,body,author,baseRefName,headRefName,headRefOid`. Write the diff to a file with `gh pr diff <n> > <scratch>/pr-<n>.diff`. When there is no PR for the branch, run `git fetch origin`, then use `git diff origin/main...<branch>` instead. A local `main` can be behind `origin/main`. A reviewer reads this file.
+2. Get the **base commit**, the merge base of the PR head and the base branch. Run `gh api 'repos/{owner}/{repo}/compare/<baseRefName>...<headRefOid>' --jq .merge_base_commit.sha`. When there is no PR, run `git merge-base origin/main <branch>`.
 3. The brief is the `## Brief` section of the `orchestrate` ticket that the PR body names, or of the PR body itself. When there is no brief, the intent comes from the PR body and the Jira ticket named in the title or branch. Use the Atlassian MCP to get the Jira ticket.
 4. Check the kind of PR. A `fix` prefix or a bug ticket makes it a **bugfix**. If the PR is a bugfix, write down the root cause that the diff implies before you judge the fix. A fix that only addresses a symptom is a `discrepancy`.
 
@@ -33,9 +35,9 @@ Apply both lenses of `pr-reviewer.md` to the diff yourself. Then apply `security
 
 Spawn the four agents in parallel with the Agent tool. Set `subagent_type` to the scoped names below. Wait for all four agents to finish.
 
-- `dev:pr-reviewer` (Sonnet, 20 turns, no shell). Give it the diff file path, the brief text, and the PR title and body. Also give it the ticket context that you gathered, and the repo root. Its input is the diff, not the repo. It can use Context7 for one library-documentation check.
+- `dev:pr-reviewer` (Sonnet, 20 turns, no shell). Give it the diff file path, the brief text, and the PR title and body. Also give it the ticket context that you gathered, and the repo root. Also give it the path of the repo's AGENTS.md or CLAUDE.md. Its input is the diff, not the repo. It can use Context7 for one library-documentation check.
 - `dev:security-reviewer` (Sonnet, 20 turns, no shell). Give it the same inputs as `dev:pr-reviewer`.
-- `dev:verifier` (Haiku, 16 turns). Give it the base commit. If the branch under review is checked out, give it the directory that holds the branch. If the branch is not checked out, spawn the verifier with `isolation: "worktree"`. Then its working directory is a new worktree, and the prompt names no directory. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first. If the PR changes a file that the sandbox denies, such as `.claude/settings.json`, the switch fails. Then the verdict is `could_not_run`.
+- `dev:verifier` (Haiku, 16 turns). Give it the base commit. If the branch under review is checked out, give it the directory that holds the branch. If the branch is not checked out, spawn the verifier with `isolation: "worktree"`. Then its working directory is a new worktree, and the prompt names no directory. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first. If one of these commands fails, tell it to run no declared command and to return the verdict `could_not_run`. The switch fails when the PR changes a file that the sandbox denies, such as `.claude/settings.json`.
 - `dev:blast-radius` (Opus, 30 turns, with a shell). Give it the same inputs as `dev:pr-reviewer`, and the base commit. Give it the directory of the branch, or spawn it with `isolation: "worktree"`, the same as `dev:verifier`.
 
 A red verifier verdict is a `blocking` finding. Report a `could_not_run` verdict as such. Do not report it as green.
