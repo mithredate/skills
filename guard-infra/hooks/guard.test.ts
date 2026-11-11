@@ -200,7 +200,7 @@ test('runs a read and a command with no privileged call without a question', asy
   expect(questions).toEqual([])
 })
 
-// The parts of `guard-infra/sandbox.json` that the guard reads.
+// The parts of `managed-settings.json` that the guard reads.
 const SANDBOX = {
   enabled: true,
   failIfUnavailable: true,
