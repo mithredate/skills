@@ -22,7 +22,9 @@ The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:
 
 ## Build
 
-Start one agent with the Agent tool, on Opus. If a target is a git repo, start the prompt with `First actions: call the Skill tool with dev:tdd.` Give it:
+Start one agent with the Agent tool. In rounds 1 and 2, set its `model` to `opus`. In round 3, set its `model` to `fable`. Round 3 runs only after two failed rounds, so it gets the stronger model. The session picks the model from the round number. The implementer does not judge its own capability. If the Agent tool rejects `fable`, start round 3 with `opus`. Keep the reason for the report.
+
+If a target is a git repo, start the prompt with `First actions: call the Skill tool with dev:tdd.` Give it:
 
 - the path of [references/implementer-brief.md](references/implementer-brief.md), as its contract
 - the path of the ticket or the brief file, and the Brief section, verbatim
@@ -73,7 +75,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
-5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent. List each Verification check that the brief puts after the merge.
+5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent. If round 3 ran on `opus`, say so, and give the reason. List each Verification check that the brief puts after the merge.
 
 A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. Merge only by the Merge section.
 
