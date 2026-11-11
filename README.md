@@ -11,11 +11,11 @@
 
 The official guide is [Install and manage plugins](https://code.claude.com/docs/en/discover-plugins).
 
-`guard-infra/sandbox.json` turns on the Claude Code sandbox. A plugin cannot turn on the sandbox. Run these commands to link the installed copy as the managed settings file, so that every session loads it.
+`managed-settings.json` at the repo root holds every machine-wide Claude Code setting, not only the sandbox. It turns on the Claude Code sandbox, sets the package cooldowns, and sets the default subagent model and permission mode. A plugin cannot turn on the sandbox. Run these commands to link the installed copy as the managed settings file, so that every session loads it. `ln -sfn` also replaces an existing link.
 
 ```bash
 sudo mkdir -p "/Library/Application Support/ClaudeCode"
-sudo ln -s ~/.claude/plugins/marketplaces/skills/guard-infra/sandbox.json "/Library/Application Support/ClaudeCode/managed-settings.json"
+sudo ln -sfn ~/.claude/plugins/marketplaces/skills/managed-settings.json "/Library/Application Support/ClaudeCode/managed-settings.json"
 ```
 
 To run sessions without the sandbox, delete the link.
@@ -30,7 +30,7 @@ Start a new session after you add or delete the link. `/status` warns that the l
 
 In 2026, attackers used hijacked maintainer accounts to publish malicious new versions on npm and PyPI. With these settings, npm, pnpm, and uv refuse a version that is younger than 7 days.
 
-The managed settings link of `guard-infra/sandbox.json` sets the cooldown for every Claude Code session. Its `env` block sets `npm_config_min_release_age`, `pnpm_config_minimum_release_age`, and `UV_EXCLUDE_NEWER`. These variables override the value in a project's `.npmrc` or `pnpm-workspace.yaml`. uv needs 0.9.17 or later to read the duration in `UV_EXCLUDE_NEWER`. A plugin cannot set package-manager config. For your own terminal, apply the settings below once on each machine.
+The managed settings link of `managed-settings.json` sets the cooldown for every Claude Code session. Its `env` block sets `npm_config_min_release_age`, `pnpm_config_minimum_release_age`, and `UV_EXCLUDE_NEWER`. These variables override the value in a project's `.npmrc` or `pnpm-workspace.yaml`. uv needs 0.9.17 or later to read the duration in `UV_EXCLUDE_NEWER`. A plugin cannot set package-manager config. For your own terminal, apply the settings below once on each machine.
 
 | Tool | Setting | 7-day value | Minimum version | Command or config file |
 |---|---|---|---|---|

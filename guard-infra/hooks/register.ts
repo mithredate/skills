@@ -16,7 +16,7 @@ type Sandbox = {
 }
 type BashCall = { command: string; dangerouslyDisableSandbox?: boolean; allowed_domains?: string[] }
 
-// The credentials that `guard-infra/sandbox.json` hides from a sandboxed call.
+// The credentials that `managed-settings.json` hides from a sandboxed call.
 const HIDDEN_FILES = ['~/.aws', '~/.kube']
 const HIDDEN_VARIABLES = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']
 // The API host suffixes of every public AWS partition. The deny list keeps a key from a `.env` file off AWS.
