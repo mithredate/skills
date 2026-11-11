@@ -26,7 +26,7 @@ A decision is **critical** when a wrong choice causes harm that a reversal of th
 - It changes access, secrets, personal data, or cost.
 - It changes the agreed destination, scope, or priority.
 - It adds the first file of a kind to a repo that other people use, such as the first ADR.
-- It has another side effect that a revert does not undo, such as a call to an external system.
+- It has another side effect that a revert does not undo, such as a call to an external system. These calls are not critical: a retry of a read or a test, and a push to the session branch. A PR in a repo with no other owner and a reply to a bot review comment are not critical either.
 - It weakens a safety net, such as a test, a CI check, or access control.
 - It is a design decision, unless it is minor and a revert does not touch the critical path.
 

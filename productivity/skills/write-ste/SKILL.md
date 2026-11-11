@@ -21,9 +21,9 @@ description: Our writing rules. Use when writing a skill, an agent file, a refer
 ## Sentences
 
 - Write short sentences. Write one idea per sentence.
-- An **agent text** is a text that agents read, such as a skill, an agent file, a reference, or a brief.
+- An **agent text** is a text that agents read, such as a skill, an agent file, a reference, or a brief. The `<details>` block of a PR body is an agent text too.
 - In an agent text, a procedure sentence has 20 words maximum. A description sentence has 25 words maximum. Write one instruction per sentence.
-- A text that people read has no word count. Examples are a chat message, a report, a PR body, and a review finding.
+- A text that people read has no word limit per sentence. Examples are a chat message, a report, a PR body, and a review finding.
 - Use the active voice. Name the actor: "the agent", "the user", "you".
 - Write an instruction in the imperative: "Read the file." Write a description in the present tense: "The file holds the rules."
 - Start a condition with "if" or "when" and put it before the instruction: "If the file is longer than 200 lines, move the section."
