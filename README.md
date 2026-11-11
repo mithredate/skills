@@ -11,14 +11,16 @@
 
 The official guide is [Install and manage plugins](https://code.claude.com/docs/en/discover-plugins).
 
-`managed-settings.json` at the repo root holds every machine-wide Claude Code setting, not only the sandbox. It turns on the Claude Code sandbox, sets the package cooldowns, and sets the default subagent model and permission mode. A plugin cannot turn on the sandbox. Run these commands to link the installed copy as the managed settings file, so that every session loads it. `ln -sfn` also replaces an existing link.
+`managed-settings.json` at the repo root holds every machine-wide Claude Code setting, not only the sandbox. It turns on the Claude Code sandbox, sets the package cooldowns, and sets the default subagent model and permission mode. A plugin cannot turn on the sandbox. Run these commands to link the installed copy as the managed settings file, so that every session loads it. The `ln` command fails if a file is already at that path. If the file is your own old link, delete it with the command below, and run `ln` again. If your company put the file there, do not replace it.
 
 ```bash
 sudo mkdir -p "/Library/Application Support/ClaudeCode"
-sudo ln -sfn ~/.claude/plugins/marketplaces/skills/managed-settings.json "/Library/Application Support/ClaudeCode/managed-settings.json"
+sudo ln -sn ~/.claude/plugins/marketplaces/skills/managed-settings.json "/Library/Application Support/ClaudeCode/managed-settings.json"
 ```
 
-To run sessions without the sandbox, delete the link.
+A company policy from the claude.ai admin console or from an MDM profile outranks this file. Claude Code then ignores most of this file, and only its `env` block still applies. Run `/status` to check that the sandbox is still on.
+
+To run sessions without the sandbox, delete the link. This also removes the default subagent model and the permission mode.
 
 ```bash
 sudo rm "/Library/Application Support/ClaudeCode/managed-settings.json"

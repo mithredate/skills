@@ -34,6 +34,7 @@ Each top-level plugin dir has `.claude-plugin/plugin.json` and `skills/`. A mod 
 - **A call that fails in the sandbox retries outside it with the review of the permission mode.** Do not add `excludedCommands` to `managed-settings.json`. An excluded command runs outside the sandbox on every call, where it can read `~/.aws`, for example `soffice --cat`.
 - **Keep every key that weakens the sandbox out of `managed-settings.json`.** An example is `enableWeakerNetworkIsolation`. `claude plugin eval` refuses every Bash grant when a managed settings file holds such a key. Without that key, `gh` fails TLS in the sandbox and retries outside it.
 - **A sandboxed call writes only in the session's folder.** Do not add `~/projects`, or another folder that holds a repo, to `allowWrite`. Claude Code protects the `.git` config and hooks only in the session's folder. A `denyWrite` glob does not fully protect them in other folders. Git can also read its config from outside `.git`. If a sandboxed call changes the git config of a repo, git later runs that code outside the sandbox. Keep every `denyWrite` entry.
+- **Do not set `CLAUDE_CODE_SUBAGENT_MODEL_FORCE`.** `CLAUDE_CODE_SUBAGENT_MODEL` sets only the default model. With the force variable, every subagent runs on that model. This includes an agent with a `model:` line, such as `blast-radius` on opus, and each Opus or Fable spawn of `fire`.
 
 ## Worktree workflow
 
