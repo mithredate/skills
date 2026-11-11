@@ -18,7 +18,7 @@ The session does not edit code or a target system. Agents build, review, and ver
 
 The step is done when each git target has its branch checked out in a known directory, and has its base commit.
 
-The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`.
+The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`. In `orchestrate fire`, no user is there. Stop with the status `blocked`, and name the missing agents.
 
 ## Build
 
@@ -32,7 +32,7 @@ Start one agent with the Agent tool, on Opus. If a target is a git repo, start t
 - in a patch round, the red checks and the open findings of the prior round, each one verbatim, as the reviewer wrote it
 - in a patch round, the `choices` of the prior round, verbatim
 
-A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`. Add no fix, example, or wording of your own. An added example once held the answers of two eval cases, and the reviewer flagged the patch as `blocking`.
+A `pre_existing` command is not a red check. Give each open finding without the instances that `dev:finding-checker` refuted or listed as `pre_existing`. Add no fix, example, or wording of your own. An example of your own can put the expected answer of a test into the patch, and the reviewer then flags the patch as `blocking`.
 
 The step is done when the agent returns its JSON. If the outcome is `plan_broken` or `setup_blocked`, stop with the status `blocked` and its evidence.
 

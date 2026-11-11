@@ -48,13 +48,13 @@ The step is done when each live link is listed with the file that holds it, and 
 
 ## Check
 
-Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last time that the record gives for the link. A comment or an edit after that time is new. If the record gives only a date, a comment or an edit on that date is new too. Read the body of each new comment and each new edit.
+Check all live links in parallel. Use the MCP tool or the CLI that the session has for the host. Compare the status, the last edit, and the comments after the last time that the record gives for the link. For a PR, compare the review state and the CI state too. A comment or an edit after that time is new. If the record gives only a date, a comment or an edit on that date is new too. Read the body of each new comment and each new edit.
 
 An **update** is a state that the host owns, such as a PR merge, a review, the CI state, or a ticket status. The date and the author of a new comment are updates too. A statement by another person or a bot that is not an update is a claim, by the definition in `productivity:settle-decisions`. List each claim that a new comment or a new edit holds, with its link.
 
-For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`. The review state and the CI state are easy to miss.
+For a GitHub PR, use `gh pr view <url> --json state,reviewDecision,mergedAt,statusCheckRollup,body,comments,reviews`. For its inline review comments, use `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`.
 
-If the session has no tool for the host, or the call fails, mark the link "not checked" and give the reason. Do not guess the state.
+If the session has no tool for the host, mark the link "not checked" and give the reason. These calls only read, so a retry needs no approval. If a call fails, retry it, or use another tool for the host. If it still fails, mark the link "not checked" and give the reason. Do not guess the state.
 
 The step is done when each live link has a state or a "not checked" mark, and you have listed each claim.
 

@@ -18,9 +18,10 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 **The index** is the file `.initiatives/README.md`, with one row for each initiative.
 
 - Every session reads the index before any other step. This rule applies also when the user names an initiative.
-- If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Leave a `closed` row and its directory as they are, also when the directory still exists. Run `close` for that initiative only when the user names it. If a one-line state is longer than the limit below, cut it to the latest fact and the next step. `orchestrate fire` skips this cut. Do this before any other work. Do not work a ticket while the index is not true.
-- Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked. `orchestrate fire` skips this sweep.
+- If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Leave a `closed` row and its directory as they are, also when the directory still exists. Run `close` for that initiative only when the user names it. If a one-line state is longer than the limit below, cut it to the latest fact and the next step. Do this before any other work. Do not work a ticket while the index is not true.
+- Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
+- `orchestrate fire` reads the index in its clone and changes nothing in it. It skips the repair, the cut, and the sweep, because it commits only tickets and `initiative.md`.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. Only an `open` row is takeable.
@@ -32,7 +33,7 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 
 When a change happens to an initiative, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
 
-Refer to an initiative or a ticket by its title in everything the user reads. Put the path inside the title's link. A list of bare ids is not readable.
+In everything the user reads, refer to a ticket by its title and to an initiative by its directory name. Put the path inside the link. A list of bare ids is not readable.
 
 ## The initiative
 
@@ -75,7 +76,7 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 1. Read `initiative.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Start from the goal. Name the next step toward it that a person or an agent can take now. Claim the open tickets that this step cannot start without, or the tickets that the user names. Check that need against the step itself, because a `blocked-by` edge can be stale. Do not claim a `gate`, or a build ticket for a git repo. List the other open tickets as "not needed now", with no question to the user. If the next step is a gate, give the user its checklist. List each ready build ticket as approved or as waiting for a yes. Show the brief of each waiting ticket. Ask the user for a yes. Then go to step 7.
    - Only the user's yes to a brief that you showed in this session adds `approved:`. A request to cook or to build is not a yes.
-3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in one round.
+3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in the rounds of `productivity:settle-decisions`.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under Decisions so far in `initiative.md`. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.

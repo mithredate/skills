@@ -9,8 +9,9 @@
 test("user can checkout with valid cart", async () => {
   const cart = createCart();
   cart.add(product);
-  const result = await checkout(cart, paymentMethod);
-  expect(result.status).toBe("confirmed");
+  const expected = "confirmed";
+  const sut = await checkout(cart, paymentMethod);
+  expect(sut.status).toBe(expected);
 });
 ```
 
@@ -29,8 +30,9 @@ test("createUser saves to database", async () => {
 // GOOD: Verifies through interface
 test("createUser makes user retrievable", async () => {
   const user = await createUser({ name: "Alice" });
-  const retrieved = await getUser(user.id);
-  expect(retrieved.name).toBe("Alice");
+  const expected = "Alice";
+  const sut = await getUser(user.id);
+  expect(sut.name).toBe(expected);
 });
 ```
 
@@ -41,11 +43,15 @@ test("createUser makes user retrievable", async () => {
 test("calculateTotal sums line items", () => {
   const items = [{ price: 10 }, { price: 5 }];
   const expected = items.reduce((sum, i) => sum + i.price, 0);
-  expect(calculateTotal(items)).toBe(expected);
+  const sut = calculateTotal(items);
+  expect(sut).toBe(expected);
 });
 
 // GOOD: Expected value is an independent, known literal
 test("calculateTotal sums line items", () => {
-  expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15);
+  const items = [{ price: 10 }, { price: 5 }];
+  const expected = 15;
+  const sut = calculateTotal(items);
+  expect(sut).toBe(expected);
 });
 ```

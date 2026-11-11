@@ -10,7 +10,7 @@ First actions: call the Skill tool with `personal:work-like-mehrdad` and `dev:po
 
 **Arguments:** $ARGUMENTS. The argument is a requirement: a request in the user's words, a Jira or Linear key, or a link to a Slack or Teams thread. In an `orchestrate` hand-off, the requirement is the build ticket and the decisions of its initiative.
 
-Prep turns a requirement into a brief. The **brief** is the whole input of one `dev:fire` run. `fire` and its agents read nothing else. So prep runs in the session that holds the context, and the brief carries each fact of that context that the build needs.
+Prep turns a requirement into a brief. The **brief** is the whole input of one `dev:fire` run. `fire` and its agents get nothing else from this session. So prep runs in the session that holds the context, and the brief carries each fact of that context that the build needs.
 
 ## Gather
 

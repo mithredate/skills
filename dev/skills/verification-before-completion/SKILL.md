@@ -7,17 +7,9 @@ description: Use before claiming that work is done, fixed, or passing, and befor
 
 ## Overview
 
-**Core principle:** Evidence before claims, always.
+Evidence comes before the claim, because the user, a reviewer, or a merge step acts on what you report.
 
-**Violating the letter of this rule is violating the spirit of this rule.**
-
-## The Iron Law
-
-```
-NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
-```
-
-If you haven't run the verification command in this message, you cannot claim it passes.
+Before you say that work passes, is fixed, or is done, run the check that shows it. Run the check after your last change and read its output. If no check can run, say which check you did not run and why.
 
 ## Common Failures
 
@@ -31,16 +23,16 @@ If you haven't run the verification command in this message, you cannot claim it
 | Agent completed | VCS diff shows changes | Agent reports "success" |
 | Requirements met | Line-by-line checklist | Tests passing |
 
-## Red Flags - STOP
+## Red Flags
 
-- Using "should", "probably", "seems to"
-- Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
+If one of these applies, run the check before you report, or say which check you did not run.
+
+- A hedge such as "should pass" in place of output
 - About to commit/push/PR without verification
 - Trusting agent success reports
 - Relying on partial verification
 - Thinking "just this once"
 - Tired and wanting work over
-- **ANY wording implying success without having run verification**
 
 ## Key Patterns
 

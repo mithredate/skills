@@ -3,7 +3,7 @@ name: research
 description: Use when the user asks to research a topic, or a question needs several primary sources read and the findings kept in a file.
 ---
 
-Spin up a **background agent** to do the research, so you keep working while it reads.
+If the research reads many sources and you are not in a subagent, you can run it in a **background agent**, so you keep working while it reads. In a subagent, do the research yourself.
 
 Its job:
 
@@ -12,4 +12,4 @@ Its job:
 3. Save it where the repo already keeps such notes; match the existing convention, and if there is none, put it somewhere sensible and say where.
 
 ---
-_Adapted from [mattpocock/skills/skills/engineering/research](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/research) — MIT © 2026 Matt Pocock._
+_Inspired by [mattpocock/skills/skills/engineering/research](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/research) — MIT © 2026 Matt Pocock._

@@ -7,7 +7,7 @@ description: Use when building a feature or fixing a bug test-first, writing int
 
 TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. Every section applies on every cycle: consult them before and during the loop, not after.
 
-When exploring the codebase, read `CONTEXT.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
+When exploring the codebase, name tests and interfaces in the project's domain language. Use the words of the brief's Terms line, or of the repo's glossary or context file when one exists. Respect any ADR in the area you touch.
 
 ## What a good test is
 
@@ -19,7 +19,7 @@ See [tests.md](references/tests.md) for examples and [mocking.md](references/moc
 
 A **seam** is the public boundary you test at: the interface where you observe behavior without reaching inside. Tests live at seams, never against internals.
 
-**Test only at seams chosen up front.** Before writing any test, write down the seams under test. Use the seams that the brief or the user names. Otherwise choose them yourself, and list them in the `<details>` block of the PR body. No test is written at a seam that is not on the list. You can't test everything, so choosing the seams up front is how testing effort lands on the critical paths and complex logic instead of every edge case.
+**Test only at seams chosen up front.** Before writing any test, write down the seams under test. Use the seams that the brief or the user names. Otherwise choose them yourself, and list them in the `<details>` block of the PR body. In a `dev:fire` run, list them in `choices` instead. No test is written at a seam that is not on the list. Each edge case that the brief lists gets a test, so its seam goes on the list. You can't test everything, so choosing the seams up front is how testing effort lands on the critical paths and complex logic.
 
 When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface should expose), apply these rules:
 
@@ -40,7 +40,7 @@ When the shape of that interface is itself in question (how deep the module is, 
 
 - **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
-- **Refactoring is not part of the loop.** It belongs to the review stage (`dev:review-pr`), not the red → green implementation cycle.
+- **Refactoring is not part of the loop.** Do not restructure working code during the red → green cycle. `dev:review-pr` reports a structure problem as a finding.
 
 ---
 _Adapted from [mattpocock/skills/skills/engineering/tdd](https://github.com/mattpocock/skills/tree/6654f6b60cd9d5be8b54c6fafe44346dabeb3b76/skills/engineering/tdd) — MIT © 2026 Matt Pocock._

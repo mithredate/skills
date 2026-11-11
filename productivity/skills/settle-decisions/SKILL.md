@@ -26,7 +26,7 @@ A decision is **critical** when a wrong choice causes harm that a reversal of th
 - It changes access, secrets, personal data, or cost.
 - It changes the agreed destination, scope, or priority.
 - It adds the first file of a kind to a repo that other people use, such as the first ADR.
-- It has another side effect that a revert does not undo, such as a call to an external system.
+- It has another side effect that a revert does not undo, such as a call to an external system. These calls are not critical: a retry of a read or a test, and a push to the session branch. A PR in a repo with no other owner and a reply to a bot review comment are not critical either.
 - It weakens a safety net, such as a test, a CI check, or access control.
 - It is a design decision, unless it is minor and a revert does not touch the critical path.
 
@@ -38,7 +38,7 @@ A **conflict** is two claims that disagree. A claim or a conflict that the check
 
 When the human reports a meeting, record what the others said as reported. Each commitment of the human, such as time, scope, or role, stays open until the human confirms it.
 
-Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, start a subagent with a fresh context for it. Do not block on the subagent. Only the decisions that depend on its fact wait.
+Find each fact yourself. Do not ask the human for a fact you can look up. If the search reads many files or sources, you can run it in a subagent. Do not block on the subagent. Only the decisions that depend on its fact wait.
 
 Before you measure or research a criterion, state which result would change the decision. If no result would change it, drop the criterion. When the result is in, start with the finding that decided the question. Mark the other findings as context, because precision that decides nothing hides the finding that does.
 
@@ -83,4 +83,4 @@ Facts: <at most three bullets>
 
 If you ask in an `AskUserQuestion` dialog, put the full context in the question text. The terminal can hide the message above the dialog.
 
-The session is done when the frontier is empty. Every decision has a record, and nothing is assumed silently.
+The settling is done when the frontier is empty. Every decision has a record, and nothing is assumed silently. Then continue with the work that the decisions unblock.
