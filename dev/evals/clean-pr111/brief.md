@@ -30,7 +30,7 @@ PR title: feat(productivity): remind to load write-a-skill when a skill or agent
   - `load-fire-on-brief` keeps its behavior.
 - Verification:
   1. `./scripts/validate.sh` exits 0. It runs `node --test */hooks/*.test.mjs`, so each FR case has a test there, in a temporary git repo.
-  2. In a sandboxed session, clone this repo to `$TMPDIR` with `git clone -q --depth 1 file:///Users/mehrdad.hedayati/projects/mithredate-skills "$TMPDIR/wask-check"`. Run each Bash command below in the clone and time it. Then feed the hook the PostToolUse input JSON of that call, with real paths in the clone and the measured `duration_ms`. Run the cases in this order, and report the output of each.
+  2. In a sandboxed session, clone this repo to `$TMPDIR` with `git clone -q --depth 1 file://<repo-root> "$TMPDIR/wask-check"`. Run each Bash command below in the clone and time it. Then feed the hook the PostToolUse input JSON of that call, with real paths in the clone and the measured `duration_ms`. Run the cases in this order, and report the output of each.
      - An Edit of `dev/skills/review-pr/SKILL.md` gives the reminder.
      - An Edit of `README.md` gives nothing.
      - A Bash call `echo x >> README.md && git -c user.email=a@b -c user.name=a commit -qam x` gives nothing.
