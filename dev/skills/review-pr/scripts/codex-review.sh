@@ -61,13 +61,42 @@ conforms() { # schema file, answer file
     conforms($schema[0])' "$2" >/dev/null 2>&1
 }
 
+# Print the paths that the Claude Code sandbox denies to read, as a TOML table
+# for a Codex permissions profile. Claude turns each Read() deny rule into a
+# sandbox read denial. A rule path is relative to the run directory unless it
+# starts with ~/ or //.
+read_denials() { # run directory
+  local files=() f
+  for f in "/Library/Application Support/ClaudeCode/managed-settings.json" \
+    "/Library/Application Support/ClaudeCode/managed-settings.d/"*.json \
+    /etc/claude-code/managed-settings.json /etc/claude-code/managed-settings.d/*.json \
+    "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json" \
+    "$1/.claude/settings.json" "$1/.claude/settings.local.json"; do
+    if [[ -f $f ]]; then files+=("$f"); fi
+  done
+  (( ${#files[@]} )) || return 1
+  jq -rs --arg home "$HOME" --arg dir "$1" '
+    def expand: if startswith("~/") then $home + .[1:] else . end;
+    [.[] | (.permissions.deny // [])[] | capture("^Read\\((?<p>.+)\\)$").p
+      | sub("/\\*\\*$"; "")
+      | if startswith("//") then .[1:] elif startswith("~/") then expand else $dir + "/" + ltrimstr("./") end]
+    + [.[] | (.sandbox.filesystem.denyRead // [])[] | expand]
+    | unique | "{" + (map(tojson + " = \"none\"") | join(", ")) + "}"' "${files[@]}"
+}
+
 # Write the result line of a role to <out-dir>/<role>.status.
-run_role() { # role, directory, sandbox
-  local role=$1 dir=$2 sandbox=$3 code=0
+run_role() { # role, directory, base profile
+  local role=$1 dir=$2 base_profile=$3 code=0 denials
   local answer=$out_dir/$role.answer.json
   rm -f "$out_dir/$role.json" "$answer"
+  if ! denials=$(read_denials "$dir" 2>/dev/null); then
+    echo "$role: Codex review did not run: cannot read the read denials of the Claude settings" > "$out_dir/$role.status"
+    return
+  fi
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
-  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" codex exec -C "$dir" -s "$sandbox" --color never \
+  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" codex exec -C "$dir" \
+    -c default_permissions='"review"' -c permissions.review.extends="\"$base_profile\"" \
+    -c permissions.review.filesystem="$denials" --color never \
     --output-schema "$here/$role.schema.json" -o "$answer" - \
     < "$out_dir/$role.prompt" > "$out_dir/$role.log" 2>&1 || code=$?
   if (( code == 142 )); then
@@ -94,7 +123,7 @@ remove_worktree() {
 }
 run_blast_radius() {
   if git -C "$repo" worktree add -q --detach "$worktree" "$head" >/dev/null 2>&1; then
-    run_role blast-radius "$worktree" workspace-write
+    run_role blast-radius "$worktree" :workspace
   else
     echo "blast-radius: Codex review did not run: git worktree add failed" > "$out_dir/blast-radius.status"
   fi
@@ -104,8 +133,8 @@ run_blast_radius() {
 worktree=$out_dir/blast-radius-worktree
 for role in "${roles[@]}"; do rm -f "$out_dir/$role.status"; done
 remove_worktree
-run_role pr-reviewer "$repo" read-only &
-run_role security-reviewer "$repo" read-only &
+run_role pr-reviewer "$repo" :read-only &
+run_role security-reviewer "$repo" :read-only &
 run_blast_radius &
 wait
 for role in "${roles[@]}"; do

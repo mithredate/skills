@@ -23,19 +23,19 @@ cat > "$tmp/bin/codex" <<'EOF'
 #!/usr/bin/env bash
 # The role is the name of the --output-schema file. Write the arguments, one per
 # line, to $FAKE/<role>.args. Write the HEAD and the files of the -C directory to
-# $FAKE/<role>.head and $FAKE/<role>.files. Unless -s is read-only, write a file
-# there, as a proof of blast-radius does. Copy $FAKE/<role>.out to the -o file.
+# $FAKE/<role>.head and $FAKE/<role>.files. Unless the profile extends :read-only,
+# write a file there, as a proof of blast-radius does. Copy $FAKE/<role>.out to the -o file.
 # Sleep $FAKE/<role>.sleep seconds, if set. Exit with $FAKE/<role>.status, or 0.
-args=("$@") dir= out= schema= sandbox=
+args=("$@") dir= out= schema=
 while (( $# )); do
-  case $1 in -C) dir=$2 ;; -o) out=$2 ;; --output-schema) schema=$2 ;; -s) sandbox=$2 ;; esac
+  case $1 in -C) dir=$2 ;; -o) out=$2 ;; --output-schema) schema=$2 ;; esac
   shift
 done
 role=$(basename "$schema" .schema.json)
 printf '%s\n' "${args[@]}" > "$FAKE/$role.args"
 git -C "$dir" rev-parse HEAD > "$FAKE/$role.head"
 ls -A "$dir" > "$FAKE/$role.files"
-[[ $sandbox == read-only ]] || echo proof > "$dir/codex-wrote-this.txt"
+[[ " ${args[*]} " == *' permissions.review.extends=":read-only" '* ]] || echo proof > "$dir/codex-wrote-this.txt"
 cp "$FAKE/$role.out" "$out"
 [[ -f $FAKE/$role.sleep ]] && sleep "$(cat "$FAKE/$role.sleep")"
 exit "$(cat "$FAKE/$role.status" 2>/dev/null || echo 0)"
@@ -45,12 +45,20 @@ review_json='{"blocking": [], "discrepancy": [], "quality_note": ["a.txt:1 one s
 blast_json='{"what_it_does": "adds a.txt", "safety_fact": {"fact": "no code reads a.txt", "step": "4", "proof": "grep -r a.txt printed nothing"},
  "blocking": [], "discrepancy": [], "quality_note": [], "cleared": ["grep a.txt: no reader"], "before_merge": "none"}'
 
+mkdir "$tmp/claude"
+echo '{"permissions": {"deny": ["Read(~/.secret/**)", "Edit(~/.secret/**)", "Read(//etc/secret.conf)", "Bash(rm:*)"]}}' \
+  > "$tmp/claude/settings.json"
+# The managed settings of the machine can add more denials, so the test looks
+# for these two inside the filesystem table.
+home_denial='"'"$HOME"'/.secret" = "none"'
+root_denial='"/etc/secret.conf" = "none"'
+
 failed=0
 pass() { echo "  ✓ $1"; }
 fail() { echo "  ✘ $1"; failed=1; }
 
 run_with_fake() {
-  FAKE="$tmp/fake" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
+  FAKE="$tmp/fake" CLAUDE_CONFIG_DIR="$tmp/claude" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
 }
 
 out=$(PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
@@ -70,8 +78,10 @@ out=$(run_with_fake) && code=0 || code=$?
 for role in pr-reviewer security-reviewer; do
   args=$(tr '\n' ' ' 2>/dev/null < "$tmp/fake/$role.args") || true
   schema=$(grep -A1 -x -- --output-schema "$tmp/fake/$role.args" 2>/dev/null | tail -1) || true
-  if [[ $args == *"-s read-only "* && $(jq -r .type "$schema" 2>/dev/null) == object ]]; then
-    pass "$role runs with -s read-only and --output-schema"
+  if [[ $args == *'-c default_permissions="review" -c permissions.review.extends=":read-only" '* \
+    && $args == *"-c permissions.review.filesystem={"*"$home_denial"*"} "* && $args == *"$root_denial"* && $args != *" -s "* \
+    && $(jq -r .type "$schema" 2>/dev/null) == object ]]; then
+    pass "$role runs with a :read-only profile that denies the Claude read denials, --output-schema, and no -s"
   else
     fail "$role arguments: $args"
   fi
@@ -86,9 +96,10 @@ done
 
 blast_dir=$(grep -A1 -x -- -C "$tmp/fake/blast-radius.args" 2>/dev/null | tail -1) || true
 blast_args=$(tr '\n' ' ' 2>/dev/null < "$tmp/fake/blast-radius.args") || true
-if [[ -n $blast_dir && $blast_dir != "$tmp/repo" && $blast_args == *"-s workspace-write "* \
+if [[ -n $blast_dir && $blast_dir != "$tmp/repo" && $blast_args == *'-c permissions.review.extends=":workspace" '* \
+  && $blast_args == *"-c permissions.review.filesystem={"*"$home_denial"*"} "* && $blast_args == *"$root_denial"* && $blast_args != *" -s "* \
   && $(cat "$tmp/fake/blast-radius.head") == "$head" && -z $(git -C "$tmp/repo" status --porcelain) ]]; then
-  pass "blast-radius writes in a worktree at the head, and the checkout stays clean"
+  pass "blast-radius writes in a worktree at the head with a :workspace profile, and the checkout stays clean"
 else
   fail "blast-radius ran in \"$blast_dir\" with: $blast_args"
   git -C "$tmp/repo" status --porcelain | sed 's/^/    /'
