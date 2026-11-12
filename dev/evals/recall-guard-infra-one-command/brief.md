@@ -15,11 +15,11 @@ PR title: fix(guard-infra): ask only about one plain command, refuse any other p
   - `kubectl delete pod x` asks, as now.
   - `kubectl get cm app -o json | jq '.data.x="y"' | kubectl apply -f -` does not ask. The agent gets a refusal that names `kubectl apply -f -`.
   - `kubectl delete pod $POD` does not ask. The agent gets a refusal.
-  - `cd /tmp/claude-501; for r in app-one app-two; do gh api repos/example-org/$r/contents/Jenkinsfile --jq .content | base64 -d | grep -nE "helm|kubectl"; done` runs with no question and no refusal when the sandbox settings of `guard-infra/sandbox.json` are in force, as in 0.1.3.
+  - `cd "$TMPDIR"; for r in app-one app-two; do gh api repos/example-org/$r/contents/Jenkinsfile --jq .content | base64 -d | grep -nE "helm|kubectl"; done` runs with no question and no refusal when the sandbox settings of `guard-infra/sandbox.json` are in force, as in 0.1.3.
 - NFR:
   - No new dependency.
   - Stays unbuilt: the parser mistake that flags `base64 -d` before a `grep` that writes a tool name. A line with it stays in the sandbox, so the mistake has no effect there.
 - Verification:
   - A test in `guard-infra/hooks/guard.test.ts` for each FR line, red first.
   - `./scripts/validate.sh` passes. Run the mod type check by hand too, because `validate.sh` skips it in the sandbox.
-  - Replay the Bash calls since 2026-10-14 through the new code with `node /private/tmp/claude-501/-Users-mehrdad-hedayati-projects-mithredate-skills/756d3533-afef-46f0-adff-10fcac50ebd8/scratchpad/replay.mts 2026-10-14`. It must count 0 questions. It must also count 0 refusals, so extend the script to count them.
+  - Replay the Bash calls since 2026-10-14 through the new code with `node <scratchpad>/replay.mts 2026-10-14`. It must count 0 questions. It must also count 0 refusals, so extend the script to count them.

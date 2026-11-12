@@ -40,6 +40,6 @@ PR title: feat(watch-discussions): rename watch-prs and watch the Teams threads 
     6. `/watch-discussions` and `/unwatch-discussions` take a Teams link.
   - `command claude plugin test watch-discussions` passes. Use `command`, because a shell alias breaks plain `claude plugin test`.
   - `./scripts/validate.sh` passes.
-  - After `validate.sh`, never before, run the type check by hand. In the sandbox, `validate.sh` deletes the laid types and skips the check. Copy a `.claude-plugin/types/` folder into the mod. Put the current build's `claude-code.d.ts` from `/private/tmp/claude-501/bundled-skills/<version>/<hash>/plugin-authoring/types/` at `claude-code/index.d.ts`. Then run `npx --yes -p typescript@7.0.2 tsc -p watch-discussions`, and make sure it passes.
+  - After `validate.sh`, never before, run the type check by hand. In the sandbox, `validate.sh` deletes the laid types and skips the check. Copy a `.claude-plugin/types/` folder into the mod. Put the current build's `claude-code.d.ts` from `<bundled-skills>/<version>/<hash>/plugin-authoring/types/` at `claude-code/index.d.ts`. Then run `npx --yes -p typescript@7.0.2 tsc -p watch-discussions`, and make sure it passes.
   - The PR body tells the user to enable `watch-discussions@skills` and remove `watch-prs@skills` on both machines. A live check needs another person to reply in a thread, so the user runs it after the install.
 
