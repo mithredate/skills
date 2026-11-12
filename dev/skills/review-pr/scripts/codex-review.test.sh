@@ -163,4 +163,21 @@ else
 fi
 rm "$tmp/fake/pr-reviewer.sleep"
 
+cp "$tmp/claude/settings.json" "$tmp/claude/settings.good"
+echo '{"permissions": ' > "$tmp/claude/settings.json"
+rm -f "$tmp/fake/"*.args
+out=$(run_with_fake) && code=0 || code=$?
+expected="pr-reviewer: Codex review did not run: cannot read the read denials of the Claude settings
+security-reviewer: Codex review did not run: cannot read the read denials of the Claude settings
+blast-radius: Codex review did not run: cannot read the read denials of the Claude settings"
+if [[ $code == 0 && $out == "$expected" ]] && ! ls "$tmp/fake/"*.args >/dev/null 2>&1; then
+  pass "when the Claude settings cannot be read, codex does not start and each role reports why"
+else
+  fail "unreadable settings: exit $code, want:"
+  echo "$expected" | sed 's/^/    /'
+  echo "  got:"
+  echo "$out" | sed 's/^/    /'
+fi
+mv "$tmp/claude/settings.good" "$tmp/claude/settings.json"
+
 exit "$failed"
