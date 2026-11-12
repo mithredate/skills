@@ -43,7 +43,13 @@ The step is done when the agent returns its JSON. If the outcome is `plan_broken
 Start these agents in parallel, and wait for all of them:
 
 - `dev:pr-reviewer`, `dev:security-reviewer`, and `dev:blast-radius`, when a git target changed. These three agents are the reviewers. Give each the diff file, the brief, the path of the ticket or the brief file, and the root and the AGENTS.md or CLAUDE.md of each changed repo. Also give `dev:blast-radius` the base commit of each changed repo.
-- The Codex runs of the same three roles, once for each changed repo, by the Codex section of `dev:review-pr`. Use [../review-pr/scripts/codex-review.sh](../review-pr/scripts/codex-review.sh). The head commit is `git rev-parse HEAD` of the branch. The context file holds the inputs of the reviewers, other than the diff file and the root. Each Codex result is a reviewer result. Keep each `Codex review did not run` line and each `Codex worktree kept` line of the round.
+- The Codex runs of the same three roles, once for each changed repo. Follow these steps:
+  1. Write a context file in the scratchpad. Put in it the inputs of the reviewers as text, other than the diff file and the root. Codex cannot read a path under `$HOME`.
+  2. Run [../review-pr/scripts/codex-review.sh](../review-pr/scripts/codex-review.sh) with the Bash tool. Set `run_in_background: true` and `dangerouslyDisableSandbox: true`. Codex fails in the sandbox.
+  3. Give the arguments in this order: `<out-dir> <repo-dir> <head commit> <base commit> <diff-file> <context-file>`. The out-dir is a new scratchpad folder for each round and repo. The repo-dir is the directory of the branch. The head commit is `git rev-parse HEAD` of the branch.
+  4. If the permission mode denies the call, each role did not run, with the reason `the call was denied`.
+
+  Each Codex result is a reviewer result. Keep each `Codex review did not run` line and each `Codex clone kept` line of the round.
 - `dev:verifier`, once for each git target, with its directory, its base commit, and its AGENTS.md or CLAUDE.md.
 - `dev:verifier`, once, for the brief's Verification checks of the git targets that the declared commands do not cover. Tell it to run each check and report it as a command. Give it no base commit.
 - One `general-purpose` agent for the Verification checks of each target that is not a git repo. That agent has the tools of the system, which `dev:verifier` does not have. Tell it to change nothing, and to return the JSON of `dev:verifier`.
@@ -80,7 +86,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
-5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent. If round 3 ran on `opus`, say so, and give the reason. List each Verification check that the brief puts after the merge. Name each Codex worktree that a round kept.
+5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent. If round 3 ran on `opus`, say so, and give the reason. List each Verification check that the brief puts after the merge. Name each Codex clone that a round kept.
 
 A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. Merge only by the Merge section.
 

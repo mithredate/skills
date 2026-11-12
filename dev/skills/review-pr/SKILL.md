@@ -32,11 +32,11 @@ An **engine** is the agent program and model family that runs a reviewer role, C
 
 Start [scripts/codex-review.sh](scripts/codex-review.sh) at the start of the review, in parallel with the other work of the mode.
 
-1. Write a context file in the scratchpad. Put in it the inputs that `dev:pr-reviewer` gets, other than the diff file and the repo root.
-2. Run `scripts/codex-review.sh <out-dir> <repo-dir> <head commit> <base commit> <diff-file> <context-file>` with the Bash tool. Set `run_in_background: true` and `dangerouslyDisableSandbox: true`. Codex fails in the sandbox, and the permission mode reviews the call. The out-dir is a new folder in the scratchpad. The repo-dir is the directory of the branch, or the repo that holds the head commit.
+1. Write a context file in the scratchpad. Put in it the inputs that `dev:pr-reviewer` gets, other than the diff file and the repo root. Write each input as text, not as a path. Codex cannot read a path under `$HOME`.
+2. Run `scripts/codex-review.sh <out-dir> <repo-dir> <head commit> <base commit> <diff-file> <context-file>` with the Bash tool. Set `run_in_background: true` and `dangerouslyDisableSandbox: true`. Codex fails in the sandbox, and the permission mode reviews the call. The out-dir is a new folder in the scratchpad, outside `$HOME`. The repo-dir is the directory of the branch, or the repo that holds the head commit.
 3. Wait for the script to exit. For each role, it prints the path of a JSON result or `Codex review did not run: <reason>`. If the call is denied, write `Codex review did not run: the call was denied` for each role.
 
-The step is done when each role has a JSON result or a reason. The script makes the `blast-radius` worktree and deletes it. It prints `Codex worktree kept: <path>` when the delete fails.
+The step is done when each role has a JSON result or a reason. Each role reviews a clone of its own at the head commit, in the out-dir. The script deletes each clone. It prints `Codex clone kept: <path>` when a delete fails.
 
 ## Inline: the main session reviews
 
@@ -61,6 +61,6 @@ Before you report a `blocking` or `discrepancy` finding of an agent or of Codex,
 
 Tag each finding with the engine that raised it: `claude`, `codex`, or `claude, codex`. Show a finding once when both engines raise it for the same class at the same location. Give it both tags.
 
-Put the blast radius before the findings. Give it for each engine: the safety fact, the step where its proof stopped, and the proof. If the two safety facts differ, show both. For each Codex role that did not run, write `<role>: Codex review did not run: <reason>`. Name each Codex worktree that the script kept. List findings in this order: `discrepancy`, then `blocking`, then `quality_note`, then at most five `nit` entries. State a count of the remaining nits. Write a `blocking` or `discrepancy` finding as its bug class and each instance. Then list each `pre_existing` item of the reviewers and the verifier, and the refuted list. Every entry keeps its relative path. Write findings by the rules of `productivity:write-ste`. If the PR is a bugfix, put the root-cause line first. The fresh mode ends with a cost line. This line gives the token figure that each agent result reports, and the sum of the figures.
+Put the blast radius before the findings. Give it for each engine: the safety fact, the step where its proof stopped, and the proof. If the two safety facts differ, show both. For each Codex role that did not run, write `<role>: Codex review did not run: <reason>`. Name each Codex clone that the script kept. List findings in this order: `discrepancy`, then `blocking`, then `quality_note`, then at most five `nit` entries. State a count of the remaining nits. Write a `blocking` or `discrepancy` finding as its bug class and each instance. Then list each `pre_existing` item of the reviewers and the verifier, and the refuted list. Every entry keeps its relative path. Write findings by the rules of `productivity:write-ste`. If the PR is a bugfix, put the root-cause line first. The fresh mode ends with a cost line. This line gives the token figure that each agent result reports, and the sum of the figures.
 
 Post to GitHub only when the user asks for it. Post one review with the same content. Write it in the voice that the repo's conventions specify.
