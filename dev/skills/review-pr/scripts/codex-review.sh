@@ -59,7 +59,26 @@ run_role() { # role, directory, sandbox
   echo "$role: $out_dir/$role.json" > "$out_dir/$role.status"
 }
 
+# blast-radius runs commands, so it writes only in a worktree of its own. A
+# worktree that an earlier round left can be at an old head, so it goes first.
+remove_worktree() {
+  git -C "$repo" worktree remove --force "$worktree" >/dev/null 2>&1 || rm -rf "$worktree"
+  git -C "$repo" worktree prune
+}
+run_blast_radius() {
+  if git -C "$repo" worktree add -q --detach "$worktree" "$head" >/dev/null 2>&1; then
+    run_role blast-radius "$worktree" workspace-write
+  else
+    echo "blast-radius: Codex review did not run: git worktree add failed" > "$out_dir/blast-radius.status"
+  fi
+  remove_worktree
+}
+
+worktree=$out_dir/blast-radius-worktree
+remove_worktree
 run_role pr-reviewer "$repo" read-only &
 run_role security-reviewer "$repo" read-only &
+run_blast_radius &
 wait
 for role in "${roles[@]}"; do cat "$out_dir/$role.status" 2>/dev/null || true; done
+if [[ -e $worktree ]]; then echo "Codex worktree kept: $worktree"; fi

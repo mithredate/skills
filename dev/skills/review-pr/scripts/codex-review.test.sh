@@ -83,4 +83,33 @@ for role in pr-reviewer security-reviewer; do
   fi
 done
 
+blast_dir=$(grep -A1 -x -- -C "$tmp/fake/blast-radius.args" 2>/dev/null | tail -1) || true
+blast_args=$(tr '\n' ' ' 2>/dev/null < "$tmp/fake/blast-radius.args") || true
+if [[ -n $blast_dir && $blast_dir != "$tmp/repo" && $blast_args == *"-s workspace-write "* \
+  && $(cat "$tmp/fake/blast-radius.head") == "$head" && -z $(git -C "$tmp/repo" status --porcelain) ]]; then
+  pass "blast-radius writes in a worktree at the head, and the checkout stays clean"
+else
+  fail "blast-radius ran in \"$blast_dir\" with: $blast_args"
+  git -C "$tmp/repo" status --porcelain | sed 's/^/    /'
+fi
+if [[ $out == *"blast-radius: $tmp/out/blast-radius.json"* && ! -e $blast_dir && $(git -C "$tmp/repo" worktree list | wc -l) -eq 1 ]]; then
+  pass "blast-radius prints its result, and the run deletes its worktree"
+else
+  fail "blast-radius result or worktree: $(git -C "$tmp/repo" worktree list)"
+  echo "$out" | sed 's/^/    /'
+fi
+
+git -C "$tmp/repo" worktree add -q --detach "$blast_dir" "$base"
+echo stale > "$blast_dir/stale.txt"
+echo two > "$tmp/repo/b.txt"
+git -C "$tmp/repo" add b.txt
+git -C "$tmp/repo" -c user.name=t -c user.email=t@t commit -q -m second
+head=$(git -C "$tmp/repo" rev-parse HEAD)
+run_with_fake >/dev/null
+if [[ $(cat "$tmp/fake/blast-radius.head") == "$head" ]] && ! grep -qx stale.txt "$tmp/fake/blast-radius.files"; then
+  pass "a worktree from an earlier round is replaced by a clean one at the current head"
+else
+  fail "blast-radius saw $(cat "$tmp/fake/blast-radius.head") and files: $(tr '\n' ' ' < "$tmp/fake/blast-radius.files")"
+fi
+
 exit "$failed"
