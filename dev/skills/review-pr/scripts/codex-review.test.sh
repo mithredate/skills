@@ -72,7 +72,7 @@ pass() { echo "  ✓ $1"; }
 fail() { echo "  ✘ $1"; failed=1; }
 
 run_with_fake() {
-  AWS_ACCESS_KEY_ID=leaked GH_TOKEN=leaked CODEX_HOME="$tmp/codex-home" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
+  AWS_ACCESS_KEY_ID=leaked GH_TOKEN=leaked CODEX_HOME="$tmp/codex-home" PATH="$tmp/bin:$PATH" ./codex-review.sh "${1:-$tmp/out}" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
 }
 
 out=$(PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
@@ -117,6 +117,11 @@ for role in "${roles[@]}"; do
     pass "$role gets a scrubbed environment with no credential variable and no global git config"
   else
     fail "$role environment: $(tr '\n' ' ' < "$tmp/fake/$role.env")"
+  fi
+  if grep -qxF -- "- Diff file: $tmp/out/pr.diff" "$tmp/out/$role.prompt" && cmp -s "$tmp/pr.diff" "$tmp/out/pr.diff"; then
+    pass "$role reads a copy of the diff in the out-dir"
+  else
+    fail "$role diff line: $(grep 'Diff file' "$tmp/out/$role.prompt")"
   fi
   [[ $role == blast-radius ]] && continue
   expected="$role: $tmp/out/$role.json"
@@ -216,5 +221,18 @@ else
   echo "$out" | sed 's/^/    /'
 fi
 rm "$tmp/fake/pr-reviewer.sleep"
+
+mkdir -p "$tmp/home"
+rm -f "$tmp/fake/"*.args
+out=$(HOME="$tmp/home" run_with_fake "$tmp/home/out") && code=0 || code=$?
+expected='pr-reviewer: Codex review did not run: the out-dir is inside $HOME
+security-reviewer: Codex review did not run: the out-dir is inside $HOME
+blast-radius: Codex review did not run: the out-dir is inside $HOME'
+if [[ $code == 0 && $out == "$expected" ]] && ! ls "$tmp/fake/"*.args >/dev/null 2>&1; then
+  pass "with the out-dir inside \$HOME, where Codex cannot read its clone, codex does not start"
+else
+  fail "out-dir inside \$HOME: exit $code, got:"
+  echo "$out" | sed 's/^/    /'
+fi
 
 exit "$failed"

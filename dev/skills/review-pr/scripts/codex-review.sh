@@ -26,6 +26,11 @@ here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$out_dir"
 out_dir=$(cd "$out_dir" && pwd -P)
 home=$(cd "$HOME" && pwd -P)
+if [[ $out_dir/ == "$home"/* ]]; then
+  for role in "${roles[@]}"; do echo "$role: Codex review did not run: the out-dir is inside \$HOME"; done
+  exit 0
+fi
+cp "$diff_file" "$out_dir/pr.diff"
 
 # The run ignores the user config, because it can start MCP servers and set a
 # sandbox_mode that overrides the profile. It keeps the model and the effort of
@@ -52,10 +57,12 @@ prompt() { # role, directory
 
 You run in the Codex CLI, not in Claude Code. Where the text above names a Claude Code tool, such as Read, Grep, Glob, or Context7, use your shell or your own tools.
 
-- Diff file: $diff_file
+- Diff file: $out_dir/pr.diff
 - Repo root: $2
 - Base commit: $base
 - Head commit: $head
+
+The repo root is a clone at the head commit. Read the AGENTS.md or CLAUDE.md of the repo there. You cannot read a path under \$HOME.
 
 The caller gives the rest of the inputs below.
 
