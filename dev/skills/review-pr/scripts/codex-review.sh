@@ -21,6 +21,9 @@ if ! command -v codex >/dev/null 2>&1; then
   exit 0
 fi
 
+# Codex runs its own binary again inside the profile. The binary can be under
+# $HOME, so the profile reads its folder, and the run calls it with no symlink.
+codex_bin=$(readlink -f "$(command -v codex)")
 out_dir=$1 repo=$2 head=$3 base=$4 diff_file=$5 context_file=$6
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$out_dir"
@@ -85,11 +88,11 @@ conforms() { # schema file, answer file
 }
 
 # Print the filesystem table of the Codex permissions profile of a role. The
-# run reads nothing under $HOME, where the credentials live. It writes nowhere
-# but in the clone of blast-radius. The out-dir stays unwritable, so a role
-# cannot change the result of another role.
+# run reads nothing under $HOME, where the credentials live, but the folder of
+# the Codex binary. It writes nowhere but in the clone of blast-radius. The
+# out-dir stays unwritable, so a role cannot change the result of another role.
 filesystem() { # role, clone
-  local table="\"$home\" = \"none\", \":slash_tmp\" = \"read\", \":tmpdir\" = \"read\", \"$out_dir\" = \"read\""
+  local table="\"$home\" = \"none\", \":slash_tmp\" = \"read\", \":tmpdir\" = \"read\", \"$out_dir\" = \"read\", \"${codex_bin%/*}\" = \"read\""
   if [[ $1 == blast-radius ]]; then table+=", \"$2\" = \"write\""; fi
   echo "{$table}"
 }
@@ -100,7 +103,7 @@ run_role() { # role, directory, base profile
   local answer=$out_dir/$role.answer.json
   rm -f "$out_dir/$role.json" "$answer"
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
-  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" "${codex_env[@]}" codex exec \
+  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" "${codex_env[@]}" "$codex_bin" exec \
     --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps \
     --disable computer_use --disable browser_use ${config_flags[@]+"${config_flags[@]}"} -C "$dir" \
     -c default_permissions='"review"' -c permissions.review.extends="\"$base_profile\"" \

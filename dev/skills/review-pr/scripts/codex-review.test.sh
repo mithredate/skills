@@ -18,8 +18,10 @@ head=$(git -C "$tmp/repo" rev-parse HEAD)
 git -C "$tmp/repo" diff "$base" "$head" > "$tmp/pr.diff"
 echo "Brief: add a.txt" > "$tmp/context.md"
 
-mkdir "$tmp/bin" "$tmp/fake"
-cat > "$tmp/bin/codex" <<'EOF'
+mkdir "$tmp/bin" "$tmp/fake" "$tmp/codex-pkg"
+# Codex runs itself again inside the profile, so the profile must let it read its own folder.
+ln -s "$tmp/codex-pkg/codex" "$tmp/bin/codex"
+cat > "$tmp/codex-pkg/codex" <<'EOF'
 #!/usr/bin/env bash
 # The role is the name of the --output-schema file. The script hands codex a
 # scrubbed environment, so the fake finds $tmp/fake next to its own folder.
@@ -30,6 +32,7 @@ cat > "$tmp/bin/codex" <<'EOF'
 # fake/<role>.out to the -o file. Sleep fake/<role>.sleep seconds, if set. Exit
 # with fake/<role>.status, or 0.
 fake=$(dirname "$0")/../fake
+echo "$0" > "$fake/argv0"
 args=("$@") dir= out= schema=
 while (( $# )); do
   case $1 in -C) dir=$2 ;; -o) out=$2 ;; --output-schema) schema=$2 ;; esac
@@ -46,7 +49,7 @@ cp "$fake/$role.out" "$out"
 [[ -f $fake/$role.sleep ]] && sleep "$(cat "$fake/$role.sleep")"
 exit "$(cat "$fake/$role.status" 2>/dev/null || echo 0)"
 EOF
-chmod +x "$tmp/bin/codex"
+chmod +x "$tmp/codex-pkg/codex"
 review_json='{"blocking": [], "discrepancy": [], "quality_note": ["a.txt:1 one sentence"], "nit": [], "pre_existing": []}'
 blast_json='{"what_it_does": "adds a.txt", "safety_fact": {"fact": "no code reads a.txt", "step": "4", "proof": "grep -r a.txt printed nothing"},
  "blocking": [], "discrepancy": [], "quality_note": [], "cleared": ["grep a.txt: no reader"], "before_merge": "none"}'
@@ -55,6 +58,7 @@ home=$(cd "$HOME" && pwd -P)
 home_none='"'"$home"'" = "none"'
 out_read='"'"$tmp/out"'" = "read"'
 tmp_read='":slash_tmp" = "read", ":tmpdir" = "read"'
+bin_read='"'"$tmp/codex-pkg"'" = "read"'
 
 mkdir "$tmp/codex-home"
 cat > "$tmp/codex-home/config.toml" <<'EOF'
@@ -100,7 +104,7 @@ for role in "${roles[@]}"; do
   fi
   writes=$(grep -o '"[^"]*" = "write"' <<< "$table") || true
   if [[ $args == *"-c default_permissions=\"review\" -c permissions.review.extends=\"$profile\" "* && $args != *" -s "* \
-    && $table == *"$home_none"* && $table == *"$out_read"* && $table == *"$tmp_read"* \
+    && $table == *"$home_none"* && $table == *"$out_read"* && $table == *"$tmp_read"* && $table == *"$bin_read"* && $(cat "$tmp/fake/argv0") == "$tmp/codex-pkg/codex" \
     && $writes == "$write" && $(jq -r .type "$schema" 2>/dev/null) == object ]]; then
     pass "$role runs with a $profile profile that denies \$HOME, keeps the out-dir unwritable, has --output-schema, and no -s"
   else
