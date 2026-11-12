@@ -71,6 +71,42 @@ test('reminds after an Edit of a SKILL.md', () => {
     assert.equal(context, LOAD_WRITE_A_SKILL);
 });
 
+test('gives the frontmatter rules after an Edit that changes the description of a SKILL.md', () => {
+    const repo = makeRepo();
+    const path = join(repo, 'dev/skills/tdd/SKILL.md');
+    const before = '---\nname: tdd\ndescription: Runs red-green-refactor.\n---\n\n# tdd\n';
+    writeFileSync(path, '---\nname: tdd\ndescription: Use when the user mentions TDD.\n---\n\n# tdd\n');
+
+    const context = fileToolContext(repo, 'Edit', { file_path: path, old_string: 'Runs red-green-refactor.', new_string: 'Use when the user mentions TDD.' }, { tool_response: { originalFile: before } });
+
+    assert.ok(context.startsWith(`${LOAD_WRITE_A_SKILL}\n\nThe frontmatter of a skill changed.`), context);
+    assert.ok(context.includes('\n- `description` is the routing signal.'), context);
+    assert.ok(!context.includes('## Agent files'), context);
+});
+
+test('gives the frontmatter rules after a Write that creates a SKILL.md', () => {
+    const repo = makeRepo();
+    const path = join(repo, 'dev/skills/prep/SKILL.md');
+    const content = '---\nname: prep\ndescription: Use on `/prep`.\n---\n\n# prep\n';
+    mkdirSync(join(path, '..'), { recursive: true });
+    writeFileSync(path, content);
+
+    const context = fileToolContext(repo, 'Write', { file_path: path, content }, { tool_response: { type: 'create', originalFile: null } });
+
+    assert.ok(context.includes('\n- `description` is the routing signal.'), context);
+});
+
+test('gives no frontmatter rules after an Edit of the body of a SKILL.md', () => {
+    const repo = makeRepo();
+    const path = join(repo, 'dev/skills/tdd/SKILL.md');
+    const before = '---\nname: tdd\ndescription: Use when the user mentions TDD.\n---\n\n# tdd\n';
+    writeFileSync(path, '---\nname: tdd\ndescription: Use when the user mentions TDD.\n---\n\n# TDD\n');
+
+    const context = fileToolContext(repo, 'Edit', { file_path: path, old_string: '# tdd', new_string: '# TDD' }, { tool_response: { originalFile: before } });
+
+    assert.equal(context, LOAD_WRITE_A_SKILL);
+});
+
 test('reminds after a Write of a file in references/ and in scripts/', () => {
     const repo = makeRepo();
 
