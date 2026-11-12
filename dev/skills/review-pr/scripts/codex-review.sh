@@ -108,13 +108,26 @@ filesystem() { # role, clone
   echo "{$table}"
 }
 
+# Run a command in a process group of its own, and exit with its code. At the
+# time limit, stop the whole group and exit 142. A launcher of Codex, such as
+# the npm one, starts Codex as a child, which a signal to the launcher alone
+# leaves alive.
+run_with_time_limit='
+  my $limit = shift;
+  defined(my $pid = fork) or die;
+  if (!$pid) { setpgrp(0, 0); exec @ARGV or die }
+  $SIG{ALRM} = sub { kill "TERM", -$pid; sleep 2; kill "KILL", -$pid; waitpid $pid, 0; exit 142 };
+  alarm $limit;
+  waitpid $pid, 0;
+  exit($? & 127 ? 128 + ($? & 127) : $? >> 8);'
+
 # Write the result line of a role to <out-dir>/<role>.status.
 run_role() { # role, directory, base profile
   local role=$1 dir=$2 base_profile=$3 code=0
   local answer=$out_dir/$role.answer.json
   rm -f "$out_dir/$role.json" "$answer"
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
-  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" "${codex_env[@]}" "$codex_bin" exec \
+  perl -e "$run_with_time_limit" "$time_limit" "${codex_env[@]}" "$codex_bin" exec \
     --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps \
     --disable computer_use --disable browser_use ${config_flags[@]+"${config_flags[@]}"} -C "$dir" \
     -c default_permissions='"review"' -c permissions.review.extends="\"$base_profile\"" \

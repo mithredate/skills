@@ -32,7 +32,8 @@ cat > "$tmp/codex-pkg/codex" <<'EOF'
 # git status of the -C directory to fake/<role>.gitstatus. If the shell
 # environment of the run sets TMPDIR, make a folder there as blast-radius does,
 # and write its path to fake/<role>.mktemp. Copy fake/<role>.out to the -o file.
-# Sleep fake/<role>.sleep seconds, if set. Exit with fake/<role>.status, or 0.
+# If fake/<role>.sleep is set, wait that many seconds in a child process, which
+# then writes fake/<role>.outlived. Exit with fake/<role>.status, or 0.
 fake=$(dirname "$0")/../fake
 echo "$0" > "$fake/argv0"
 args=("$@") dir= out= schema=
@@ -51,7 +52,10 @@ run_tmpdir=$(printf '%s\n' "${args[@]}" | sed -n 's/^shell_environment_policy\.s
 [[ -z $run_tmpdir ]] || mktemp -d "$run_tmpdir/blast-radius.XXXXXX" > "$fake/$role.mktemp" 2>&1
 [[ " ${args[*]} " == *' permissions.review.extends=":read-only" '* ]] || echo proof > "$dir/codex-wrote-this.txt"
 cp "$fake/$role.out" "$out"
-[[ -f $fake/$role.sleep ]] && sleep "$(cat "$fake/$role.sleep")"
+if [[ -f $fake/$role.sleep ]]; then
+  ( sleep "$(cat "$fake/$role.sleep")"; touch "$fake/$role.outlived" ) &
+  wait
+fi
 exit "$(cat "$fake/$role.status" 2>/dev/null || echo 0)"
 EOF
 chmod +x "$tmp/codex-pkg/codex"
@@ -246,6 +250,12 @@ if [[ $code == 0 && $out == *"$expected"* && $out == *"security-reviewer: $tmp/o
 else
   fail "timeout: exit $code, want \"$expected\" in:"
   echo "$out" | sed 's/^/    /'
+fi
+sleep 3
+if [[ ! -e $tmp/fake/pr-reviewer.outlived ]]; then
+  pass "the time limit also stops the child processes of codex"
+else
+  fail "a child process of codex outlived the time limit"
 fi
 rm "$tmp/fake/pr-reviewer.sleep"
 
