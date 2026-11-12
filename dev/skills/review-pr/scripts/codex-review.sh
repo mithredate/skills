@@ -2,7 +2,8 @@
 # Run the pr-reviewer, security-reviewer, and blast-radius checklists on Codex,
 # in parallel. Print one line for each role: the path of its JSON result, or
 # "Codex review did not run: <reason>". A role that did not run never fails the
-# script, so the review goes on with the Claude reviewers.
+# script, so the review goes on with the Claude reviewers. Codex runs only when
+# CODEX_REVIEW is on.
 #
 # Usage: codex-review.sh <out-dir> <repo-dir> <head> <base> <diff-file> <context-file>
 set -euo pipefail
@@ -15,6 +16,11 @@ fi
 roles=(pr-reviewer security-reviewer blast-radius)
 # The test sets a short limit. A hung run must not hold the review open.
 time_limit=${CODEX_REVIEW_TIMEOUT:-1800}
+
+if [[ ${CODEX_REVIEW:-} != on ]]; then
+  for role in "${roles[@]}"; do echo "$role: Codex review did not run: turned off by CODEX_REVIEW"; done
+  exit 0
+fi
 
 if ! command -v codex >/dev/null 2>&1; then
   for role in "${roles[@]}"; do echo "$role: Codex review did not run: codex not found"; done

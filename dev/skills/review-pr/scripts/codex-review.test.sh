@@ -85,10 +85,28 @@ pass() { echo "  ✓ $1"; }
 fail() { echo "  ✘ $1"; failed=1; }
 
 run_with_fake() {
-  AWS_ACCESS_KEY_ID=leaked GH_TOKEN=leaked CODEX_HOME="$tmp/codex-home" PATH="$tmp/bin:$PATH" ./codex-review.sh "${1:-$tmp/out}" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
+  CODEX_REVIEW=on AWS_ACCESS_KEY_ID=leaked GH_TOKEN=leaked CODEX_HOME="$tmp/codex-home" PATH="$tmp/bin:$PATH" ./codex-review.sh "${1:-$tmp/out}" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
 }
 
-out=$(PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
+for value in unset off ON; do
+  rm -f "$tmp/fake/"*.args
+  if [[ $value == unset ]]; then
+    out=$(env -u CODEX_REVIEW PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
+  else
+    out=$(CODEX_REVIEW=$value PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
+  fi
+  want='pr-reviewer: Codex review did not run: turned off by CODEX_REVIEW
+security-reviewer: Codex review did not run: turned off by CODEX_REVIEW
+blast-radius: Codex review did not run: turned off by CODEX_REVIEW'
+  if [[ $code == 0 && $out == "$want" ]] && ! ls "$tmp/fake/"*.args >/dev/null 2>&1; then
+    pass "with CODEX_REVIEW $value, codex does not start, and each role reports that it is turned off"
+  else
+    fail "with CODEX_REVIEW $value: exit $code, output:"
+    echo "$out" | sed 's/^/    /'
+  fi
+done
+
+out=$(CODEX_REVIEW=on PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
 want='pr-reviewer: Codex review did not run: codex not found
 security-reviewer: Codex review did not run: codex not found
 blast-radius: Codex review did not run: codex not found'
