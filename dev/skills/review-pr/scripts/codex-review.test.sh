@@ -56,13 +56,23 @@ home_none='"'"$home"'" = "none"'
 out_read='"'"$tmp/out"'" = "read"'
 tmp_read='":slash_tmp" = "read", ":tmpdir" = "read"'
 
+mkdir "$tmp/codex-home"
+cat > "$tmp/codex-home/config.toml" <<'EOF'
+model = "gpt-test" # the model of the user
+sandbox_mode = "danger-full-access"
+model_reasoning_effort = 'high'
+[mcp_servers.node_repl]
+command = "node"
+model = "nested"
+EOF
+
 roles=(pr-reviewer security-reviewer blast-radius)
 failed=0
 pass() { echo "  ✓ $1"; }
 fail() { echo "  ✘ $1"; failed=1; }
 
 run_with_fake() {
-  PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
+  CODEX_HOME="$tmp/codex-home" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
 }
 
 out=$(PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
@@ -95,6 +105,12 @@ for role in "${roles[@]}"; do
     pass "$role runs with a $profile profile that denies \$HOME, keeps the out-dir unwritable, has --output-schema, and no -s"
   else
     fail "$role arguments: $args"
+  fi
+  if [[ $args == "exec --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps --disable computer_use --disable browser_use -c model=\"gpt-test\" -c model_reasoning_effort='high' "* \
+    && $args != *sandbox_mode* && $args != *nested* ]]; then
+    pass "$role ignores the user config, its hooks, and its plugins, and takes only the model and the effort from it"
+  else
+    fail "$role does not ignore the user config: $args"
   fi
   [[ $role == blast-radius ]] && continue
   expected="$role: $tmp/out/$role.json"

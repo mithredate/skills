@@ -27,6 +27,15 @@ mkdir -p "$out_dir"
 out_dir=$(cd "$out_dir" && pwd -P)
 home=$(cd "$HOME" && pwd -P)
 
+# The run ignores the user config, because it can start MCP servers and set a
+# sandbox_mode that overrides the profile. It keeps the model and the effort of
+# the user. Only the top-level keys count, before the first table.
+config_flags=()
+while IFS= read -r flag; do config_flags+=(-c "$flag"); done < <(
+  awk '/^[[:space:]]*\[/ { exit }
+    /^(model|model_reasoning_effort)[[:space:]]*=/ { sub(/[[:space:]]*=[[:space:]]*/, "="); sub(/[[:space:]]+#.*$/, ""); print }' \
+    "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null)
+
 # Print the body of the agent file of a role, with no frontmatter.
 agent_body() { awk 'n >= 2; /^---$/ { n++ }' "$here/../../../agents/$1.md"; }
 
@@ -79,7 +88,9 @@ run_role() { # role, directory, base profile
   local answer=$out_dir/$role.answer.json
   rm -f "$out_dir/$role.json" "$answer"
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
-  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" codex exec -C "$dir" \
+  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" codex exec \
+    --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps \
+    --disable computer_use --disable browser_use ${config_flags[@]+"${config_flags[@]}"} -C "$dir" \
     -c default_permissions='"review"' -c permissions.review.extends="\"$base_profile\"" \
     -c permissions.review.filesystem="$(filesystem "$role" "$dir")" --color never \
     --output-schema "$here/$role.schema.json" -o "$answer" - \
