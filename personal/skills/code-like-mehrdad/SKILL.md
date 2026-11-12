@@ -1,6 +1,6 @@
 ---
 name: code-like-mehrdad
-description: Mehrdad's code defaults. Use when you plan, edit, debug, or review code, even when the user does not ask.
+description: Use when you plan, edit, debug, or review code, even when the user does not ask.
 ---
 
 # Code like Mehrdad

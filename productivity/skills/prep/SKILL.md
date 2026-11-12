@@ -1,6 +1,6 @@
 ---
 name: prep
-description: Requirement to brief for `fire`. Use on `/prep` with a request, an issue key, or a thread link, or when `orchestrate` hands off a build.
+description: Use on `/prep`, when a request, an issue key, or a thread link needs a brief for `fire`, or when `orchestrate` hands off a build.
 argument-hint: "<request | issue key | thread link>"
 ---
 
