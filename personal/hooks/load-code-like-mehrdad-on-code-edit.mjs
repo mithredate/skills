@@ -19,10 +19,11 @@ try {
     if (CODE_FILE.test(path)) {
         // An agent ignores the load line, and an agent that obeys it loads about 7.2K tokens.
         const lines = input.agent_id ? [] : ['A code file changed. If `personal:code-like-mehrdad` is not loaded, call the Skill tool with it before your next tool call.'];
+        lines.push(`If you have not read the code rubric in this session, read \`${rubric('code')}\`.`);
         if (TEST_NAME.test(basename(path)) || TEST_FOLDER.test(path)) lines.push(`If you have not read the testing rubric in this session, read \`${rubric('testing')}\`.`);
         if (TYPESCRIPT_FILE.test(path)) lines.push(`If you have not read the TypeScript rubric in this session, read \`${rubric('typescript')}\`.`);
 
-        if (lines.length) console.log(JSON.stringify({
+        console.log(JSON.stringify({
             hookSpecificOutput: {
                 hookEventName: 'PostToolUse',
                 additionalContext: lines.join(' '),
