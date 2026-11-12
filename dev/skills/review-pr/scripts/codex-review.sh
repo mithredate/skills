@@ -49,6 +49,17 @@ while IFS= read -r flag; do config_flags+=(-c "$flag"); done < <(
 codex_env=(env -i HOME="$HOME" PATH="$PATH" LANG="${LANG:-en_US.UTF-8}" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
   ${CODEX_HOME:+"CODEX_HOME=$CODEX_HOME"})
 
+# Print the environment of the commands of a role. Codex loads the .env file of
+# its home before it reads a flag, so the commands inherit nothing from Codex.
+# blast-radius writes its proof scripts in a TMPDIR in its clone, because the
+# profile lets it write nowhere else.
+shell_env() { # role, clone
+  local table="HOME = \"$HOME\", PATH = \"$PATH\", LANG = \"${LANG:-en_US.UTF-8}\", GIT_CONFIG_GLOBAL = \"/dev/null\", GIT_CONFIG_NOSYSTEM = \"1\""
+  if [[ $1 == blast-radius ]]; then table+=", TMPDIR = \"$2/$proof_tmp\""; fi
+  echo "{$table}"
+}
+proof_tmp=.blast-radius-tmp
+
 # Print the body of the agent file of a role, with no frontmatter.
 agent_body() { awk 'n >= 2; /^---$/ { n++ }' "$here/../../../agents/$1.md"; }
 
@@ -107,7 +118,8 @@ run_role() { # role, directory, base profile
     --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps \
     --disable computer_use --disable browser_use ${config_flags[@]+"${config_flags[@]}"} -C "$dir" \
     -c default_permissions='"review"' -c permissions.review.extends="\"$base_profile\"" \
-    -c permissions.review.filesystem="$(filesystem "$role" "$dir")" --color never \
+    -c permissions.review.filesystem="$(filesystem "$role" "$dir")" \
+    -c shell_environment_policy.inherit='"none"' -c shell_environment_policy.set="$(shell_env "$role" "$dir")" --color never \
     --output-schema "$here/$role.schema.json" -o "$answer" - \
     < "$out_dir/$role.prompt" > "$out_dir/$role.log" 2>&1 || code=$?
   if (( code == 142 )); then
@@ -137,7 +149,9 @@ make_clone() { # clone directory
   clean_git clone -q --shared --no-checkout "$repo" "$1" \
     && clean_git -C "$1" checkout -q --detach "$head" \
     && clean_git -C "$1" repack -q -a -d \
-    && rm "$1/.git/objects/info/alternates"
+    && rm "$1/.git/objects/info/alternates" \
+    && echo "/$proof_tmp/" >> "$1/.git/info/exclude" \
+    && rm -rf "${1:?}/$proof_tmp" && mkdir "$1/$proof_tmp"
 }
 review() { # role, base profile
   local clone=$clones/$1

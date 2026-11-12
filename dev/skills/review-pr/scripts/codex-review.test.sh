@@ -28,9 +28,11 @@ cat > "$tmp/codex-pkg/codex" <<'EOF'
 # Write the arguments, one per line, to fake/<role>.args, and the environment
 # to fake/<role>.env. Write the HEAD, the git dir, and the files of the -C
 # directory to fake/<role>.head, .gitdir, and .files. Unless the profile extends
-# :read-only, write a file there, as a proof of blast-radius does. Copy
-# fake/<role>.out to the -o file. Sleep fake/<role>.sleep seconds, if set. Exit
-# with fake/<role>.status, or 0.
+# :read-only, write a file there, as a proof of blast-radius does. Write the
+# git status of the -C directory to fake/<role>.gitstatus. If the shell
+# environment of the run sets TMPDIR, make a folder there as blast-radius does,
+# and write its path to fake/<role>.mktemp. Copy fake/<role>.out to the -o file.
+# Sleep fake/<role>.sleep seconds, if set. Exit with fake/<role>.status, or 0.
 fake=$(dirname "$0")/../fake
 echo "$0" > "$fake/argv0"
 args=("$@") dir= out= schema=
@@ -44,6 +46,9 @@ env > "$fake/$role.env"
 git -C "$dir" rev-parse HEAD > "$fake/$role.head"
 git -C "$dir" rev-parse --absolute-git-dir > "$fake/$role.gitdir"
 { ls -A "$dir"; ls "$dir/.git/objects/info"; } > "$fake/$role.files"
+git -C "$dir" status --porcelain > "$fake/$role.gitstatus"
+run_tmpdir=$(printf '%s\n' "${args[@]}" | sed -n 's/^shell_environment_policy\.set=.*TMPDIR = "\([^"]*\)".*/\1/p')
+[[ -z $run_tmpdir ]] || mktemp -d "$run_tmpdir/blast-radius.XXXXXX" > "$fake/$role.mktemp" 2>&1
 [[ " ${args[*]} " == *' permissions.review.extends=":read-only" '* ]] || echo proof > "$dir/codex-wrote-this.txt"
 cp "$fake/$role.out" "$out"
 [[ -f $fake/$role.sleep ]] && sleep "$(cat "$fake/$role.sleep")"
@@ -121,6 +126,24 @@ for role in "${roles[@]}"; do
     pass "$role gets a scrubbed environment with no credential variable and no global git config"
   else
     fail "$role environment: $(tr '\n' ' ' < "$tmp/fake/$role.env")"
+  fi
+  shell_env=$(grep -x -- 'shell_environment_policy.set=.*' "$tmp/fake/$role.args") || true
+  if [[ $args == *' -c shell_environment_policy.inherit="none" '* && $shell_env == *"HOME = \"$HOME\""* && $shell_env == *'PATH = "'"$tmp/bin:"* \
+    && $shell_env == *'GIT_CONFIG_GLOBAL = "/dev/null"'* && $shell_env == *'GIT_CONFIG_NOSYSTEM = "1"'* && $shell_env != *leaked* ]]; then
+    pass "$role gives its commands a fixed environment, so a variable that Codex loads from its .env file does not reach them"
+  else
+    fail "$role shell environment: $(grep shell_environment_policy "$tmp/fake/$role.args" | tr '\n' ' ')"
+  fi
+  if [[ $role == blast-radius ]]; then
+    if [[ $(cat "$tmp/fake/$role.mktemp") == "$tmp/out/clones/$role/.blast-radius-tmp/blast-radius."* && ! -s $tmp/fake/$role.gitstatus ]]; then
+      pass "$role gets a TMPDIR in its clone where a proof script can go, and git status of the clone stays clean"
+    else
+      fail "$role TMPDIR: $(cat "$tmp/fake/$role.mktemp" 2>&1), git status: $(cat "$tmp/fake/$role.gitstatus")"
+    fi
+  elif [[ $shell_env != *TMPDIR* ]]; then
+    pass "$role gets no TMPDIR, because it cannot write"
+  else
+    fail "$role shell environment has a TMPDIR: $shell_env"
   fi
   if grep -qxF -- "- Diff file: $tmp/out/pr.diff" "$tmp/out/$role.prompt" && cmp -s "$tmp/pr.diff" "$tmp/out/pr.diff"; then
     pass "$role reads a copy of the diff in the out-dir"
