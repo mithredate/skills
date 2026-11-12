@@ -290,4 +290,18 @@ else
   echo "$out" | sed 's/^/    /'
 fi
 
+# The skills run the script with the sandbox off, so a relative path could run a script of the checkout under review.
+for skill in ../../review-pr ../../fire; do
+  skill_dir=$(cd "$skill" && pwd -P)
+  commands=$(grep -o '`[^`]*codex-review\.sh[^`]*`' "$skill_dir/SKILL.md") || true
+  paths=$(printf '%s\n' "$commands" | sed -n 's/^`\(CODEX_REVIEW=[^"]* \)\{0,1\}"\${CLAUDE_SKILL_DIR}\([^"]*\/codex-review\.sh\)".*/\2/p')
+  resolved=$(while read -r path; do [[ -n $path && -f $skill_dir$path ]] && echo "$path"; done <<< "$paths") || true
+  if [[ -n $commands && $(grep -c . <<< "$commands") == $(grep -c . <<< "$resolved") ]]; then
+    pass "$(basename "$skill_dir") runs the script by its path from \${CLAUDE_SKILL_DIR}"
+  else
+    fail "$(basename "$skill_dir") runs the script by a path that does not start at \${CLAUDE_SKILL_DIR}:"
+    printf '%s\n' "$commands" | sed 's/^/    /'
+  fi
+done
+
 exit "$failed"
