@@ -48,14 +48,17 @@ PROMPT
 # Write the result line of a role to <out-dir>/<role>.status.
 run_role() { # role, directory, sandbox
   local role=$1 dir=$2 sandbox=$3 code=0
+  local answer=$out_dir/$role.answer.json
+  rm -f "$out_dir/$role.json" "$answer"
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
   codex exec -C "$dir" -s "$sandbox" --color never \
-    --output-schema "$here/$role.schema.json" -o "$out_dir/$role.json" - \
+    --output-schema "$here/$role.schema.json" -o "$answer" - \
     < "$out_dir/$role.prompt" > "$out_dir/$role.log" 2>&1 || code=$?
   if (( code != 0 )); then
     echo "$role: Codex review did not run: codex exited $code" > "$out_dir/$role.status"
     return
   fi
+  mv "$answer" "$out_dir/$role.json"
   echo "$role: $out_dir/$role.json" > "$out_dir/$role.status"
 }
 

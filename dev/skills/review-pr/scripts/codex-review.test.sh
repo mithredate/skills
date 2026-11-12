@@ -112,4 +112,16 @@ else
   fail "blast-radius saw $(cat "$tmp/fake/blast-radius.head") and files: $(tr '\n' ' ' < "$tmp/fake/blast-radius.files")"
 fi
 
+echo 3 > "$tmp/fake/security-reviewer.status"
+out=$(run_with_fake) && code=0 || code=$?
+expected="security-reviewer: Codex review did not run: codex exited 3"
+if [[ $code == 0 && $out == *"$expected"* && $out == *"pr-reviewer: $tmp/out/pr-reviewer.json"* \
+  && $out == *"blast-radius: $tmp/out/blast-radius.json"* && ! -e $tmp/out/security-reviewer.json ]]; then
+  pass "a non-zero exit of one role gives that role a did-not-run result, and the other roles still report"
+else
+  fail "non-zero exit: exit $code, want \"$expected\" in:"
+  echo "$out" | sed 's/^/    /'
+fi
+rm "$tmp/fake/security-reviewer.status"
+
 exit "$failed"
