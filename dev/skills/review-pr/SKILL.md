@@ -1,14 +1,14 @@
 ---
 name: review-pr
 description: Use when asked to review a PR or a branch, to check the open PRs assigned to the user, or to judge if a change is ready to merge.
-argument-hint: "<PR number | branch> [--inline | --fresh]"
+argument-hint: "<PR number | branch> [--inline | --fresh] [--codex | --no-codex]"
 ---
 
 # Review a PR
 
 First actions: call the Skill tool with `personal:work-like-mehrdad` and `personal:code-like-mehrdad`.
 
-**Arguments:** $ARGUMENTS. The argument is a PR number or a branch name. With no argument, list the open PRs that ask for your review with `gh search prs --review-requested=@me --state=open`. Then ask which one to review. Add `--inline` or `--fresh` to force a mode. When no flag is given, the mode follows the author.
+**Arguments:** $ARGUMENTS. The argument is a PR number or a branch name. With no argument, list the open PRs that ask for your review with `gh search prs --review-requested=@me --state=open`. Then ask which one to review. Add `--inline` or `--fresh` to force a mode. When no flag is given, the mode follows the author. Add `--codex` or `--no-codex` to switch the Codex review on or off for this session.
 
 Review stance, order of findings, and the verify-don't-trust rule come from `personal:code-like-mehrdad`. The checklists are [../../agents/pr-reviewer.md](../../agents/pr-reviewer.md), [../../agents/security-reviewer.md](../../agents/security-reviewer.md), and [../../agents/blast-radius.md](../../agents/blast-radius.md). Each file is also the system prompt of its agent. The human decides whether to merge.
 
@@ -30,10 +30,12 @@ An **engine** is the agent program and model family that runs a reviewer role, C
 
 ## Codex: the second engine
 
+Codex runs only when `CODEX_REVIEW` is `on`. Any other value, or no value, switches it off. A machine sets the value in the `env` of `~/.claude/settings.json`. The **session value** is the value that `--codex` or `--no-codex` sets, or that the user sets in words in the session. The session value wins over the value of the machine. With no session value, run `printenv CODEX_REVIEW` to get the value of the machine.
+
 Start [scripts/codex-review.sh](scripts/codex-review.sh) at the start of the review, in parallel with the other work of the mode.
 
 1. Write a context file in the scratchpad. Put in it the inputs that `dev:pr-reviewer` gets, other than the diff file and the repo root. Write each input as text, not as a path. Codex cannot read a path under `$HOME`.
-2. Run `scripts/codex-review.sh <out-dir> <repo-dir> <head commit> <base commit> <diff-file> <context-file>` with the Bash tool. Set `run_in_background: true` and `dangerouslyDisableSandbox: true`. Codex fails in the sandbox, and the permission mode reviews the call. The out-dir is a new folder in the scratchpad, outside `$HOME`. The repo-dir is the directory of the branch, or the repo that holds the head commit.
+2. Run `CODEX_REVIEW=<on or off> scripts/codex-review.sh <out-dir> <repo-dir> <head commit> <base commit> <diff-file> <context-file>` with the Bash tool. Set `run_in_background: true`. If the value is `on`, also set `dangerouslyDisableSandbox: true`. Codex fails in the sandbox, and the permission mode reviews the call. The out-dir is a new folder in the scratchpad, outside `$HOME`. The repo-dir is the directory of the branch, or the repo that holds the head commit.
 3. Wait for the script to exit. For each role, it prints the path of a JSON result or `Codex review did not run: <reason>`. If the call is denied, write `Codex review did not run: the call was denied` for each role.
 
 The step is done when each role has a JSON result or a reason. Each role reviews a clone of its own at the head commit, in the out-dir. The script deletes each clone. It prints `Codex clone kept: <path>` when a delete fails.
