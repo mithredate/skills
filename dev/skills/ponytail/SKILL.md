@@ -1,6 +1,6 @@
 ---
 name: ponytail
-description: Forces the simplest working solution. Use on any coding task, or when the user says "be lazy" or "yagni" or complains about bloat.
+description: Use on any coding task, or when the user says "be lazy" or "yagni" or complains about bloat.
 argument-hint: "[lite|full|ultra|off]"
 license: MIT
 ---

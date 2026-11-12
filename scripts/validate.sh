@@ -51,6 +51,10 @@ while read -r skill_path; do
   fi
 done < <(jq -r '.plugins[] | .source as $s | (.skills // [])[] | "\($s)/\(.)"' "$manifest" | sed 's#^\./##; s#/\./#/#')
 
+echo
+echo "→ skill descriptions"
+scripts/check-descriptions.sh */skills/*/SKILL.md || failed=1
+
 # Hook tests run the real hook with node:test.
 echo
 echo "→ hook tests"
@@ -61,6 +65,7 @@ echo
 echo "→ script tests"
 scripts/score-reviewer.test.sh || failed=1
 scripts/check-score-lines.test.sh || failed=1
+scripts/check-descriptions.test.sh || failed=1
 
 # Mod tests run the hooks module against the engine's test kit. Some builds,
 # such as npm's latest in CI, have no `claude plugin test` yet.

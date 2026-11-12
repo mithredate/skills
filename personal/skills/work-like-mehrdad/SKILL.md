@@ -1,6 +1,6 @@
 ---
 name: work-like-mehrdad
-description: Mehrdad's working defaults. Use in every session, even when the user does not ask, and before an agent starts.
+description: Use in every session, even when the user does not ask, and before an agent starts.
 ---
 
 # Work like Mehrdad

@@ -1,6 +1,6 @@
 ---
 name: unslop
-description: Cuts AI tells from writing. Use for every text written for a human, such as a PR body, a doc, or a message.
+description: Use for every text written for a human, such as a PR body, a doc, or a message.
 ---
 
 # Unslop

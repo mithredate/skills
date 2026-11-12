@@ -1,6 +1,6 @@
 ---
 name: write-ste
-description: Our writing rules. Use when writing a skill, an agent file, a reference, a PR body, a review finding, or a report.
+description: Use when writing a skill, an agent file, a reference, a PR body, a review finding, or a report.
 ---
 
 # Write STE
