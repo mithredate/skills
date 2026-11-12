@@ -25,6 +25,7 @@ out_dir=$1 repo=$2 head=$3 base=$4 diff_file=$5 context_file=$6
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$out_dir"
 out_dir=$(cd "$out_dir" && pwd -P)
+home=$(cd "$HOME" && pwd -P)
 
 # Print the body of the agent file of a role, with no frontmatter.
 agent_body() { awk 'n >= 2; /^---$/ { n++ }' "$here/../../../agents/$1.md"; }
@@ -62,42 +63,25 @@ conforms() { # schema file, answer file
     conforms($schema[0])' "$2" >/dev/null 2>&1
 }
 
-# Print the paths that the Claude Code sandbox denies to read, as a TOML table
-# for a Codex permissions profile. Claude turns each Read() deny rule into a
-# sandbox read denial. A rule path is relative to the run directory unless it
-# starts with ~/ or //.
-read_denials() { # run directory
-  local files=() f
-  for f in "/Library/Application Support/ClaudeCode/managed-settings.json" \
-    "/Library/Application Support/ClaudeCode/managed-settings.d/"*.json \
-    /etc/claude-code/managed-settings.json /etc/claude-code/managed-settings.d/*.json \
-    "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json" \
-    "$1/.claude/settings.json" "$1/.claude/settings.local.json"; do
-    if [[ -f $f ]]; then files+=("$f"); fi
-  done
-  (( ${#files[@]} )) || return 1
-  jq -rs --arg home "$HOME" --arg dir "$1" '
-    def expand: if startswith("~/") then $home + .[1:] else . end;
-    [.[] | (.permissions.deny // [])[] | capture("^Read\\((?<p>.+)\\)$").p
-      | sub("/\\*\\*$"; "")
-      | if startswith("//") then .[1:] elif startswith("~/") then expand else $dir + "/" + ltrimstr("./") end]
-    + [.[] | (.sandbox.filesystem.denyRead // [])[] | expand]
-    | unique | "{" + (map(tojson + " = \"none\"") | join(", ")) + "}"' "${files[@]}"
+# Print the filesystem table of the Codex permissions profile of a role. The
+# run reads nothing under $HOME, where the credentials live. It writes nowhere
+# but in the clone of blast-radius. The out-dir stays unwritable, so a role
+# cannot change the result of another role.
+filesystem() { # role, clone
+  local table="\"$home\" = \"none\", \":slash_tmp\" = \"read\", \":tmpdir\" = \"read\", \"$out_dir\" = \"read\""
+  if [[ $1 == blast-radius ]]; then table+=", \"$2\" = \"write\""; fi
+  echo "{$table}"
 }
 
 # Write the result line of a role to <out-dir>/<role>.status.
 run_role() { # role, directory, base profile
-  local role=$1 dir=$2 base_profile=$3 code=0 denials
+  local role=$1 dir=$2 base_profile=$3 code=0
   local answer=$out_dir/$role.answer.json
   rm -f "$out_dir/$role.json" "$answer"
-  if ! denials=$(read_denials "$dir" 2>/dev/null); then
-    echo "$role: Codex review did not run: cannot read the read denials of the Claude settings" > "$out_dir/$role.status"
-    return
-  fi
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
   perl -e 'alarm shift; exec @ARGV or die' "$time_limit" codex exec -C "$dir" \
     -c default_permissions='"review"' -c permissions.review.extends="\"$base_profile\"" \
-    -c permissions.review.filesystem="$denials" --color never \
+    -c permissions.review.filesystem="$(filesystem "$role" "$dir")" --color never \
     --output-schema "$here/$role.schema.json" -o "$answer" - \
     < "$out_dir/$role.prompt" > "$out_dir/$role.log" 2>&1 || code=$?
   if (( code == 142 )); then

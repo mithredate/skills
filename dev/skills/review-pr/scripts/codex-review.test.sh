@@ -51,13 +51,10 @@ review_json='{"blocking": [], "discrepancy": [], "quality_note": ["a.txt:1 one s
 blast_json='{"what_it_does": "adds a.txt", "safety_fact": {"fact": "no code reads a.txt", "step": "4", "proof": "grep -r a.txt printed nothing"},
  "blocking": [], "discrepancy": [], "quality_note": [], "cleared": ["grep a.txt: no reader"], "before_merge": "none"}'
 
-mkdir "$tmp/claude"
-echo '{"permissions": {"deny": ["Read(~/.secret/**)", "Edit(~/.secret/**)", "Read(//etc/secret.conf)", "Bash(rm:*)"]}}' \
-  > "$tmp/claude/settings.json"
-# The managed settings of the machine can add more denials, so the test looks
-# for these two inside the filesystem table.
-home_denial='"'"$HOME"'/.secret" = "none"'
-root_denial='"/etc/secret.conf" = "none"'
+home=$(cd "$HOME" && pwd -P)
+home_none='"'"$home"'" = "none"'
+out_read='"'"$tmp/out"'" = "read"'
+tmp_read='":slash_tmp" = "read", ":tmpdir" = "read"'
 
 roles=(pr-reviewer security-reviewer blast-radius)
 failed=0
@@ -65,7 +62,7 @@ pass() { echo "  ✓ $1"; }
 fail() { echo "  ✘ $1"; failed=1; }
 
 run_with_fake() {
-  CLAUDE_CONFIG_DIR="$tmp/claude" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
+  PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
 }
 
 out=$(PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
@@ -82,16 +79,24 @@ fi
 for role in pr-reviewer security-reviewer; do echo "$review_json" > "$tmp/fake/$role.out"; done
 echo "$blast_json" > "$tmp/fake/blast-radius.out"
 out=$(run_with_fake) && code=0 || code=$?
-for role in pr-reviewer security-reviewer; do
+for role in "${roles[@]}"; do
   args=$(tr '\n' ' ' 2>/dev/null < "$tmp/fake/$role.args") || true
   schema=$(grep -A1 -x -- --output-schema "$tmp/fake/$role.args" 2>/dev/null | tail -1) || true
-  if [[ $args == *'-c default_permissions="review" -c permissions.review.extends=":read-only" '* \
-    && $args == *"-c permissions.review.filesystem={"*"$home_denial"*"} "* && $args == *"$root_denial"* && $args != *" -s "* \
-    && $(jq -r .type "$schema" 2>/dev/null) == object ]]; then
-    pass "$role runs with a :read-only profile that denies the Claude read denials, --output-schema, and no -s"
+  table=$(grep -x -- 'permissions.review.filesystem=.*' "$tmp/fake/$role.args") || true
+  if [[ $role == blast-radius ]]; then
+    profile=':workspace' write='"'"$tmp/out/clones/$role"'" = "write"'
+  else
+    profile=':read-only' write=
+  fi
+  writes=$(grep -o '"[^"]*" = "write"' <<< "$table") || true
+  if [[ $args == *"-c default_permissions=\"review\" -c permissions.review.extends=\"$profile\" "* && $args != *" -s "* \
+    && $table == *"$home_none"* && $table == *"$out_read"* && $table == *"$tmp_read"* \
+    && $writes == "$write" && $(jq -r .type "$schema" 2>/dev/null) == object ]]; then
+    pass "$role runs with a $profile profile that denies \$HOME, keeps the out-dir unwritable, has --output-schema, and no -s"
   else
     fail "$role arguments: $args"
   fi
+  [[ $role == blast-radius ]] && continue
   expected="$role: $tmp/out/$role.json"
   if [[ $code == 0 && $out == *"$expected"* ]] && jq -e --argjson want "$review_json" '. == $want' "$tmp/out/$role.json" >/dev/null; then
     pass "$role prints the path of its JSON result"
@@ -189,22 +194,5 @@ else
   echo "$out" | sed 's/^/    /'
 fi
 rm "$tmp/fake/pr-reviewer.sleep"
-
-cp "$tmp/claude/settings.json" "$tmp/claude/settings.good"
-echo '{"permissions": ' > "$tmp/claude/settings.json"
-rm -f "$tmp/fake/"*.args
-out=$(run_with_fake) && code=0 || code=$?
-expected="pr-reviewer: Codex review did not run: cannot read the read denials of the Claude settings
-security-reviewer: Codex review did not run: cannot read the read denials of the Claude settings
-blast-radius: Codex review did not run: cannot read the read denials of the Claude settings"
-if [[ $code == 0 && $out == "$expected" ]] && ! ls "$tmp/fake/"*.args >/dev/null 2>&1; then
-  pass "when the Claude settings cannot be read, codex does not start and each role reports why"
-else
-  fail "unreadable settings: exit $code, want:"
-  echo "$expected" | sed 's/^/    /'
-  echo "  got:"
-  echo "$out" | sed 's/^/    /'
-fi
-mv "$tmp/claude/settings.good" "$tmp/claude/settings.json"
 
 exit "$failed"
