@@ -1,0 +1,120 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "what_it_does",
+    "safety_fact",
+    "blocking",
+    "discrepancy",
+    "quality_note",
+    "cleared",
+    "before_merge"
+  ],
+  "properties": {
+    "what_it_does": {
+      "type": "string"
+    },
+    "safety_fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fact",
+        "step",
+        "proof"
+      ],
+      "properties": {
+        "fact": {
+          "type": "string"
+        },
+        "step": {
+          "type": "string",
+          "enum": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ]
+        },
+        "proof": {
+          "type": "string"
+        }
+      }
+    },
+    "blocking": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "class",
+          "instances",
+          "chance_and_cost",
+          "check"
+        ],
+        "properties": {
+          "class": {
+            "type": "string"
+          },
+          "instances": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chance_and_cost": {
+            "type": "string"
+          },
+          "check": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "discrepancy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "class",
+          "instances",
+          "chance_and_cost",
+          "check"
+        ],
+        "properties": {
+          "class": {
+            "type": "string"
+          },
+          "instances": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chance_and_cost": {
+            "type": "string"
+          },
+          "check": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "quality_note": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cleared": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "before_merge": {
+      "type": "string"
+    }
+  }
+}
