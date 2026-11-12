@@ -13,6 +13,8 @@ if (( $# != 6 )); then
 fi
 
 roles=(pr-reviewer security-reviewer blast-radius)
+# The test sets a short limit. A hung run must not hold the review open.
+time_limit=${CODEX_REVIEW_TIMEOUT:-1800}
 
 if ! command -v codex >/dev/null 2>&1; then
   for role in "${roles[@]}"; do echo "$role: Codex review did not run: codex not found"; done
@@ -65,9 +67,13 @@ run_role() { # role, directory, sandbox
   local answer=$out_dir/$role.answer.json
   rm -f "$out_dir/$role.json" "$answer"
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
-  codex exec -C "$dir" -s "$sandbox" --color never \
+  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" codex exec -C "$dir" -s "$sandbox" --color never \
     --output-schema "$here/$role.schema.json" -o "$answer" - \
     < "$out_dir/$role.prompt" > "$out_dir/$role.log" 2>&1 || code=$?
+  if (( code == 142 )); then
+    echo "$role: Codex review did not run: timed out after ${time_limit}s" > "$out_dir/$role.status"
+    return
+  fi
   if (( code != 0 )); then
     echo "$role: Codex review did not run: codex exited $code" > "$out_dir/$role.status"
     return

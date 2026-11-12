@@ -24,8 +24,8 @@ cat > "$tmp/bin/codex" <<'EOF'
 # The role is the name of the --output-schema file. Write the arguments, one per
 # line, to $FAKE/<role>.args. Write the HEAD and the files of the -C directory to
 # $FAKE/<role>.head and $FAKE/<role>.files. Unless -s is read-only, write a file
-# there, as a proof of blast-radius does. Copy
-# $FAKE/<role>.out to the -o file. Exit with $FAKE/<role>.status, or 0.
+# there, as a proof of blast-radius does. Copy $FAKE/<role>.out to the -o file.
+# Sleep $FAKE/<role>.sleep seconds, if set. Exit with $FAKE/<role>.status, or 0.
 args=("$@") dir= out= schema= sandbox=
 while (( $# )); do
   case $1 in -C) dir=$2 ;; -o) out=$2 ;; --output-schema) schema=$2 ;; -s) sandbox=$2 ;; esac
@@ -37,6 +37,7 @@ git -C "$dir" rev-parse HEAD > "$FAKE/$role.head"
 ls -A "$dir" > "$FAKE/$role.files"
 [[ $sandbox == read-only ]] || echo proof > "$dir/codex-wrote-this.txt"
 cp "$FAKE/$role.out" "$out"
+[[ -f $FAKE/$role.sleep ]] && sleep "$(cat "$FAKE/$role.sleep")"
 exit "$(cat "$FAKE/$role.status" 2>/dev/null || echo 0)"
 EOF
 chmod +x "$tmp/bin/codex"
@@ -138,5 +139,17 @@ else
   echo "  got:"
   echo "$out" | sed 's/^/    /'
 fi
+
+echo "$review_json" > "$tmp/fake/pr-reviewer.out"
+echo 3 > "$tmp/fake/pr-reviewer.sleep"
+out=$(CODEX_REVIEW_TIMEOUT=1 run_with_fake) && code=0 || code=$?
+expected="pr-reviewer: Codex review did not run: timed out after 1s"
+if [[ $code == 0 && $out == *"$expected"* && $out == *"security-reviewer: $tmp/out/security-reviewer.json"* ]]; then
+  pass "a role that runs past the time limit gives a did-not-run result"
+else
+  fail "timeout: exit $code, want \"$expected\" in:"
+  echo "$out" | sed 's/^/    /'
+fi
+rm "$tmp/fake/pr-reviewer.sleep"
 
 exit "$failed"
