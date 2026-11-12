@@ -124,4 +124,19 @@ else
 fi
 rm "$tmp/fake/security-reviewer.status"
 
+echo '{"blocking": [], "discrepancy": [], "quality_note": [], "pre_existing": []}' > "$tmp/fake/pr-reviewer.out"
+echo 'The change is safe.' > "$tmp/fake/blast-radius.out"
+out=$(run_with_fake) && code=0 || code=$?
+expected="pr-reviewer: Codex review did not run: the answer does not match the schema
+security-reviewer: $tmp/out/security-reviewer.json
+blast-radius: Codex review did not run: the answer does not match the schema"
+if [[ $code == 0 && $out == "$expected" && ! -e $tmp/out/pr-reviewer.json ]]; then
+  pass "an answer with a missing key, or with no JSON, gives a did-not-run result"
+else
+  fail "schema mismatch: exit $code, want:"
+  echo "$expected" | sed 's/^/    /'
+  echo "  got:"
+  echo "$out" | sed 's/^/    /'
+fi
+
 exit "$failed"

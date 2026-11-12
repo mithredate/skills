@@ -45,6 +45,20 @@ $(cat "$context_file")
 PROMPT
 }
 
+# Check a JSON answer against the subset of JSON Schema that the schema files use.
+conforms() { # schema file, answer file
+  jq -e --slurpfile schema "$1" '
+    def conforms($s):
+      if $s.type == "object" then
+        type == "object"
+        and ($s.required - keys) == []
+        and all(to_entries[]; .key as $k | $s.properties[$k] as $p | $p != null and (.value | conforms($p)))
+      elif $s.type == "array" then type == "array" and all(.[]; conforms($s.items))
+      elif $s.type == "string" then type == "string" and (. as $v | $s.enum == null or ($s.enum | any(. == $v)))
+      else false end;
+    conforms($schema[0])' "$2" >/dev/null 2>&1
+}
+
 # Write the result line of a role to <out-dir>/<role>.status.
 run_role() { # role, directory, sandbox
   local role=$1 dir=$2 sandbox=$3 code=0
@@ -56,6 +70,10 @@ run_role() { # role, directory, sandbox
     < "$out_dir/$role.prompt" > "$out_dir/$role.log" 2>&1 || code=$?
   if (( code != 0 )); then
     echo "$role: Codex review did not run: codex exited $code" > "$out_dir/$role.status"
+    return
+  fi
+  if ! conforms "$here/$role.schema.json" "$answer"; then
+    echo "$role: Codex review did not run: the answer does not match the schema" > "$out_dir/$role.status"
     return
   fi
   mv "$answer" "$out_dir/$role.json"
@@ -78,10 +96,13 @@ run_blast_radius() {
 }
 
 worktree=$out_dir/blast-radius-worktree
+for role in "${roles[@]}"; do rm -f "$out_dir/$role.status"; done
 remove_worktree
 run_role pr-reviewer "$repo" read-only &
 run_role security-reviewer "$repo" read-only &
 run_blast_radius &
 wait
-for role in "${roles[@]}"; do cat "$out_dir/$role.status" 2>/dev/null || true; done
+for role in "${roles[@]}"; do
+  cat "$out_dir/$role.status" 2>/dev/null || echo "$role: Codex review did not run: the script failed before codex ran"
+done
 if [[ -e $worktree ]]; then echo "Codex worktree kept: $worktree"; fi
