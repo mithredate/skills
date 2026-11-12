@@ -35,12 +35,13 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 
 - `name` is the directory name.
 - `description` is the routing signal. The agent sees only the name and the description of each skill when it chooses which skill to load. Write when to load the skill, not what the body does.
-- Write "Use when" and the triggers. A trigger is the words the user types, a symptom the agent sees, a moment in a session, or a calling skill. If the name does not say what the skill is, put a short noun phrase first: "Deep-module vocabulary."
+- Write one sentence that starts with "Use", such as "Use when", and give the triggers. A trigger is the words the user types, a symptom the agent sees, a moment in a session, or a calling skill.
 - Keep the description under 150 characters. Every session carries every description in its context.
 - If the agent must load the skill with no request, add "even when the user does not ask". An agent uses a skill less often than it must.
 - Put no step, count, or rule from the body in the description. An agent that reads a workflow summary in the description follows the summary and skips the body.
+- `scripts/validate.sh` checks the format of the description. It cannot tell a trigger from a summary, so check each trigger by eye.
 - A colon followed by a space inside the value breaks the YAML, unless the whole value is in double quotes. The skill then loads with no metadata. Only `scripts/validate.sh` catches this, so also check it by eye.
-- A user-invoked skill sets `disable-model-invocation: true` and an `argument-hint`. Its description is a one-line summary for the human.
+- A user-invoked skill sets `disable-model-invocation: true` and an `argument-hint`. Its description is a one-line summary for the human, and `scripts/validate.sh` does not check it.
 - Check the field list against https://code.claude.com/docs/en/skills before you ship. The spec changes.
 
 ## Agent files
