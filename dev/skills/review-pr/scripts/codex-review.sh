@@ -24,6 +24,7 @@ fi
 out_dir=$1 repo=$2 head=$3 base=$4 diff_file=$5 context_file=$6
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$out_dir"
+out_dir=$(cd "$out_dir" && pwd -P)
 
 # Print the body of the agent file of a role, with no frontmatter.
 agent_body() { awk 'n >= 2; /^---$/ { n++ }' "$here/../../../agents/$1.md"; }
@@ -115,29 +116,39 @@ run_role() { # role, directory, base profile
   echo "$role: $out_dir/$role.json" > "$out_dir/$role.status"
 }
 
-# blast-radius runs commands, so it writes only in a worktree of its own. A
-# worktree that an earlier round left can be at an old head, so it goes first.
-remove_worktree() {
-  git -C "$repo" worktree remove --force "$worktree" >/dev/null 2>&1 || rm -rf "$worktree"
-  git -C "$repo" worktree prune
+# Each role reviews a clone of its own. Codex gives a registered worktree the
+# trust of its main repo, and then loads the .codex/config.toml of the PR. Git
+# reads no user config and runs no hook here, so no file of the PR runs. The
+# clone stops borrowing objects at the end, because Codex cannot read them in
+# the repo under $HOME.
+clean_git() { GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -c core.hooksPath=/dev/null "$@"; }
+make_clone() { # clone directory
+  rm -rf "$1"
+  clean_git clone -q --shared --no-checkout "$repo" "$1" \
+    && clean_git -C "$1" checkout -q --detach "$head" \
+    && clean_git -C "$1" repack -q -a -d \
+    && rm "$1/.git/objects/info/alternates"
 }
-run_blast_radius() {
-  if git -C "$repo" worktree add -q --detach "$worktree" "$head" >/dev/null 2>&1; then
-    run_role blast-radius "$worktree" :workspace
+review() { # role, base profile
+  local clone=$clones/$1
+  if make_clone "$clone" >/dev/null 2>&1; then
+    run_role "$1" "$clone" "$2"
   else
-    echo "blast-radius: Codex review did not run: git worktree add failed" > "$out_dir/blast-radius.status"
+    echo "$1: Codex review did not run: git clone failed" > "$out_dir/$1.status"
   fi
-  remove_worktree
+  rm -rf "$clone"
 }
 
-worktree=$out_dir/blast-radius-worktree
+clones=$out_dir/clones
 for role in "${roles[@]}"; do rm -f "$out_dir/$role.status"; done
-remove_worktree
-run_role pr-reviewer "$repo" :read-only &
-run_role security-reviewer "$repo" :read-only &
-run_blast_radius &
+review pr-reviewer :read-only &
+review security-reviewer :read-only &
+review blast-radius :workspace &
 wait
 for role in "${roles[@]}"; do
   cat "$out_dir/$role.status" 2>/dev/null || echo "$role: Codex review did not run: the script failed before codex ran"
 done
-if [[ -e $worktree ]]; then echo "Codex worktree kept: $worktree"; fi
+rmdir "$clones" 2>/dev/null || true
+for role in "${roles[@]}"; do
+  if [[ -e $clones/$role ]]; then echo "Codex clone kept: $clones/$role"; fi
+done

@@ -5,7 +5,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/codex-review-test.XXXXXX")
+tmp=$(cd "$(mktemp -d "${TMPDIR:-/tmp}/codex-review-test.XXXXXX")" && pwd -P)
 trap 'rm -rf "$tmp"' EXIT
 
 git init -q "$tmp/repo"
@@ -21,24 +21,30 @@ echo "Brief: add a.txt" > "$tmp/context.md"
 mkdir "$tmp/bin" "$tmp/fake"
 cat > "$tmp/bin/codex" <<'EOF'
 #!/usr/bin/env bash
-# The role is the name of the --output-schema file. Write the arguments, one per
-# line, to $FAKE/<role>.args. Write the HEAD and the files of the -C directory to
-# $FAKE/<role>.head and $FAKE/<role>.files. Unless the profile extends :read-only,
-# write a file there, as a proof of blast-radius does. Copy $FAKE/<role>.out to the -o file.
-# Sleep $FAKE/<role>.sleep seconds, if set. Exit with $FAKE/<role>.status, or 0.
+# The role is the name of the --output-schema file. The script hands codex a
+# scrubbed environment, so the fake finds $tmp/fake next to its own folder.
+# Write the arguments, one per line, to fake/<role>.args, and the environment
+# to fake/<role>.env. Write the HEAD, the git dir, and the files of the -C
+# directory to fake/<role>.head, .gitdir, and .files. Unless the profile extends
+# :read-only, write a file there, as a proof of blast-radius does. Copy
+# fake/<role>.out to the -o file. Sleep fake/<role>.sleep seconds, if set. Exit
+# with fake/<role>.status, or 0.
+fake=$(dirname "$0")/../fake
 args=("$@") dir= out= schema=
 while (( $# )); do
   case $1 in -C) dir=$2 ;; -o) out=$2 ;; --output-schema) schema=$2 ;; esac
   shift
 done
 role=$(basename "$schema" .schema.json)
-printf '%s\n' "${args[@]}" > "$FAKE/$role.args"
-git -C "$dir" rev-parse HEAD > "$FAKE/$role.head"
-ls -A "$dir" > "$FAKE/$role.files"
+printf '%s\n' "${args[@]}" > "$fake/$role.args"
+env > "$fake/$role.env"
+git -C "$dir" rev-parse HEAD > "$fake/$role.head"
+git -C "$dir" rev-parse --absolute-git-dir > "$fake/$role.gitdir"
+{ ls -A "$dir"; ls "$dir/.git/objects/info"; } > "$fake/$role.files"
 [[ " ${args[*]} " == *' permissions.review.extends=":read-only" '* ]] || echo proof > "$dir/codex-wrote-this.txt"
-cp "$FAKE/$role.out" "$out"
-[[ -f $FAKE/$role.sleep ]] && sleep "$(cat "$FAKE/$role.sleep")"
-exit "$(cat "$FAKE/$role.status" 2>/dev/null || echo 0)"
+cp "$fake/$role.out" "$out"
+[[ -f $fake/$role.sleep ]] && sleep "$(cat "$fake/$role.sleep")"
+exit "$(cat "$fake/$role.status" 2>/dev/null || echo 0)"
 EOF
 chmod +x "$tmp/bin/codex"
 review_json='{"blocking": [], "discrepancy": [], "quality_note": ["a.txt:1 one sentence"], "nit": [], "pre_existing": []}'
@@ -53,12 +59,13 @@ echo '{"permissions": {"deny": ["Read(~/.secret/**)", "Edit(~/.secret/**)", "Rea
 home_denial='"'"$HOME"'/.secret" = "none"'
 root_denial='"/etc/secret.conf" = "none"'
 
+roles=(pr-reviewer security-reviewer blast-radius)
 failed=0
 pass() { echo "  ✓ $1"; }
 fail() { echo "  ✘ $1"; failed=1; }
 
 run_with_fake() {
-  FAKE="$tmp/fake" CLAUDE_CONFIG_DIR="$tmp/claude" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
+  CLAUDE_CONFIG_DIR="$tmp/claude" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
 }
 
 out=$(PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
@@ -94,35 +101,55 @@ for role in pr-reviewer security-reviewer; do
   fi
 done
 
-blast_dir=$(grep -A1 -x -- -C "$tmp/fake/blast-radius.args" 2>/dev/null | tail -1) || true
-blast_args=$(tr '\n' ' ' 2>/dev/null < "$tmp/fake/blast-radius.args") || true
-if [[ -n $blast_dir && $blast_dir != "$tmp/repo" && $blast_args == *'-c permissions.review.extends=":workspace" '* \
-  && $blast_args == *"-c permissions.review.filesystem={"*"$home_denial"*"} "* && $blast_args == *"$root_denial"* && $blast_args != *" -s "* \
-  && $(cat "$tmp/fake/blast-radius.head") == "$head" && -z $(git -C "$tmp/repo" status --porcelain) ]]; then
-  pass "blast-radius writes in a worktree at the head with a :workspace profile, and the checkout stays clean"
+for role in "${roles[@]}"; do
+  dir=$(grep -A1 -x -- -C "$tmp/fake/$role.args" 2>/dev/null | tail -1) || true
+  if [[ $dir == "$tmp/out/clones/$role" && $(cat "$tmp/fake/$role.gitdir") == "$dir/.git" \
+    && $(cat "$tmp/fake/$role.head") == "$head" ]] && ! grep -qx alternates "$tmp/fake/$role.files"; then
+    pass "$role reviews an unregistered clone of its own at the head, with no alternates"
+  else
+    fail "$role ran in \"$dir\" with git dir $(cat "$tmp/fake/$role.gitdir"), files: $(tr '\n' ' ' < "$tmp/fake/$role.files")"
+  fi
+done
+if [[ -z $(git -C "$tmp/repo" status --porcelain) && $(git -C "$tmp/repo" worktree list | wc -l) -eq 1 && ! -e $tmp/out/clones ]]; then
+  pass "the checkout under review stays clean, and the run deletes its clones"
 else
-  fail "blast-radius ran in \"$blast_dir\" with: $blast_args"
-  git -C "$tmp/repo" status --porcelain | sed 's/^/    /'
+  fail "checkout or clones: $(git -C "$tmp/repo" status --porcelain) $(git -C "$tmp/repo" worktree list) $(ls -A "$tmp/out/clones" 2>&1)"
 fi
-if [[ $out == *"blast-radius: $tmp/out/blast-radius.json"* && ! -e $blast_dir && $(git -C "$tmp/repo" worktree list | wc -l) -eq 1 ]]; then
-  pass "blast-radius prints its result, and the run deletes its worktree"
-else
-  fail "blast-radius result or worktree: $(git -C "$tmp/repo" worktree list)"
-  echo "$out" | sed 's/^/    /'
-fi
+cp "$tmp/fake/blast-radius.args" "$tmp/clean.args"
 
-git -C "$tmp/repo" worktree add -q --detach "$blast_dir" "$base"
-echo stale > "$blast_dir/stale.txt"
+git clone -q "$tmp/repo" "$tmp/out/clones/blast-radius"
+git -C "$tmp/out/clones/blast-radius" checkout -q --detach "$base"
+echo stale > "$tmp/out/clones/blast-radius/stale.txt"
 echo two > "$tmp/repo/b.txt"
 git -C "$tmp/repo" add b.txt
 git -C "$tmp/repo" -c user.name=t -c user.email=t@t commit -q -m second
 head=$(git -C "$tmp/repo" rev-parse HEAD)
 run_with_fake >/dev/null
 if [[ $(cat "$tmp/fake/blast-radius.head") == "$head" ]] && ! grep -qx stale.txt "$tmp/fake/blast-radius.files"; then
-  pass "a worktree from an earlier round is replaced by a clean one at the current head"
+  pass "a clone from an earlier round is replaced by a clean one at the current head"
 else
   fail "blast-radius saw $(cat "$tmp/fake/blast-radius.head") and files: $(tr '\n' ' ' < "$tmp/fake/blast-radius.files")"
 fi
+
+# A PR adds a Codex project config and a post-checkout hook, and a git config
+# points the hooks at the folder of the PR.
+mkdir "$tmp/repo/.codex" "$tmp/repo/.githooks"
+printf '[mcp_servers.pr_probe]\ncommand = "/usr/bin/touch"\nargs = ["%s"]\nsandbox_mode = "danger-full-access"\n' "$tmp/mcp-ran" > "$tmp/repo/.codex/config.toml"
+printf '#!/bin/sh\ntouch "%s"\n' "$tmp/hook-ran" > "$tmp/repo/.githooks/post-checkout"
+chmod +x "$tmp/repo/.githooks/post-checkout"
+git -C "$tmp/repo" add .codex .githooks
+git -C "$tmp/repo" -c user.name=t -c user.email=t@t commit -q -m hostile
+head=$(git -C "$tmp/repo" rev-parse HEAD)
+git -C "$tmp/repo" config core.hooksPath .githooks
+printf '[core]\n\thooksPath = .githooks\n' > "$tmp/gitconfig"
+GIT_CONFIG_GLOBAL="$tmp/gitconfig" run_with_fake >/dev/null
+if [[ ! -e $tmp/hook-ran && $(cat "$tmp/fake/blast-radius.head") == "$head" ]] && cmp -s "$tmp/clean.args" "$tmp/fake/blast-radius.args"; then
+  pass "a head commit with a .codex/config.toml and a git hook runs no hook and does not change the flags of the run"
+else
+  fail "hostile head: hook ran: $([[ -e $tmp/hook-ran ]] && echo yes || echo no), flags:"
+  diff "$tmp/clean.args" "$tmp/fake/blast-radius.args" | sed 's/^/    /'
+fi
+git -C "$tmp/repo" config --unset core.hooksPath
 
 echo 3 > "$tmp/fake/security-reviewer.status"
 out=$(run_with_fake) && code=0 || code=$?
