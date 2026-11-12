@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 const HOOK = fileURLToPath(new URL('./load-code-like-mehrdad-on-code-edit.mjs', import.meta.url));
 const PLUGIN_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const LOAD_CODE_LIKE_MEHRDAD = 'A code file changed. If `personal:code-like-mehrdad` is not loaded, call the Skill tool with it before your next tool call.';
+const READ_CODE = `If you have not read the code rubric in this session, read \`${join(PLUGIN_ROOT, 'skills/code-like-mehrdad/references/code.md')}\`.`;
 const READ_TESTING = `If you have not read the testing rubric in this session, read \`${join(PLUGIN_ROOT, 'skills/code-like-mehrdad/references/testing.md')}\`.`;
 const READ_TYPESCRIPT = `If you have not read the TypeScript rubric in this session, read \`${join(PLUGIN_ROOT, 'skills/code-like-mehrdad/references/typescript.md')}\`.`;
 const RUBRIC_PATH = /`(\/[^`]+\.md)`/g;
@@ -22,70 +23,70 @@ function editContext(toolName, toolInput, extra = {}) {
     return hookOutput({ hook_event_name: 'PostToolUse', tool_name: toolName, tool_input: toolInput, tool_use_id: 'toolu_file', cwd: '/repo', ...extra }).additionalContext;
 }
 
-test('reminds to load code-like-mehrdad after an Edit of a code file', () => {
-    assert.deepEqual(hookOutput({ hook_event_name: 'PostToolUse', tool_name: 'Edit', tool_input: { file_path: '/repo/src/app.py', old_string: 'a', new_string: 'b' } }), { hookEventName: 'PostToolUse', additionalContext: LOAD_CODE_LIKE_MEHRDAD });
+test('reminds to load code-like-mehrdad and names the code rubric after an Edit of a code file', () => {
+    assert.deepEqual(hookOutput({ hook_event_name: 'PostToolUse', tool_name: 'Edit', tool_input: { file_path: '/repo/src/app.py', old_string: 'a', new_string: 'b' } }), { hookEventName: 'PostToolUse', additionalContext: `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE}` });
 });
 
 test('reminds after an Edit of a file with each source-code extension that is not TypeScript', () => {
     for (const ext of ['js', 'jsx', 'mjs', 'cjs', 'vue', 'py', 'go', 'java', 'kt', 'kts', 'php', 'rb', 'rs', 'swift', 'c', 'h', 'cpp', 'cs', 'sh']) {
-        assert.equal(editContext('Edit', { file_path: `/repo/src/app.${ext}`, old_string: 'a', new_string: 'b' }), LOAD_CODE_LIKE_MEHRDAD, ext);
+        assert.equal(editContext('Edit', { file_path: `/repo/src/app.${ext}`, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE}`, ext);
     }
 });
 
 test('reminds after a MultiEdit of a code file', () => {
-    assert.equal(editContext('MultiEdit', { file_path: '/repo/src/app.go', edits: [{ old_string: 'a', new_string: 'b' }] }), LOAD_CODE_LIKE_MEHRDAD);
+    assert.equal(editContext('MultiEdit', { file_path: '/repo/src/app.go', edits: [{ old_string: 'a', new_string: 'b' }] }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE}`);
 });
 
-test('names only the matching rubric after an Edit of a code file inside an agent', () => {
+test('names only the matching rubrics after an Edit of a code file inside an agent', () => {
     const inAgent = { agent_id: 'agent-1', agent_type: 'general-purpose' };
 
-    assert.equal(editContext('Edit', { file_path: '/repo/src/app.test.js', old_string: 'a', new_string: 'b' }, inAgent), READ_TESTING);
-    assert.equal(editContext('Write', { file_path: '/repo/src/app.test.ts', content: 'test()\n' }, inAgent), `${READ_TESTING} ${READ_TYPESCRIPT}`);
+    assert.equal(editContext('Edit', { file_path: '/repo/src/app.test.js', old_string: 'a', new_string: 'b' }, inAgent), `${READ_CODE} ${READ_TESTING}`);
+    assert.equal(editContext('Write', { file_path: '/repo/src/app.test.ts', content: 'test()\n' }, inAgent), `${READ_CODE} ${READ_TESTING} ${READ_TYPESCRIPT}`);
 });
 
-test('stays silent inside an agent after an Edit of a code file with no rubric', () => {
+test('names only the code rubric inside an agent after an Edit of a code file with no other rubric', () => {
     const edit = { file_path: '/repo/src/app.py', old_string: 'a', new_string: 'b' };
 
-    assert.equal(editContext('Edit', edit, { agent_id: 'agent-1', agent_type: 'claude' }), '');
-    assert.equal(editContext('Edit', edit), LOAD_CODE_LIKE_MEHRDAD);
+    assert.equal(editContext('Edit', edit, { agent_id: 'agent-1', agent_type: 'claude' }), READ_CODE);
+    assert.equal(editContext('Edit', edit), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE}`);
 });
 
 test('also names the testing rubric after an Edit of a test file', () => {
     for (const path of ['/repo/tests/test_app.py', '/repo/src/app.test.js']) {
-        assert.equal(editContext('Edit', { file_path: path, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TESTING}`, path);
+        assert.equal(editContext('Edit', { file_path: path, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE} ${READ_TESTING}`, path);
     }
 });
 
 test('names the testing rubric for each test name and each test folder', () => {
     for (const path of ['/repo/src/app.spec.js', '/repo/pkg/app_test.go', '/repo/test_app.py', '/repo/src/AppTest.java', '/repo/Sources/AppTests.swift', '/repo/src/__tests__/app.jsx', '/repo/spec/app_spec.rb', '/repo/test/helper.sh', '/repo/tests/fixtures/users.py']) {
-        assert.equal(editContext('Edit', { file_path: path, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TESTING}`, path);
+        assert.equal(editContext('Edit', { file_path: path, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE} ${READ_TESTING}`, path);
     }
 });
 
 test('does not name the testing rubric for a code file whose name only looks like a test name', () => {
     for (const path of ['/repo/src/latest.js', '/repo/src/contest.py', '/repo/src/test_app.go', '/repo/src/testing/app.py', '/repo/src/specs.rb']) {
-        assert.equal(editContext('Edit', { file_path: path, old_string: 'a', new_string: 'b' }), LOAD_CODE_LIKE_MEHRDAD, path);
+        assert.equal(editContext('Edit', { file_path: path, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE}`, path);
     }
 });
 
 test('also names the TypeScript rubric after an Edit of a TypeScript file', () => {
-    assert.equal(editContext('Edit', { file_path: '/repo/src/app.ts', old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TYPESCRIPT}`);
+    assert.equal(editContext('Edit', { file_path: '/repo/src/app.ts', old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE} ${READ_TYPESCRIPT}`);
 });
 
 test('names the TypeScript rubric for each TypeScript extension', () => {
     for (const ext of ['ts', 'tsx', 'mts', 'cts']) {
-        assert.equal(editContext('Edit', { file_path: `/repo/src/app.${ext}`, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TYPESCRIPT}`, ext);
+        assert.equal(editContext('Edit', { file_path: `/repo/src/app.${ext}`, old_string: 'a', new_string: 'b' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE} ${READ_TYPESCRIPT}`, ext);
     }
 });
 
-test('names both rubrics after a Write of a TypeScript test file', () => {
-    assert.equal(editContext('Write', { file_path: '/repo/src/app.test.ts', content: 'test()\n' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_TESTING} ${READ_TYPESCRIPT}`);
+test('names all three rubrics after a Write of a TypeScript test file', () => {
+    assert.equal(editContext('Write', { file_path: '/repo/src/app.test.ts', content: 'test()\n' }), `${LOAD_CODE_LIKE_MEHRDAD} ${READ_CODE} ${READ_TESTING} ${READ_TYPESCRIPT}`);
 });
 
 test('each rubric path in the message exists on disk', () => {
     const paths = [...editContext('Edit', { file_path: '/repo/src/app.test.ts', old_string: 'a', new_string: 'b' }).matchAll(RUBRIC_PATH)].map((match) => match[1]);
 
-    assert.equal(paths.length, 2);
+    assert.equal(paths.length, 3);
     for (const path of paths) assert.ok(existsSync(path), path);
 });
 
