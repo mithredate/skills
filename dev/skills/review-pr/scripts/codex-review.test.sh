@@ -72,7 +72,7 @@ pass() { echo "  ✓ $1"; }
 fail() { echo "  ✘ $1"; failed=1; }
 
 run_with_fake() {
-  CODEX_HOME="$tmp/codex-home" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
+  AWS_ACCESS_KEY_ID=leaked GH_TOKEN=leaked CODEX_HOME="$tmp/codex-home" PATH="$tmp/bin:$PATH" ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md"
 }
 
 out=$(PATH=/usr/bin:/bin ./codex-review.sh "$tmp/out" "$tmp/repo" "$head" "$base" "$tmp/pr.diff" "$tmp/context.md") && code=0 || code=$?
@@ -111,6 +111,12 @@ for role in "${roles[@]}"; do
     pass "$role ignores the user config, its hooks, and its plugins, and takes only the model and the effort from it"
   else
     fail "$role does not ignore the user config: $args"
+  fi
+  if ! grep -q leaked "$tmp/fake/$role.env" && grep -qx GIT_CONFIG_GLOBAL=/dev/null "$tmp/fake/$role.env" \
+    && grep -qx "CODEX_HOME=$tmp/codex-home" "$tmp/fake/$role.env"; then
+    pass "$role gets a scrubbed environment with no credential variable and no global git config"
+  else
+    fail "$role environment: $(tr '\n' ' ' < "$tmp/fake/$role.env")"
   fi
   [[ $role == blast-radius ]] && continue
   expected="$role: $tmp/out/$role.json"

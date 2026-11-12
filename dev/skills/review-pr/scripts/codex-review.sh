@@ -36,6 +36,11 @@ while IFS= read -r flag; do config_flags+=(-c "$flag"); done < <(
     /^(model|model_reasoning_effort)[[:space:]]*=/ { sub(/[[:space:]]*=[[:space:]]*/, "="); sub(/[[:space:]]+#.*$/, ""); print }' \
     "${CODEX_HOME:-$HOME/.codex}/config.toml" 2>/dev/null)
 
+# Codex runs outside the Claude sandbox, so it gets no variable of the caller,
+# such as a cloud token. Git in the run reads no global config under $HOME.
+codex_env=(env -i HOME="$HOME" PATH="$PATH" LANG="${LANG:-en_US.UTF-8}" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+  ${CODEX_HOME:+"CODEX_HOME=$CODEX_HOME"})
+
 # Print the body of the agent file of a role, with no frontmatter.
 agent_body() { awk 'n >= 2; /^---$/ { n++ }' "$here/../../../agents/$1.md"; }
 
@@ -88,7 +93,7 @@ run_role() { # role, directory, base profile
   local answer=$out_dir/$role.answer.json
   rm -f "$out_dir/$role.json" "$answer"
   prompt "$role" "$dir" > "$out_dir/$role.prompt"
-  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" codex exec \
+  perl -e 'alarm shift; exec @ARGV or die' "$time_limit" "${codex_env[@]}" codex exec \
     --ignore-user-config --ignore-rules --disable hooks --disable plugins --disable apps \
     --disable computer_use --disable browser_use ${config_flags[@]+"${config_flags[@]}"} -C "$dir" \
     -c default_permissions='"review"' -c permissions.review.extends="\"$base_profile\"" \
