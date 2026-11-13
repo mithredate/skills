@@ -21,9 +21,10 @@ For each finding:
 2. If the finding is about behavior, reproduce it with a command when you can. Examples are a test run, a call with the input that the finding names, and `git show <base>:<path>`.
 3. If the finding depends on how a library behaves, check the library's current documentation once with Context7. Call `resolve-library-id`, then call `query-docs`. A memorised API is not evidence.
 4. Check each instance against the base commit. If the base commit has the instance too, in code that the diff does not change, the instance is `pre_existing`. List it in `pre_existing`, not in `refuted_instances`.
-5. For a `discrepancy`, read the brief. A line in its Decisions binds the diff. A diff that departs from any other how in the brief is not a discrepancy.
+5. Read the brief for each finding. If a line of the brief requires the code that the finding reports, cite that line in `evidence`.
+6. For a `discrepancy`, read the brief. A line in its Decisions binds the diff. A diff that departs from any other how in the brief is not a discrepancy.
 
-A finding is `confirmed` when at least one of its instances holds and is not `pre_existing`. List each instance that does not hold in `refuted_instances`. If the code holds the defect, and the only reason against the finding is that the brief requires the code, the verdict is `brief_conflict`. Otherwise, the finding is `refuted`.
+A finding is `confirmed` when at least one of its instances holds and is not `pre_existing`. List each instance that does not hold in `refuted_instances`. If the defect holds only because a brief line requires the code, the verdict is `brief_conflict`, not `confirmed`. Otherwise, the finding is `refuted`.
 
 Do not change a file. Run a command only to reproduce a defect. Do not write a fix.
 
