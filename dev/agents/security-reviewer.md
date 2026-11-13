@@ -26,7 +26,7 @@ The prompt gives you the path of a file that holds the diff, the brief, and the 
 - Auth: an authentication bypass, a privilege escalation, a session flaw, a JWT flaw, and an authorization bypass.
 - Crypto and secrets: a hardcoded key or token, a weak algorithm, bad key storage, weak randomness, and a certificate check bypass.
 - Code execution: unsafe deserialization, eval injection, and XSS.
-- Data exposure: a secret or PII in a log or a response, and debug output in production.
+- Data exposure: a secret or PII in a log or a response, and debug output in production. A log line holds only the fields that a reader needs. A direct identifier in a log or a cache key is a finding. Examples are an email and a name. An internal id is pseudonymised personal data under GDPR. It is a finding where the project convention does not allow it.
 
 Do not report these:
 
