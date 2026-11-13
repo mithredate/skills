@@ -37,7 +37,7 @@ Check the brief before you write it to its file:
 3. Each Verification check is a real command with real data.
 4. The Terms line names each domain term that the change touches, or says `none`. Each edge case of the change is an FR line.
 5. Start one agent with the brief, the design doc if one exists, and the AGENTS.md or CLAUDE.md of each target. Tell it to check them against the repo conventions and the security model of each target. A line that tells the build to copy code needs evidence that the copy is right. An identity mapped from a token claim needs evidence that the claim identifies the person. Tell it also to count the lines that the change can add or change, without generated files. Fix each gap that it finds.
-6. If the count is over 800 lines, split the change into incremental briefs. Each brief can merge alone. In a hand-off, each brief is its own build ticket. Reviewers report a larger diff as too large to review.
+6. If the count is over 800 lines, split the change into incremental briefs. Each brief can merge alone. Reviewers report a larger diff as too large to review. In a hand-off, each brief is its own build ticket, with a `blocked-by` edge to the build ticket before it. Outside a hand-off, stop, and tell the user to chart the change with `productivity:orchestrate`.
 
 ## Hand off
 
