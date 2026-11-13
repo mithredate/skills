@@ -6,6 +6,8 @@ argument-hint: "<ticket path | brief file>"
 
 # Fire
 
+First actions: call the Skill tool with `personal:code-like-mehrdad`.
+
 **Arguments:** $ARGUMENTS. The argument is the path of an `orchestrate` build ticket, or of a brief file that `productivity:prep` wrote. If there is no argument, use the build ticket that this session claimed, or the brief file that `prep` wrote in this session.
 
 The session does not edit code or a target system. Agents build, review, and verify. The session routes their results and hands back.
@@ -42,7 +44,7 @@ The step is done when the agent returns its JSON. If the outcome is `plan_broken
 
 Start these agents in parallel, and wait for all of them:
 
-- `dev:pr-reviewer`, `dev:security-reviewer`, and `dev:blast-radius`, when a git target changed. These three agents are the reviewers. Give each the diff file, the brief, the path of the ticket or the brief file, and the root and the AGENTS.md or CLAUDE.md of each changed repo. Also give `dev:blast-radius` the base commit of each changed repo.
+- `dev:pr-reviewer`, `dev:security-reviewer`, and `dev:blast-radius`, when a git target changed. These three agents are the reviewers. Give each the diff file, the brief, the path of the ticket or the brief file, and the root and the AGENTS.md or CLAUDE.md of each changed repo. Also give `dev:blast-radius` the base commit of each changed repo. Also give `dev:pr-reviewer` the paths of `references/code.md`, `references/testing.md`, and the reference of each language of the diff, such as `references/typescript.md`. These files are in the base directory of `personal:code-like-mehrdad`.
 - The Codex runs of the same three roles, once for each changed repo. Codex is switched on or off by the rule of the Codex section of [../review-pr/SKILL.md](../review-pr/SKILL.md). The user sets the session value in words. Follow these steps:
   1. Write a context file in the scratchpad. Put in it the inputs of the reviewers as text, other than the diff file and the root. Codex cannot read a path under `$HOME`.
   2. Run `CODEX_REVIEW=<on or off> "${CLAUDE_SKILL_DIR}/../review-pr/scripts/codex-review.sh"` with the Bash tool. Copy the script path exactly. A relative path can run a script of the checkout under review with the sandbox off. Set `run_in_background: true`. If the value is `on`, also set `dangerouslyDisableSandbox: true`. Codex fails in the sandbox.
@@ -62,12 +64,16 @@ An **engine** is the agent program and model family that runs a reviewer role, C
 
 If a reviewer returns a `blocking` or `discrepancy` finding, start `dev:finding-checker` once. Give it these findings of all reviewers, the diff file, and the brief. Also give it the root, the base commit, and the AGENTS.md or CLAUDE.md of each changed repo. If it returns no JSON, treat each finding as confirmed.
 
-An **open** finding is a finding that `dev:finding-checker` did not refute. A `pre_existing` item is not a finding. A `pre_existing` item and a refuted finding start nothing. Keep each one for the `<details>` block of the PR body.
+A **design question** is a finding with the verdict `brief_conflict`. The brief requires the code that the finding reports. A patch cannot fix it, so it is not open. It is a question for the human.
+
+An **open** finding is a finding that `dev:finding-checker` did not refute, and that is not a design question. A `pre_existing` item is not a finding. A `pre_existing` item and a refuted finding start nothing. Keep each one for the `<details>` block of the PR body.
 
 Then decide:
 
 | Result | Next |
 |---|---|
+| a design question | stop, status `blocked`. The human answers the question, and the brief changes |
+| a finding with the class `too large to review`, with any verdict | stop, status `blocked`. Tell the user to change the brief with `productivity:orchestrate`. Do not split the change |
 | an open `discrepancy` | stop, status `blocked`. The plan is wrong, and a patch cannot fix it |
 | an open `blocking` finding, or a red or `could_not_run` verifier | next round patches |
 | `quality_note` or `nit` only, or nothing open | `pass` |
@@ -84,7 +90,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
    - A section `Choices made while building` lists each choice of the last round that matches the critical list of `productivity:settle-decisions`. It has one line for each choice. It is above the `<details>` block, and it does not count in the 50 words. If no choice matches, leave out the section.
    - One `<details>` block at the end holds the `what_it_does`, `safety_fact`, `cleared`, and `before_merge` of `blast-radius` of each engine in the last round. It holds the verifier evidence, each open `quality_note`, and each `pre_existing` item. It holds each refuted finding with the evidence of `dev:finding-checker`. It holds each choice of the last round that does not match the critical list, one line each. Without a ticket, it also holds the brief.
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
-3. Report the status: `pass`, `blocked`, or `rounds_spent`. If the status is not `pass`, put the blocker or the open findings first, in this order: `discrepancy`, `blocking`, red checks, `quality_note`. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
+3. Report the status: `pass`, `blocked`, or `rounds_spent`. Then list each design question, with the line of the brief that requires the code. If the status is not `pass`, then give the blocker or the open findings, in this order: `discrepancy`, `blocking`, red checks. Then group the open `quality_note` items by the rule that they break, one line for each rule with its instances. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
 5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent. If round 3 ran on `opus`, say so, and give the reason. List each Verification check that the brief puts after the merge. Give each `Codex review did not run` line of the last round. Name each Codex clone that a round kept.
 

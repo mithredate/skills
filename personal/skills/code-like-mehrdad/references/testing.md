@@ -15,6 +15,7 @@ This rubric states how to write and judge tests. Use it when you write tests, ch
 
 ## Fixtures
 
+- **Build with the factory.** A test builds an entity with the existing factory. It sets each value that the assertion reads. A helper that remains is `createX` when it persists the entity, and `makeX` when it does not.
 - **Reuse before creating.** Never introduce a parallel fixture builder for an entity that already has one. Search the shared fixtures folder of the project first, such as `tests/fixtures/`.
 - **Placement follows usage scope**: a builder used by multiple test files lives in the shared fixtures folder. Builders there are organized per layer. A builder used by a single test file stays local to that file.
 - **Compose, don't fork.** Derive a variant from an existing builder, for example `toUserDTO(makeUser(...))`. Do not write a sibling builder.
