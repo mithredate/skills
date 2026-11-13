@@ -21,7 +21,7 @@ description: Use when writing a skill, an agent file, a reference, a PR body, a 
 ## Sentences
 
 - Write short sentences. Write one idea per sentence.
-- An **agent text** is a text that agents read, such as a skill, an agent file, a reference, or a brief. The `<details>` block of a PR body is an agent text too.
+- An **agent text** is a text that agents read, such as a skill, an agent file, a reference, or a brief. The text for agents at the end of any text is an agent text too. An example is the `<details>` block of a PR body.
 - In an agent text, a procedure sentence has 20 words maximum. A description sentence has 25 words maximum. Write one instruction per sentence.
 - A text that people read has no word limit per sentence. Examples are a chat message, a report, a PR body, and a review finding.
 - Use the active voice. Name the actor: "the agent", "the user", "you".
