@@ -38,7 +38,7 @@ STE is a standard for English only. The rules of this file apply to a text in an
 - Do not join independent clauses with a semicolon or a colon. Write two sentences.
 - Do not use an arrow, a slash for "or", or parentheses that hold a second idea. Write the second idea as its own sentence.
 - Use articles: "the manifest", "a rule". Do not write "manifest lists scripts".
-- Write an action as a verb. Do not make the action a noun, and do not open a sentence with that noun. In English, that noun is the -ing form. Write "Check the manifest", not "Checking the manifest".
+- Do not open a sentence with a noun or a participle that is made from a verb. In English, that form is the -ing form. Write "Check the manifest", not "Checking the manifest".
 - Put no more than three nouns in a row. A compound word is a row of nouns, so count each noun in it.
 
 ## Paragraphs and lists
