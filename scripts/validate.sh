@@ -64,6 +64,7 @@ node --test */hooks/*.test.mjs || failed=1
 echo
 echo "→ script tests"
 scripts/score-reviewer.test.sh || failed=1
+scripts/score-writing.test.sh || failed=1
 scripts/check-score-lines.test.sh || failed=1
 scripts/check-descriptions.test.sh || failed=1
 dev/skills/review-pr/scripts/codex-review.test.sh || failed=1

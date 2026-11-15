@@ -7,12 +7,20 @@ description: Use when writing a skill, an agent file, a reference, a PR body, a 
 
 **Simplified Technical English** (STE) is the ASD-STE100 controlled language. This file holds the subset we apply to every text that we author. Vendored skills are exempt. The specification is free on registration at https://www.asd-ste100.org/.
 
+STE is a standard for English only. The rules of this file apply to a text in any language.
+
+## Language
+
+- Name the language of the text before you write or check it. A technical name or a quote in another language does not change the language.
+- Apply each rule in that language. An example shows the pattern of a rule. It is not the full list of its cases.
+- The word lists of this file are English. For a text in another language, apply the rule behind each list. Write in your answer that no word list exists for that language.
+
 ## Words
 
 - One word has one meaning. Use the same word for the same thing in the whole file. Do not vary words for style.
 - Prefer the short common verb: do, use, make, start, stop, check, write, read, delete, move, run, open, close, list, show, give, get, keep, put.
-- These words are not allowed: perform, utilize, initiate, terminate, facilitate, leverage, ensure, groom, prior to, in order to. Write "make sure" for ensure, "refine" for groom, "before" for prior to, and "to" for in order to.
-- Do not write "should" or "may". Write "must" for a rule and "can" for a possibility.
+- Do not use a formal word or a jargon word where a short common word exists. In English, these words are not allowed: perform, utilize, initiate, terminate, facilitate, leverage, ensure, groom, prior to, in order to. Write "make sure" for ensure, "refine" for groom, "before" for prior to, and "to" for in order to.
+- Write a rule as a duty and a possibility as a possibility. Do not use a word that makes a rule optional. In English, do not write "should" or "may". Write "must" for a rule and "can" for a possibility.
 - Do not use metaphors, idioms, or images. A word such as "frontier" is allowed only as a defined term of the file.
 - Do not use a noun as a verb or a verb as a noun. Write "check", not "do a check".
 - A technical name is a fixed word. This includes a file name, a command, a tool, a flag, and a defined term. Keep it exactly. Put it in backticks.
@@ -30,8 +38,8 @@ description: Use when writing a skill, an agent file, a reference, a PR body, a 
 - Do not join independent clauses with a semicolon or a colon. Write two sentences.
 - Do not use an arrow, a slash for "or", or parentheses that hold a second idea. Write the second idea as its own sentence.
 - Use articles: "the manifest", "a rule". Do not write "manifest lists scripts".
-- Do not use an -ing form as a noun or as a sentence opener. Write "Check the manifest", not "Checking the manifest".
-- Put no more than three nouns in a row.
+- Do not open a sentence with a noun or a participle that is made from a verb. In English, that form is the -ing form. Write "Check the manifest", not "Checking the manifest".
+- Put no more than three nouns in a row. A compound word is a row of nouns, so count each noun in it.
 
 ## Paragraphs and lists
 
