@@ -1,0 +1,93 @@
+schema_version: "1.1"
+name: english-chat
+tags: [writing]
+execution:
+  timeout_seconds: 600
+  allowed_tools: [Skill, Read]
+  prompt: |
+    Call the Skill tool with `productivity:write-ste`, and then with `productivity:unslop`. Check the text between the two lines below with both skills. It is a text that people read. Do not rewrite it.
+
+    ---
+    Checking the manifest should be performed prior to deployment. The team must groom the backlog first.
+
+    The user account settings page serves as a testament to our seamless design — it isn't just fast, it's pivotal. From this vantage, the interplay of the modules garners trust, highlighting the importance of the release.
+
+    In order to utilize the tool, the script is run by the agent. I hope this helps!
+    ---
+
+    Reply with the findings only. Write one finding per line, in this format: `quoted words || skill || rule`. The skill is `write-ste` or `unslop`. For `unslop`, the rule is the rule number. For `write-ste`, the rule is a few words of the rule. List every hit, and do not filter by importance. If a skill tells you to write something more in your answer, write it on a line that starts with `NOTE:`.
+graders:
+  - name: loads-write-ste
+    type: tool_used
+    tool: Skill
+    input_match: 'write-ste'
+  - name: loads-unslop
+    type: tool_used
+    tool: Skill
+    input_match: 'unslop'
+  - name: ste-ing-opener
+    type: regex
+    pattern: 'Checking[^\n]*write-ste'
+  - name: ste-should
+    type: regex
+    pattern: 'should[^\n]*write-ste'
+  - name: ste-perform
+    type: regex
+    pattern: 'perform[^\n]*write-ste'
+  - name: ste-prior-to
+    type: regex
+    pattern: 'prior to[^\n]*write-ste'
+  - name: ste-groom
+    type: regex
+    pattern: 'groom[^\n]*write-ste'
+  - name: ste-in-order-to
+    type: regex
+    pattern: '[Ii]n order to[^\n]*write-ste'
+  - name: ste-utilize
+    type: regex
+    pattern: 'utilize[^\n]*write-ste'
+  - name: ste-four-nouns
+    type: regex
+    pattern: '(account settings|settings page)[^\n]*write-ste'
+  - name: ste-active-voice
+    type: regex
+    pattern: 'run by[^\n]*write-ste'
+  - name: unslop-3-trailing-phrase
+    type: regex
+    pattern: 'highlighting[^\n]*unslop[^\n]*\b3\b'
+  - name: unslop-7-testament
+    type: regex
+    pattern: 'testament[^\n]*unslop[^\n]*\b7\b'
+  - name: unslop-7-pivotal
+    type: regex
+    pattern: 'pivotal[^\n]*unslop[^\n]*\b7\b'
+  - name: unslop-7-interplay
+    type: regex
+    pattern: 'interplay[^\n]*unslop[^\n]*\b7\b'
+  - name: unslop-7-garner
+    type: regex
+    pattern: 'garner[^\n]*unslop[^\n]*\b7\b'
+  - name: unslop-8-serves-as
+    type: regex
+    pattern: 'serves as[^\n]*unslop[^\n]*\b8\b'
+  - name: unslop-9-not-just
+    type: regex
+    pattern: 'just[^\n]*unslop[^\n]*\b9\b'
+  - name: unslop-13-em-dash
+    type: regex
+    pattern: '(—|dash)[^\n]*unslop[^\n]*\b13\b'
+  - name: unslop-20-chatbot-phrase
+    type: regex
+    pattern: 'hope this helps[^\n]*unslop[^\n]*\b20\b'
+  - name: unslop-23-in-order-to
+    type: regex
+    pattern: '[Ii]n order to[^\n]*unslop[^\n]*\b23\b'
+  - name: unslop-26-vantage
+    type: regex
+    pattern: 'vantage[^\n]*unslop[^\n]*\b26\b'
+  - name: unslop-29-passive
+    type: regex
+    pattern: '(run by|performed)[^\n]*unslop[^\n]*\b29\b'
+  - name: unslop-31-utilize
+    type: regex
+    pattern: 'utilize[^\n]*unslop[^\n]*\b31\b'

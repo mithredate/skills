@@ -1,0 +1,53 @@
+schema_version: "1.1"
+name: other-german
+tags: [writing]
+execution:
+  timeout_seconds: 600
+  allowed_tools: [Skill, Read]
+  prompt: |
+    Call the Skill tool with `productivity:write-ste`, and then with `productivity:unslop`. Check the text between the two lines below with both skills. It is a text that people read. Do not rewrite it.
+
+    ---
+    Die Prüfung der Konfigurationsdatei erfolgt vor dem Start. So funktioniert das Werkzeug: Es liest die Benutzerkontoeinstellungsseite und speichert die Werte. Die Datei wird vom Skript gelesen — das Werkzeug ist nicht nur schnell, sondern auch zuverlässig. Der Nutzer sollte die Werte mittels der Übersicht prüfen.
+    ---
+
+    Reply with the findings only. Write one finding per line, in this format: `quoted words || skill || rule`. The skill is `write-ste` or `unslop`. For `unslop`, the rule is the rule number. For `write-ste`, the rule is a few words of the rule. List every hit, and do not filter by importance. If a skill tells you to write something more in your answer, write it on a line that starts with `NOTE:`.
+graders:
+  - name: loads-write-ste
+    type: tool_used
+    tool: Skill
+    input_match: 'write-ste'
+  - name: loads-unslop
+    type: tool_used
+    tool: Skill
+    input_match: 'unslop'
+  - name: says-no-word-list
+    type: regex
+    pattern: '[Nn]o[^\n]*word list'
+  - name: ste-action-as-noun
+    type: regex
+    pattern: 'Prüfung[^\n]*write-ste'
+  - name: ste-colon
+    type: regex
+    pattern: 'So funktioniert das Werkzeug[^\n]*write-ste'
+  - name: ste-compound
+    type: regex
+    pattern: 'Benutzerkontoeinstellungsseite[^\n]*write-ste'
+  - name: ste-soft-duty
+    type: regex
+    pattern: 'sollte[^\n]*write-ste'
+  - name: ste-formal-word
+    type: regex
+    pattern: 'mittels[^\n]*write-ste'
+  - name: unslop-9-not-only
+    type: regex
+    pattern: 'nicht nur[^\n]*unslop[^\n]*\b9\b'
+  - name: unslop-13-em-dash
+    type: regex
+    pattern: '(—|dash|Gedankenstrich)[^\n]*unslop[^\n]*\b13\b'
+  - name: unslop-14-colon
+    type: regex
+    pattern: 'So funktioniert das Werkzeug[^\n]*unslop[^\n]*\b14\b'
+  - name: unslop-29-passive
+    type: regex
+    pattern: 'gelesen[^\n]*unslop[^\n]*\b29\b'
