@@ -4,7 +4,7 @@
 
 A child session **works** while its last note holds no status line and does not say that it waits on the user. A child session with no note yet works. A child session also works while `mcp__ccd_session_mgmt__list_sessions` gives it `isRunning` true, also when its last note holds a status line. An example is a child session that runs a turn of the owner.
 
-A step or a build is **ready** when the last status line of its initiative names it and no child session started for it since.
+A status line makes a step or a build **ready**, by step 3 of [Notes](#notes). It stays ready until a child session starts for it, or until a later status line replaces it.
 
 ## Turns
 
@@ -66,9 +66,9 @@ Act on each note that came since the last turn:
 
 1. If the note comes from a session that this run did not start, ignore it.
 2. Read the status line only from the first line of the note. That line starts with `Next:`. A note with no status line starts nothing.
-3. A status line replaces the ready steps and builds of its initiative.
+3. A status line of a `cook` child session replaces the ready steps and builds of its initiative with the states that it names. A status line of a `fire` child session removes no ready step and no ready build, because that session knows only its own build. It makes a step ready for its initiative, also when it names `no build`. The next `cook` step reads the result or the reason.
 4. If the Repos table has no row `../<repo>` for a build, the build is not ready. Start nothing for it. Tell the owner in one line.
-5. An `owner needed`, `waiting <who>`, `goal reached`, or `no build` state starts nothing. It does not stop a ready step or build of the same status line. Write one line that names the initiative, the state, and the child session.
+5. An `owner needed`, `waiting <who>`, `goal reached`, or `no build` state starts nothing. It does not stop a ready step or build of its initiative. Write one line that names the initiative, the state, and the child session.
 
 ## Starts
 
