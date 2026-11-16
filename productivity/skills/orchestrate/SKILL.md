@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Use in a `.initiatives/` repo, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
+description: Use for a `.initiatives/` repo, for work beyond one session, or on "chart", "cook", "orchestrate run", "orchestrate fire", "close", or "prioritize".
 ---
 
 # Orchestrate
