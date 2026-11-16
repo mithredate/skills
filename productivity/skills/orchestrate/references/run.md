@@ -32,7 +32,7 @@ These rules of the desktop app held on 2026-11-16. They decide which turn can st
 ## Start
 
 1. If the session has no `mcp__ccd_session__start_session` tool, tell the owner to use `cook`. Then stop.
-2. Find the name of the default branch of `origin`. It is the part after `origin/` in the output of `git rev-parse --abbrev-ref origin/HEAD`. If the command fails, tell the owner. Then stop. The tracker is on that branch, because `orchestrate fire` clones it.
+2. Read the name of the default branch of `origin` with `git ls-remote --symref origin HEAD`. The name is the part after `ref: refs/heads/` in the first line of the output, up to the tab. A local `origin/HEAD` can be stale, so do not read it. Use the name only when it holds only letters, digits, `.`, `_`, `-`, and `/`. The prompt of a `cook` child session puts the name in shell commands. If the command fails, or the name holds another character, tell the owner. Then stop. The tracker is on that branch, because `orchestrate fire` clones it.
 3. If the owner names no initiative, ask the owner which initiatives to run. Do not read the index for a list.
 4. Read the Repos table in the `AGENTS.md` of this repo. A build starts only in a repo of that table. The table guards the path of a build start. The consent for a build is the `approved:` line of its ticket, and `orchestrate fire` step 3 checks it.
 5. Find the main checkout of this repo. It is the parent of the directory that `git rev-parse --path-format=absolute --git-common-dir` prints.
