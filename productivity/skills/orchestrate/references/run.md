@@ -42,17 +42,17 @@ These rules of the desktop app held on 2026-11-16. They decide which turn can st
 
 Call `mcp__ccd_session__start_session` with `initiation: "user_asked"`, because the owner asked for the run. Give a `background` of 80 characters or more that names the run and the initiative. The app refuses a shorter one. End each prompt with the line `The orchestrator session of orchestrate run started this session.` Do not start that line with `orchestrate run`, because such a line is an `orchestrate run` call.
 
-- For a `cook` child session, give the title `cook <dir>` and the model `opus`. Set `use_worktree: true`, and set `source_branch` to the default branch. Give no `cwd`, because the app refuses it on a wake-up turn. The child session then works in its own worktree, so no two child sessions stage files in one checkout. Give it this prompt, with the initiative in place of `<dir>` and the default branch in place of `<branch>`:
+- For a `cook` child session, give the title `cook <dir>` and the model `opus`. Set `use_worktree: true`, and set `source_branch` to the default branch. Give no `cwd`, because the app refuses it on a wake-up turn. The child session then works in its own worktree, so no two child sessions stage files in one checkout. The local default branch can hold commits of the owner that are not on `origin`. So the prompt moves the worktree to the published state, and the child session pushes only its own commits. Give it this prompt, with the initiative in place of `<dir>` and the default branch in place of `<branch>`:
 
   ```
   orchestrate cook <dir>
   Take one step. If cook step 5 sends you back to step 2, go on to step 6. Then name `step ready` in the status line.
-  Before you read the index, run `git fetch origin` and `git merge --no-edit origin/<branch>`. The tracker is on that branch.
+  Before you read the index, run `git fetch origin` and `git switch --detach origin/<branch>`. The tracker is on that branch. Do not merge a local branch, because it can hold commits that are not published.
   Stage and commit by path only the files that you changed yourself. These include the files that your sweep wrote, such as `.initiatives/sources.md`.
-  Before cook step 6, commit your changes, then fetch and merge `origin/<branch>` again. If cook step 2 sends you to step 7, do this before step 7.
+  Before cook step 6, commit your changes, then run `git fetch origin` and `git merge --no-edit origin/<branch>`. If cook step 2 sends you to step 7, do this before step 7.
   Two child sessions can change neighbouring lines of the index or of `.initiatives/sources.md`. So write the `sources.md` rows of your first sweep only after this merge.
   Push with `git push origin HEAD:<branch>`. If the push fails, fetch and merge `origin/<branch>` again, and push again.
-  If a merge fails or conflicts, stop the step. If a merge is open, run `git merge --abort` in this worktree. Change nothing else.
+  If a fetch or the switch fails, or a merge fails or conflicts, stop the step. If a merge is open, run `git merge --abort` in this worktree. Change nothing else.
   Then name `owner needed` in the status line, and give the reason in the next line.
   The orchestrator session of orchestrate run started this session.
   ```
