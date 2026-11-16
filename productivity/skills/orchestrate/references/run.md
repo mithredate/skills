@@ -50,6 +50,8 @@ Call `mcp__ccd_session__start_session` with `initiation: "user_asked"`, because 
   Never rebase and never stash, because other sessions share this folder.
   Stage by path only the files that you changed yourself. These include the files that your sweep wrote, such as `.initiatives/sources.md`. Give the same paths to `git commit`, because other sessions stage in this folder.
   If the push fails, run `git pull --no-rebase` and push again.
+  If a pull fails or conflicts, stop the step. If a merge is open, run `git merge --abort`. Change nothing else.
+  Then name `owner needed` in the status line, and give the reason in the next line.
   orchestrate run started this session.
   ```
 
