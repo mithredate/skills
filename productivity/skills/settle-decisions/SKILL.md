@@ -12,7 +12,7 @@ Map the decisions as a **design tree**. In the tree, each decision branches into
 Sort each frontier decision before you act on it:
 
 1. If the decision is not critical, make it. Use evidence when evidence settles it. Evidence is the code, the docs, a prototype, or a measurement. If evidence does not settle it, pick the option you can defend, and write a hypothesis.
-2. If a critical decision has one defensible option, or evidence settles it, do not wait for a yes. First check each fact that the decision rests on in the code, the data, or the docs. This includes your own statements. Then make the decision and record the evidence. If the choice cannot be undone, such as lost data or a message sent to people, wait for a yes.
+2. If a critical decision has one defensible option, or evidence settles it, do not wait for the human's yes. First check each fact that the decision rests on in the code, the data, or the docs. This includes your own statements. Then make the decision and record the evidence. If the choice cannot be undone, such as lost data or a message sent to people, get a yes first.
 3. If evidence does not settle a critical decision and more than one option is defensible, put it to the human in a round.
 
 If the stated goal of the human implies a choice inside that goal, the goal is the answer of the human. Make the choice and record it. Ask about a choice that widens the scope or reverses a decision of the human.

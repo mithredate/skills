@@ -42,7 +42,7 @@
 
   <rect class="box" x="338" y="104" width="200" height="64" rx="12"/>
   <text class="t" x="438" y="131">orchestrate</text>
-  <text class="h" x="438" y="154">you approve each brief</text>
+  <text class="h" x="438" y="154">you answer its questions</text>
 
   <path class="ln" d="M138 168 V194 H438 V168"/>
   <path class="ln" d="M288 194 V220" marker-end="url(#arrow)"/>

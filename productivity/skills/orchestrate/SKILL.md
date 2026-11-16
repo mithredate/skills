@@ -76,15 +76,15 @@ The user gives a loose idea. Charting is one session's work. It resolves no tick
 If the user names no initiative, ask the user which initiative to work. Claim no ticket until the user names the initiative. One session takes every ticket that the next step toward the goal needs, so the human answers one round, not one session for each ticket. `orchestrate fire` builds a ticket whose brief targets a git repo, so `cook` never claims one. A build for another system, such as an n8n instance, opens no PR for a human to review. So `cook` claims it only when the user names it, and runs it with the user present.
 
 1. Read `initiative.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
-2. Start from the goal. Name the next step toward it that a person or an agent can take now. Claim the open tickets that this step cannot start without, or the tickets that the user names. Check that need against the step itself, because a `blocked-by` edge can be stale. Do not claim a `gate`, or a build ticket for a git repo. List the other open tickets as "not needed now", with no question to the user. If the next step is a gate, give the user its checklist. List each ready build ticket as approved or as waiting for a yes. Show the brief of each waiting ticket. Ask the user for a yes. Then go to step 7.
-   - Only the user's yes to a brief that you showed in this session adds `approved:`. A request to cook or to build is not a yes.
+2. Start from the goal. Name the next step toward it that a person or an agent can take now. Claim the open tickets that this step cannot start without, or the tickets that the user names. Check that need against the step itself, because a `blocked-by` edge can be stale. Do not claim a `gate`, or a build ticket for a git repo. List the other open tickets as "not needed now", with no question to the user. If the next step is a gate, give the user its checklist. Do the checks of `productivity:prep` for each ready build ticket with a brief and no `approved:`. Then go to step 7.
+   - If the checks pass, add `approved:` to the build ticket. If a decision for the human stops it, write the decision as its own ticket. Add that ticket to the `blocked-by` of the build ticket. If no human is in the session, name `owner needed` in the status line.
 3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in the rounds of `productivity:settle-decisions`.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under Decisions so far in `initiative.md`. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
    - If `fire` returns `pass` and `not merged` for a build with no review gate, write a review `gate` ticket for its PR. Add the gate to the `blocked-by` of each open ticket that has the build ticket in its `blocked-by`.
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the goal, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If a ticket without a brief that is not a `gate` is now ready, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
-7. Update the one-line state in the index row of this initiative, in the limit of [The index](#the-index). Change no other row. Give the number of ready build tickets that are approved and the number that wait for a yes, not their titles. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
+7. Update the one-line state in the index row of this initiative, in the limit of [The index](#the-index). Change no other row. Give the number of ready build tickets that are approved, not their titles. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
 8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message. Start the final message with the [status line](#the-status-line).
 
 The user can run other sessions on other ready tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the initiative, and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
@@ -113,7 +113,7 @@ Each stop before step 5 builds nothing. This includes a stop after a failed push
 The **status line** is the first line of a report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. The orchestrator session reads it from a note that holds only the start of the report.
 
 - Start the final report with the status line. Write it before the three-line digest of `personal:work-like-mehrdad`, because the note holds only the start of the report.
-- When a later turn changes what the initiative needs next, start its report with a new status line. An example is the turn of the owner's yes to a brief.
+- When a later turn changes what the initiative needs next, start its report with a new status line. An example is the turn of the owner's answer to a question.
 - If the session writes a wrap-up recap, make the status line the first sentence of the recap too.
 - The prompt of a child session says that `orchestrate run` started it. In a child session, a turn that the owner starts can make a step or a build ready. Then ask the owner in the report for one message in the orchestrator session.
 
@@ -121,7 +121,7 @@ Write it as `Next: <state>, <state>.` Name each state that applies:
 
 - `step ready`: another `cook` step can start now.
 - `build ready for <repo>`: a build ticket is ready by the rule of [references/format.md](references/format.md). It has `approved:` and a Targets line that names only `<repo>`. Write `<repo>` as one directory name, with no `/` and no `..`. An example is `api` for the row `../api` of the Repos table in `AGENTS.md`. Name one state for each repo.
-- `owner needed`: the next step waits for the owner, for example a gate or a brief that waits for a yes.
+- `owner needed`: the next step waits for the owner, for example a gate or a ticket with a question for the owner.
 - `waiting <who>`: the initiative waits for another person.
 - `goal reached`: the `Closes when` sentence of the Goal is true.
 - `no build because <reason>`: `orchestrate fire` stopped before it built. Write the reason.
