@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Use in a `.initiatives/` repo, to set one up, for work too big for a session, or on "chart", "cook", "orchestrate fire", "close", or "prioritize".
+description: Use in or to set up `.initiatives/`, for multi-session work, or on "chart", "cook", "orchestrate run", "orchestrate fire", "close", or "prioritize".
 ---
 
 # Orchestrate
@@ -22,6 +22,8 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 - Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
 - `orchestrate fire` reads the index in its clone and changes nothing in it. It skips the repair, the cut, and the sweep, because it commits only tickets and `initiative.md`.
+- `orchestrate run` reads nothing in the tracker. It skips the index read, the repair, the cut, and the sweep. Each `cook` session that it starts does them in its own context.
+- A `cook` session that `orchestrate run` started works only on its own initiative, as `orchestrate fire` does. It repairs and cuts only its own index row. It gives sweep only its own initiative, and no `waiting` row of another initiative. Such sessions run at the same time, so two of them must not write the same line.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. Only an `open` row is takeable.
@@ -83,21 +85,46 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the goal, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If a ticket without a brief that is not a `gate` is now ready, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the one-line state in the index row of this initiative, in the limit of [The index](#the-index). Change no other row. Give the number of ready build tickets that are approved and the number that wait for a yes, not their titles. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
-8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
+8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message. Start the final message with the [status line](#the-status-line).
 
 The user can run other sessions on other ready tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the initiative, and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
 
 ## fire
 
-`orchestrate fire <orchestrator repo path>` builds one approved build ticket with no human. Run it in a session in the target repo, because `EnterWorktree` reaches only the repo of the session. A scheduled task can start it.
+`orchestrate fire <orchestrator repo path> [<dir>]` builds one approved build ticket with no human. Run it in a session in the target repo, because `EnterWorktree` reaches only the repo of the session. A scheduled task can start it.
+
+Each stop before step 5 builds nothing. This includes a stop after a failed push in step 4. Start the final message of such a stop with the `no build` [status line](#the-status-line).
 
 1. Clone the orchestrator repo from its `origin` into the scratchpad. Read and change tickets only in this clone, because the user's checkout can hold work in progress.
 2. If an open ticket has an `assignee` that starts with `orchestrate fire`, and its time is less than 4 hours ago, stop, because one build runs at a time. If its time is older, send a `PushNotification` that names the ticket. Then stop.
-3. Pick a ready ticket in the initiative of a takeable index row. It must have `approved:` and a Targets line that names only this repo. If several match, pick the oldest `approved:` date. If none matches, stop.
+3. Pick a ready ticket in the initiative of a takeable index row. If the call gives `<dir>`, pick only a ticket of that initiative. The ticket must have `approved:` and a Targets line that names only this repo. If several match, pick the oldest `approved:` date. If none matches, stop.
 4. Set its `assignee` to `orchestrate fire <UTC time>` with the Edit tool, because the hook of step 5 does not watch Bash. Commit only that ticket file, and push. If the push fails, stop, because another run can hold the claim. Do not pull and push again.
 5. The claim makes a hook tell you to call the Skill tool with `dev:fire`. Call it before your next tool call, as the hook says. Start the first step of `dev:fire` only after the push of step 4. Give it the ticket path in the clone.
 6. Record the result by `cook` step 4. Commit only `initiative.md` and the tickets that `cook` step 4 changed or wrote, and push. If the push fails, pull with rebase and push again.
 7. Send a `PushNotification` with the `fire` status and the PR links.
+8. Start the final message with the [status line](#the-status-line). After step 6, `step ready` applies, because the next `cook` step reads the result.
+
+## run
+
+`orchestrate run <dir> ...` runs the steps of the named initiatives in sessions that it starts. It calls the owner only for a human step. The **orchestrator session** is the session that runs `orchestrate run`. A **child session** is a session that it starts. Read [references/run.md](references/run.md) before the first step of a run.
+
+## The status line
+
+The **status line** is the first line of a report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. The orchestrator session reads it from a note that holds only the start of the report.
+
+- Start the final report with the status line. Write it before the three-line digest of `personal:work-like-mehrdad`, because the note holds only the start of the report.
+- When a later turn changes what the initiative needs next, start its report with a new status line. An example is the turn of the owner's yes to a brief.
+- If the session writes a wrap-up recap, make the status line the first sentence of the recap too.
+- The prompt of a child session says that `orchestrate run` started it. In a child session, a turn that the owner starts can make a step or a build ready. Then ask the owner in the report for one message in the orchestrator session.
+
+Write it as `Next: <state>, <state>.` Name each state that applies:
+
+- `step ready`: another `cook` step can start now.
+- `build ready for <repo>`: a build ticket is ready by the rule of [references/format.md](references/format.md). It has `approved:` and a Targets line that names only `<repo>`. Write `<repo>` as one directory name, with no `/` and no `..`. An example is `api` for the row `../api` of the Repos table in `AGENTS.md`. Name one state for each repo.
+- `owner needed`: the next step waits for the owner, for example a gate or a brief that waits for a yes.
+- `waiting <who>`: the initiative waits for another person.
+- `goal reached`: the `Closes when` sentence of the Goal is true.
+- `no build because <reason>`: `orchestrate fire` stopped before it built. Write the reason.
 
 ## init
 
