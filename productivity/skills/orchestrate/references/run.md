@@ -51,7 +51,8 @@ Call `mcp__ccd_session__start_session` with `initiation: "user_asked"`, because 
   Before you read the index, run `git fetch origin` and `git switch --detach origin/<branch>`. The tracker is on that branch. Do not merge a local branch, because it can hold commits that are not published.
   Stage and commit by path only the files that you changed yourself. These include the files that your sweep wrote, such as `.initiatives/sources.md`.
   Before cook step 6, commit your changes, then run `git fetch origin` and `git merge --no-edit origin/<branch>`. If cook step 2 sends you to step 7, do this before step 7.
-  Two child sessions can change neighbouring lines of the index or of `.initiatives/sources.md`. So write no line of these two files before this merge. Keep each such edit of the repair, the cut, and the first sweep, and write it after this merge.
+  In a later turn, do the same before each edit of the index or of `.initiatives/sources.md`. An example is the turn of the owner's yes to a brief.
+  Two child sessions can change neighbouring lines of the index or of `.initiatives/sources.md`. So write no line of these two files before the merge of the turn. Keep each such edit of the repair, the cut, and the first sweep, and write it after that merge.
   Push with `git push origin HEAD:<branch>`. If the push fails, fetch and merge `origin/<branch>` again, and push again.
   If a fetch or the switch fails, or a merge fails or conflicts, stop the step. If a merge is open, run `git merge --abort` in this worktree. Change nothing else.
   Then name `owner needed` in the status line, and give the reason in the next line.
