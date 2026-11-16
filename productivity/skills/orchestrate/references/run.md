@@ -33,7 +33,7 @@ These rules of the desktop app held on 2026-11-16. They decide which turn can st
 1. If the session has no `mcp__ccd_session__start_session` tool, tell the owner to use `cook`. Then stop.
 2. Check that this folder is on the default branch of `origin`, because `orchestrate fire` clones that branch. `git rev-parse --abbrev-ref origin/HEAD` names that branch. If the folder is on another branch, tell the owner. Then stop.
 3. If the owner names no initiative, ask the owner which initiatives to run. Do not read the index for a list.
-4. Read the Repos table in the `AGENTS.md` of this repo. A build starts only in a repo of that table.
+4. Read the Repos table in the `AGENTS.md` of this repo. A build starts only in a repo of that table. The table guards the path of a build start. The consent for a build is the `approved:` line of its ticket, and `orchestrate fire` step 3 checks it.
 5. Find the main checkout of this repo. It is the parent of the directory that `git rev-parse --path-format=absolute --git-common-dir` prints.
 6. Start a `cook` child session for each named initiative.
 
@@ -41,7 +41,19 @@ These rules of the desktop app held on 2026-11-16. They decide which turn can st
 
 Call `mcp__ccd_session__start_session` with `initiation: "user_asked"`, because the owner asked for the run. Give a `background` of 80 characters or more that names the run and the initiative. The app refuses a shorter one. End each prompt with `orchestrate run started this session.`
 
-- For a `cook` child session, give the title `cook <dir>` and the model `opus`. Give the prompt `orchestrate cook <dir>` and the sentence `Run git pull --ff-only before you read the index.` The child session needs the pull, because a `fire` child session pushes its result from a clone of `origin`. Set `use_worktree: false` and give no `cwd`. The child session then works in this folder, and its commits go to the branch of the tracker.
+- For a `cook` child session, give the title `cook <dir>` and the model `opus`. Set `use_worktree: false` and give no `cwd`. The child session then works in this folder, and its commits go to the branch of the tracker. Give it this prompt, with the initiative in place of `<dir>`:
+
+  ```
+  orchestrate cook <dir>
+  Take one step. If cook step 5 sends you back to step 2, go on to step 6. Then name `step ready` in the status line.
+  Run `git pull --no-rebase` before you read the index. A fire session pushes its result from a clone of origin.
+  Never rebase and never stash, because other sessions share this folder.
+  Stage only `.initiatives/<dir>/` and `.initiatives/README.md`. Give the same paths to `git commit`, because other sessions stage in this folder.
+  If the push fails, run `git pull --no-rebase` and push again.
+  orchestrate run started this session.
+  ```
+
+  One step keeps the context of the child session small. The next step starts in a new child session.
 - For a `fire` child session, give the title `fire <dir>` and the prompt `orchestrate fire <main checkout> <dir>`. Set `cwd` to the absolute path of `<repo>` in the parent directory of the main checkout. Set `use_worktree: true`. Keep the session model.
 
 ## Notes
@@ -58,7 +70,7 @@ Act on each note that came since the last turn:
 
 ## Starts
 
-On an owner turn, call `mcp__ccd_session_mgmt__list_sessions` with `linked: true` before the starts. The owner can run a turn in a child session at the same time. The note of that turn comes only after the turn.
+On an owner turn, call `mcp__ccd_session_mgmt__list_sessions` with `linked: true` before the starts. Make the same call on a turn that a message of another session starts. The owner can run a turn in a child session at the same time. The note of that turn comes only after the turn. A timer turn makes the call in its step 1. A wake-up turn needs no call, because the app starts it only when no child session runs a turn.
 
 After the notes, start a child session for each initiative with a ready step or build. Skip an initiative that has a working child session.
 
