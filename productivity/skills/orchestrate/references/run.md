@@ -49,6 +49,8 @@ Call `mcp__ccd_session__start_session` with `initiation: "user_asked"`, because 
   Take one step. If cook step 5 sends you back to step 2, go on to step 6. Then name `step ready` in the status line.
   Before you read the index, run `git fetch origin` and `git merge --no-edit origin/<branch>`. The tracker is on that branch.
   Stage and commit by path only the files that you changed yourself. These include the files that your sweep wrote, such as `.initiatives/sources.md`.
+  Before cook step 6, commit your changes, then fetch and merge `origin/<branch>` again. If cook step 2 sends you to step 7, do this before step 7.
+  Two child sessions can change neighbouring lines of the index or of `.initiatives/sources.md`. So write the `sources.md` rows of your first sweep only after this merge.
   Push with `git push origin HEAD:<branch>`. If the push fails, fetch and merge `origin/<branch>` again, and push again.
   If a merge fails or conflicts, stop the step. If a merge is open, run `git merge --abort` in this worktree. Change nothing else.
   Then name `owner needed` in the status line, and give the reason in the next line.
