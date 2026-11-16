@@ -9,7 +9,7 @@ This rubric states how to write and judge tests. Use it when you write tests, ch
 - Use mock libraries sparingly. Before you choose a mock, ask whether a real fixture and a real call path cover it.
 - **DAMP over DRY** in test code: a test must read as a self-contained story. Duplication that aids readability beats an abstraction that hides the scenario.
 - Put each expected value in a named variable, such as `expected`, and assert against it. Do not build the expected value inside the assertion.
-- Name the result of the act step `sut`. In a class test, `sut` is the instance. In an exception test, put the call inside `expect` and bind no `sut`.
+- Name the system under test `sut`. It is the unit that the test calls, such as a repository, and never the result of the call. Name the result of the act step `actual`, and compare it with `expected`. For example, write `sut = new OrderRepository(db)` and then `actual = sut.findOrdersOfBooking(bookingNumber)`. A test of a plain function binds no `sut`. In an exception test, put the call inside `expect` and bind no `actual`.
 - Assert whole objects with `toEqual`. Use a partial match only when the rest of the object is not relevant to the behavior.
 - Test one behavior per test. For several data rows, use `it.each`. Put no condition inside a test body or an `it.each` callback. If the arrange step differs by row, write separate tests, because a branch makes the reader simulate the setup.
 
