@@ -68,9 +68,9 @@ Act on each note that came since the last turn:
 
 1. If the note comes from a session that this run did not start, ignore it.
 2. Read the status line only from the first line of the note. That line starts with `Next:`. A note with no status line starts nothing.
-3. A status line of a `cook` child session replaces the ready steps and builds of its initiative with the states that it names. A status line of a `fire` child session removes no ready step and no ready build, because that session knows only its own build. It makes a step ready for its initiative, also when it names `no build`. The next `cook` step reads the result or the reason.
+3. A status line of a `cook` child session replaces the ready steps and builds of its initiative with the states that it names. A status line of a `fire` child session removes no ready step and no other ready build, because that session knows only its own build. If it names `no build`, the build of that child session is ready again, and no step is added. That build starts again only on an owner turn. Otherwise the status line makes a step ready for its initiative, because the next `cook` step reads the result in the tracker.
 4. If the Repos table has no row `../<repo>` for a build, the build is not ready. Start nothing for it. Tell the owner in one line.
-5. An `owner needed`, `waiting <who>`, `goal reached`, or `no build` state starts nothing. It does not stop a ready step or build of its initiative. Write one line that names the initiative, the state, and the child session.
+5. An `owner needed`, `waiting <who>`, `goal reached`, or `no build` state starts nothing. It does not stop a ready step or build of its initiative. Write one line that names the initiative, the state, and the child session. For `no build`, also write the reason in that line. Then send one `PushNotification` with the title of the child session, the words `no build`, and the repo. Send it also when a child session works.
 
 ## Starts
 
