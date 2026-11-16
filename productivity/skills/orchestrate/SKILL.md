@@ -23,6 +23,7 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
 - `orchestrate fire` reads the index in its clone and changes nothing in it. It skips the repair, the cut, and the sweep, because it commits only tickets and `initiative.md`.
 - `orchestrate run` reads nothing in the tracker. It skips the index read, the repair, the cut, and the sweep. Each `cook` session that it starts does them in its own context.
+- A `cook` session that `orchestrate run` started works only on its own initiative, as `orchestrate fire` does. It repairs and cuts only its own index row. It gives sweep only its own initiative, and no `waiting` row of another initiative. Such sessions run at the same time, so two of them must not write the same line.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. Only an `open` row is takeable.
