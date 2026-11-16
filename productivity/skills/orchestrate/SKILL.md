@@ -92,6 +92,8 @@ The user can run other sessions on other ready tickets at the same time. If the 
 
 `orchestrate fire <orchestrator repo path> [<dir>]` builds one approved build ticket with no human. Run it in a session in the target repo, because `EnterWorktree` reaches only the repo of the session. A scheduled task can start it.
 
+Each stop before step 5 builds nothing. This includes a stop after a failed push in step 4. Start the final message of such a stop with the `no build` [status line](#the-status-line).
+
 1. Clone the orchestrator repo from its `origin` into the scratchpad. Read and change tickets only in this clone, because the user's checkout can hold work in progress.
 2. If an open ticket has an `assignee` that starts with `orchestrate fire`, and its time is less than 4 hours ago, stop, because one build runs at a time. If its time is older, send a `PushNotification` that names the ticket. Then stop.
 3. Pick a ready ticket in the initiative of a takeable index row. If the call gives `<dir>`, pick only a ticket of that initiative. The ticket must have `approved:` and a Targets line that names only this repo. If several match, pick the oldest `approved:` date. If none matches, stop.
@@ -109,7 +111,7 @@ The user can run other sessions on other ready tickets at the same time. If the 
 
 The **status line** is the first line of a report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. The orchestrator session reads it from a note that holds only the first 400 characters of the report.
 
-- Start the final report with the status line.
+- Start the final report with the status line. Write it before the three-line digest of `personal:work-like-mehrdad`, because the note holds only the start of the report.
 - When a later turn changes what the initiative needs next, start its report with a new status line. An example is the turn of the owner's yes to a brief.
 - If the session has the `mcp__ccd_turn__wrap_up` tool, make the status line the first sentence of its recap too.
 - The prompt of a child session says that `orchestrate run` started it. In a child session, the note of a turn that the owner starts waits for the next turn of the orchestrator session. If that turn makes a step or a build ready, ask the owner for one message in the orchestrator session.
@@ -121,8 +123,7 @@ Write it as `Next: <state>, <state>.` Name each state that applies:
 - `owner needed`: the next step waits for the owner, for example a gate or a brief that waits for a yes.
 - `waiting <who>`: the initiative waits for another person.
 - `goal reached`: the `Closes when` sentence of the Goal is true.
-
-If `orchestrate fire` stops before the push of its step 4, write `Next: no build.` with the reason.
+- `no build because <reason>`: `orchestrate fire` stopped before it built. Write the reason.
 
 ## init
 
