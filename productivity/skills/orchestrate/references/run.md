@@ -48,7 +48,7 @@ Call `mcp__ccd_session__start_session` with `initiation: "user_asked"`, because 
   Take one step. If cook step 5 sends you back to step 2, go on to step 6. Then name `step ready` in the status line.
   Run `git pull --no-rebase` before you read the index. A fire session pushes its result from a clone of origin.
   Never rebase and never stash, because other sessions share this folder.
-  Stage only `.initiatives/<dir>/` and `.initiatives/README.md`. Give the same paths to `git commit`, because other sessions stage in this folder.
+  Stage by path only the files that you changed yourself. These include the files that your sweep wrote, such as `.initiatives/sources.md`. Give the same paths to `git commit`, because other sessions stage in this folder.
   If the push fails, run `git pull --no-rebase` and push again.
   orchestrate run started this session.
   ```
