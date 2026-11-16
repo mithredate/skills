@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Use for a `.initiatives/` repo, for work beyond one session, or on "chart", "cook", "orchestrate run", "orchestrate fire", "close", or "prioritize".
+description: Use in or to set up `.initiatives/`, for multi-session work, or on "chart", "cook", "orchestrate run", "orchestrate fire", "close", or "prioritize".
 ---
 
 # Orchestrate
@@ -90,34 +90,39 @@ The user can run other sessions on other ready tickets at the same time. If the 
 
 ## fire
 
-`orchestrate fire <orchestrator repo path>` builds one approved build ticket with no human. Run it in a session in the target repo, because `EnterWorktree` reaches only the repo of the session. A scheduled task can start it.
+`orchestrate fire <orchestrator repo path> [<dir>]` builds one approved build ticket with no human. Run it in a session in the target repo, because `EnterWorktree` reaches only the repo of the session. A scheduled task can start it.
 
 1. Clone the orchestrator repo from its `origin` into the scratchpad. Read and change tickets only in this clone, because the user's checkout can hold work in progress.
 2. If an open ticket has an `assignee` that starts with `orchestrate fire`, and its time is less than 4 hours ago, stop, because one build runs at a time. If its time is older, send a `PushNotification` that names the ticket. Then stop.
-3. Pick a ready ticket in the initiative of a takeable index row. It must have `approved:` and a Targets line that names only this repo. If several match, pick the oldest `approved:` date. If none matches, stop.
+3. Pick a ready ticket in the initiative of a takeable index row. If the call gives `<dir>`, pick only a ticket of that initiative. The ticket must have `approved:` and a Targets line that names only this repo. If several match, pick the oldest `approved:` date. If none matches, stop.
 4. Set its `assignee` to `orchestrate fire <UTC time>` with the Edit tool, because the hook of step 5 does not watch Bash. Commit only that ticket file, and push. If the push fails, stop, because another run can hold the claim. Do not pull and push again.
 5. The claim makes a hook tell you to call the Skill tool with `dev:fire`. Call it before your next tool call, as the hook says. Start the first step of `dev:fire` only after the push of step 4. Give it the ticket path in the clone.
 6. Record the result by `cook` step 4. Commit only `initiative.md` and the tickets that `cook` step 4 changed or wrote, and push. If the push fails, pull with rebase and push again.
 7. Send a `PushNotification` with the `fire` status and the PR links.
 8. Start the final message with the [status line](#the-status-line). After step 6, `step ready` applies, because the next `cook` step reads the result.
 
+## run
+
+`orchestrate run <dir> ...` runs the steps of the named initiatives in sessions of the Claude desktop app. It calls the owner only for a human step. The **orchestrator session** is the session that runs `orchestrate run`. A **child session** is a session that it starts. Read [references/run.md](references/run.md) before the first step of a run.
+
 ## The status line
 
-The **status line** is the first line of the last report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. `orchestrate run` reads it from a note that holds only the first 400 characters of the report. If the session has the `mcp__ccd_turn__wrap_up` tool, make the status line the first sentence of its recap too.
+The **status line** is the first line of a report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. The orchestrator session reads it from a note that holds only the first 400 characters of the report.
 
-Write it as `Next for <dir>: <state>, <state>.` Name each state that applies:
+- Start the final report with the status line.
+- When a later turn changes what the initiative needs next, start its report with a new status line. An example is the turn of the owner's yes to a brief.
+- If the session has the `mcp__ccd_turn__wrap_up` tool, make the status line the first sentence of its recap too.
+- The prompt of a child session says that `orchestrate run` started it. In a child session, the note of a turn that the owner starts waits for the next turn of the orchestrator session. If that turn makes a step or a build ready, ask the owner for one message in the orchestrator session.
+
+Write it as `Next: <state>, <state>.` Name each state that applies:
 
 - `step ready`: another `cook` step can start now.
-- `build ready for <repo>`: an approved build ticket targets the sibling repo `<repo>`. Name one state for each repo.
+- `build ready for <repo>`: an approved build ticket targets `<repo>`. Write `<repo>` as one directory name, with no `/` and no `..`. An example is `api` for the row `../api` of the Repos table in `AGENTS.md`. Name one state for each repo.
 - `owner needed`: the next step waits for the owner, for example a gate or a brief that waits for a yes.
 - `waiting <who>`: the initiative waits for another person.
 - `goal reached`: the `Closes when` sentence of the Goal is true.
 
-If `orchestrate fire` stops before the push of its step 4, its status line is `Next: no build.` with the reason.
-
-## run
-
-`orchestrate run <dir> ...` runs the steps of the named initiatives in child sessions of the Claude desktop app. It calls the owner only for a human step. Read [references/run.md](references/run.md) before the first step of a run.
+If `orchestrate fire` stops before the push of its step 4, write `Next: no build.` with the reason.
 
 ## init
 
