@@ -27,6 +27,7 @@ const TICKET = [
     'Fire returned blocked: the sandbox has no DNS record.',
 ].join('\n');
 const TICKET_WITHOUT_RESOLUTION = TICKET.split('\n\n## Resolution')[0];
+const APPROVED_TICKET = TICKET.replace('assignee: claude\n', 'assignee: claude\napproved: 2026-11-03\n');
 
 function writeFile(relativePath, content) {
     const path = join(mkdtempSync(join(tmpdir(), 'prep-on-brief-edit-')), relativePath);
@@ -95,6 +96,13 @@ test('reminds after an Edit that adds approved: to the frontmatter of a ticket',
     const context = contextAfterEdit(path, '---\n\n## Brief', 'approved: 2026-11-16\n---\n\n## Brief');
 
     assert.equal(context, CHECK_APPROVAL);
+});
+
+test('gives no approval reminder after an Edit that keeps approved: or deletes it with a brief change', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    assert.equal(contextAfterEdit(path, 'assignee: claude', 'assignee: orchestrate fire 2026-11-16T10:00Z'), '');
+    assert.equal(contextAfterEdit(path, 'approved: 2026-11-03\n---\n\n## Brief\n\n- Goal: the sandbox', '---\n\n## Brief\n\n- Goal: staging'), LOAD_PREP);
 });
 
 test('stays silent after an Edit that anchors on the last brief line to add a resolution', () => {

@@ -34,7 +34,8 @@ try {
 
         const contexts = [];
         if (briefOf(before) !== briefOf(after)) contexts.push(BRIEF_CHANGED);
-        if (approvalOf(after)) contexts.push(APPROVED_ADDED);
+        const approval = approvalOf(after);
+        if (approval !== null && approval !== approvalOf(before)) contexts.push(APPROVED_ADDED);
 
         if (contexts.length > 0) {
             console.log(JSON.stringify({
