@@ -89,7 +89,7 @@ When no child session works after the starts, notify the owner. Send one `PushNo
 While a child session works and its last note holds no status line, a recurring timer of 30 minutes runs in the orchestrator session. The timer fires only while the orchestrator session is idle.
 
 - When you start a child session and no timer runs, create the timer with `CronCreate`. Give it the prompt `Timer turn. Check the child sessions.` This prompt is not an `orchestrate run` call, so it starts no new run.
-- If no working child session is without a status line after the starts of a turn, delete the timer with `CronDelete`.
+- If each working child session has a status line after the starts of a turn, delete the timer with `CronDelete`.
 
 A child session is **silent** when its last note holds no status line, its `lastActivityAt` is older than 30 minutes, and it does not wait on the user.
 
