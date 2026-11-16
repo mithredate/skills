@@ -22,6 +22,7 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 - Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
 - `orchestrate fire` reads the index in its clone and changes nothing in it. It skips the repair, the cut, and the sweep, because it commits only tickets and `initiative.md`.
+- `orchestrate run` reads nothing in the tracker. It skips the index read, the repair, the cut, and the sweep. Each `cook` session that it starts does them in its own context.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. Only an `open` row is takeable.
@@ -83,7 +84,7 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 5. Write a ticket for each new question. If an unspecified question is now precise, move it from Not yet specified into a ticket. If a ticket is past the goal, rule it out of scope. If the decision makes another ticket wrong, change or delete that ticket. If a ticket without a brief that is not a `gate` is now ready, go back to step 2.
 6. Sweep the session. Run sweep in write mode, for the session items. The step is done when every item has a place.
 7. Update the one-line state in the index row of this initiative, in the limit of [The index](#the-index). Change no other row. Give the number of ready build tickets that are approved and the number that wait for a yes, not their titles. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
-8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message.
+8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message. Start the final message with the [status line](#the-status-line).
 
 The user can run other sessions on other ready tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the initiative, and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
 
@@ -98,6 +99,25 @@ The user can run other sessions on other ready tickets at the same time. If the 
 5. The claim makes a hook tell you to call the Skill tool with `dev:fire`. Call it before your next tool call, as the hook says. Start the first step of `dev:fire` only after the push of step 4. Give it the ticket path in the clone.
 6. Record the result by `cook` step 4. Commit only `initiative.md` and the tickets that `cook` step 4 changed or wrote, and push. If the push fails, pull with rebase and push again.
 7. Send a `PushNotification` with the `fire` status and the PR links.
+8. Start the final message with the [status line](#the-status-line). After step 6, `step ready` applies, because the next `cook` step reads the result.
+
+## The status line
+
+The **status line** is the first line of the last report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. `orchestrate run` reads it from a note that holds only the first 400 characters of the report. If the session has the `mcp__ccd_turn__wrap_up` tool, make the status line the first sentence of its recap too.
+
+Write it as `Next for <dir>: <state>, <state>.` Name each state that applies:
+
+- `step ready`: another `cook` step can start now.
+- `build ready for <repo>`: an approved build ticket targets the sibling repo `<repo>`. Name one state for each repo.
+- `owner needed`: the next step waits for the owner, for example a gate or a brief that waits for a yes.
+- `waiting <who>`: the initiative waits for another person.
+- `goal reached`: the `Closes when` sentence of the Goal is true.
+
+If `orchestrate fire` stops before the push of its step 4, its status line is `Next: no build.` with the reason.
+
+## run
+
+`orchestrate run <dir> ...` runs the steps of the named initiatives in child sessions of the Claude desktop app. It calls the owner only for a human step. Read [references/run.md](references/run.md) before the first step of a run.
 
 ## init
 
