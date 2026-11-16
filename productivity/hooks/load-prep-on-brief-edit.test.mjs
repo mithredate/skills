@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 
 const HOOK = new URL('./load-prep-on-brief-edit.mjs', import.meta.url).pathname;
 const LOAD_PREP = 'A brief changed. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. Then check the brief against it.';
+const CHECK_APPROVAL = 'An edit added `approved:` to a ticket. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. If the checks of `prep` did not pass for this brief, delete `approved:`.';
 
 const TICKET = [
     '---',
@@ -14,7 +15,6 @@ const TICKET = [
     'type: task',
     'status: open',
     'assignee: claude',
-    'approved: 2026-11-03',
     '---',
     '',
     '## Brief',
@@ -79,15 +79,22 @@ test('reminds after a MultiEdit with one edit inside the brief', () => {
     assert.equal(context, LOAD_PREP);
 });
 
-test('stays silent after an Edit that claims the ticket, approves it, or records a resolution', () => {
+test('stays silent after an Edit that claims the ticket or records a resolution', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
     for (const [old_string, new_string] of [
         ['assignee:', 'assignee: claude'],
-        ['---\n\n## Brief', 'approved: 2026-11-03\n---\n\n## Brief'],
         ['blocked:', 'Fire returned blocked:'],
     ]) assert.equal(contextAfterEdit(path, old_string, new_string), '', new_string);
     assert.equal(contextAfterEdit(path, 'example.com', 'noreply@example.com'), LOAD_PREP);
+});
+
+test('reminds after an Edit that adds approved: to the frontmatter of a ticket', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextAfterEdit(path, '---\n\n## Brief', 'approved: 2026-11-16\n---\n\n## Brief');
+
+    assert.equal(context, CHECK_APPROVAL);
 });
 
 test('stays silent after an Edit that anchors on the last brief line to add a resolution', () => {
