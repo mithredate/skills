@@ -106,16 +106,16 @@ Each stop before step 5 builds nothing. This includes a stop after a failed push
 
 ## run
 
-`orchestrate run <dir> ...` runs the steps of the named initiatives in sessions of the Claude desktop app. It calls the owner only for a human step. The **orchestrator session** is the session that runs `orchestrate run`. A **child session** is a session that it starts. Read [references/run.md](references/run.md) before the first step of a run.
+`orchestrate run <dir> ...` runs the steps of the named initiatives in sessions that it starts. It calls the owner only for a human step. The **orchestrator session** is the session that runs `orchestrate run`. A **child session** is a session that it starts. Read [references/run.md](references/run.md) before the first step of a run.
 
 ## The status line
 
-The **status line** is the first line of a report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. The orchestrator session reads it from a note that holds only the first 400 characters of the report.
+The **status line** is the first line of a report of a `cook` or `orchestrate fire` session. It names what the initiative needs next. The orchestrator session reads it from a note that holds only the start of the report.
 
 - Start the final report with the status line. Write it before the three-line digest of `personal:work-like-mehrdad`, because the note holds only the start of the report.
 - When a later turn changes what the initiative needs next, start its report with a new status line. An example is the turn of the owner's yes to a brief.
-- If the session has the `mcp__ccd_turn__wrap_up` tool, make the status line the first sentence of its recap too.
-- The prompt of a child session says that `orchestrate run` started it. In a child session, the note of a turn that the owner starts waits for the next turn of the orchestrator session. If that turn makes a step or a build ready, ask the owner for one message in the orchestrator session.
+- If the session writes a wrap-up recap, make the status line the first sentence of the recap too.
+- The prompt of a child session says that `orchestrate run` started it. In a child session, a turn that the owner starts can make a step or a build ready. Then ask the owner in the report for one message in the orchestrator session.
 
 Write it as `Next: <state>, <state>.` Name each state that applies:
 
