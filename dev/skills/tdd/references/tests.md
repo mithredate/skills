@@ -10,8 +10,8 @@ test("user can checkout with valid cart", async () => {
   const cart = createCart();
   cart.add(product);
   const expected = "confirmed";
-  const sut = await checkout(cart, paymentMethod);
-  expect(sut.status).toBe(expected);
+  const actual = await checkout(cart, paymentMethod);
+  expect(actual.status).toBe(expected);
 });
 ```
 
@@ -31,8 +31,8 @@ test("createUser saves to database", async () => {
 test("createUser makes user retrievable", async () => {
   const user = await createUser({ name: "Alice" });
   const expected = "Alice";
-  const sut = await getUser(user.id);
-  expect(sut.name).toBe(expected);
+  const actual = await getUser(user.id);
+  expect(actual.name).toBe(expected);
 });
 ```
 
@@ -43,15 +43,15 @@ test("createUser makes user retrievable", async () => {
 test("calculateTotal sums line items", () => {
   const items = [{ price: 10 }, { price: 5 }];
   const expected = items.reduce((sum, i) => sum + i.price, 0);
-  const sut = calculateTotal(items);
-  expect(sut).toBe(expected);
+  const actual = calculateTotal(items);
+  expect(actual).toBe(expected);
 });
 
 // GOOD: Expected value is an independent, known literal
 test("calculateTotal sums line items", () => {
   const items = [{ price: 10 }, { price: 5 }];
   const expected = 15;
-  const sut = calculateTotal(items);
-  expect(sut).toBe(expected);
+  const actual = calculateTotal(items);
+  expect(actual).toBe(expected);
 });
 ```
