@@ -119,7 +119,7 @@ The **status line** is the first line of a report of a `cook` or `orchestrate fi
 Write it as `Next: <state>, <state>.` Name each state that applies:
 
 - `step ready`: another `cook` step can start now.
-- `build ready for <repo>`: an approved build ticket targets `<repo>`. Write `<repo>` as one directory name, with no `/` and no `..`. An example is `api` for the row `../api` of the Repos table in `AGENTS.md`. Name one state for each repo.
+- `build ready for <repo>`: a build ticket is ready by the rule of [references/format.md](references/format.md). It has `approved:` and a Targets line that names only `<repo>`. Write `<repo>` as one directory name, with no `/` and no `..`. An example is `api` for the row `../api` of the Repos table in `AGENTS.md`. Name one state for each repo.
 - `owner needed`: the next step waits for the owner, for example a gate or a brief that waits for a yes.
 - `waiting <who>`: the initiative waits for another person.
 - `goal reached`: the `Closes when` sentence of the Goal is true.
