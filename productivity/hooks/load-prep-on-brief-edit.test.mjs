@@ -69,6 +69,14 @@ test('reminds after a Write of a ticket that holds a brief', () => {
     assert.equal(context, LOAD_PREP);
 });
 
+test('gives both reminders after a Write of a new ticket that holds a brief and approved:', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-21.md', APPROVED_TICKET);
+
+    const context = contextFor('Write', { file_path: path, content: APPROVED_TICKET }, { type: 'create', filePath: path, content: APPROVED_TICKET, originalFile: null });
+
+    assert.equal(context, `${LOAD_PREP} ${CHECK_APPROVAL}`);
+});
+
 test('reminds after a MultiEdit with one edit inside the brief', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
@@ -86,6 +94,7 @@ test('stays silent after an Edit that claims the ticket or records a resolution'
     for (const [old_string, new_string] of [
         ['assignee:', 'assignee: claude'],
         ['blocked:', 'Fire returned blocked:'],
+        ['## Resolution\n', '## Resolution\n\napproved: 2026-11-16\n'],
     ]) assert.equal(contextAfterEdit(path, old_string, new_string), '', new_string);
     assert.equal(contextAfterEdit(path, 'example.com', 'noreply@example.com'), LOAD_PREP);
 });
