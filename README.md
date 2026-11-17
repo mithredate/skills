@@ -11,7 +11,7 @@
 
 The official guide is [Install and manage plugins](https://code.claude.com/docs/en/discover-plugins).
 
-`managed-settings.json` at the repo root holds every machine-wide Claude Code setting, not only the sandbox. It turns on the Claude Code sandbox, sets the package cooldowns, and sets the default subagent model and permission mode. A plugin cannot turn on the sandbox. Run these commands to link the installed copy as the managed settings file, so that every session loads it. The `ln` command fails if a file is already at that path. If the file is your own old link, delete it with the command below, and run `ln` again. If your company put the file there, do not replace it.
+`managed-settings.json` at the repo root holds every machine-wide Claude Code setting, not only the sandbox. It turns on the Claude Code sandbox, sets the package cooldowns, sets the certificate file for Go tools such as `gh`, and sets the default subagent model and permission mode. A plugin cannot turn on the sandbox. Run these commands to link the installed copy as the managed settings file, so that every session loads it. The `ln` command fails if a file is already at that path. If the file is your own old link, delete it with the command below, and run `ln` again. If your company put the file there, do not replace it.
 
 ```bash
 sudo mkdir -p "/Library/Application Support/ClaudeCode"
