@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Fail a PR that changes a reviewer agent or its cases, and has no score lines
-# of that agent in its body. The agents are pr-reviewer and blast-radius. A PR
-# that changes dev/agents/<agent>.md needs an `origin/main:` line and a `HEAD:`
-# line of that agent. A PR that changes cases of the agent needs a `HEAD:` line.
-# The files under dev/evals/blast-radius-* belong to blast-radius. The other
-# files under dev/evals/ belong to pr-reviewer. A score line starts a line of
+# of that agent in its body. The agents are pr-reviewer, blast-radius, and
+# brief-judge. A PR that changes dev/agents/<agent>.md needs an `origin/main:`
+# line and a `HEAD:` line of that agent. A PR that changes cases of the agent
+# needs a `HEAD:` line. The files under dev/evals/blast-radius-* belong to
+# blast-radius, and the files under dev/evals/brief-judge-* to brief-judge. The
+# other files under dev/evals/ belong to pr-reviewer. A score line starts a line of
 # the body, as scripts/score-reviewer.sh prints it. A `none` score counts. The
 # check does not compare the scores. The body is untrusted, so the script only
 # greps it.
@@ -18,11 +19,11 @@ evals=$(grep -E '^"?dev/evals/' <<<"$paths" || true)
 score='(none|[0-9.]+) \([0-9]+ of [0-9]+ runs\)'
 failed=0
 
-for agent in pr-reviewer blast-radius; do
+for agent in pr-reviewer blast-radius brief-judge; do
   # The pr-reviewer cases and score lines came first, so they have no agent name.
   if [[ $agent == pr-reviewer ]]; then
     label= option= cases='files under dev/evals/'
-    own=$(grep -Ev '^"?dev/evals/blast-radius-' <<<"$evals" || true)
+    own=$(grep -Ev '^"?dev/evals/(blast-radius|brief-judge)-' <<<"$evals" || true)
   else
     label="$agent " option=" --agent $agent" cases="files under dev/evals/$agent-*"
     own=$(grep -E "^\"?dev/evals/$agent-" <<<"$evals" || true)
