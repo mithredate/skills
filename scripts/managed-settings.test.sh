@@ -12,8 +12,10 @@ hook=$(jq -r '.hooks.SessionStart[0].hooks[0].command // ""' managed-settings.js
 
 failed=0
 run() { # case folder, bundle for /opt/homebrew, bundle for /usr/local, env assignments
-  local dir=$1 cmd=${hook//"/opt/homebrew/etc/ca-certificates/cert.pem"/$2}
-  cmd=${cmd//"/usr/local/etc/ca-certificates/cert.pem"/$3}
+  local dir=$1 opt=/opt/homebrew/etc/ca-certificates/cert.pem usr=/usr/local/etc/ca-certificates/cert.pem cmd
+  # bash 3.2 matches a quoted literal pattern only through a variable.
+  cmd=${hook//"$opt"/$2}
+  cmd=${cmd//"$usr"/$3}
   shift 3
   mkdir -p "$dir/cwd"
   (cd "$dir/cwd" && env -u SSL_CERT_FILE -u CLAUDE_ENV_FILE "$@" sh -c "$cmd") \
