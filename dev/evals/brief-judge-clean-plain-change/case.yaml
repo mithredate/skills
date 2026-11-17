@@ -1,0 +1,34 @@
+schema_version: "1.1"
+name: brief-judge-clean-plain-change
+tags: [brief-judge]
+plugins: [../.., ../../productivity]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob, Skill]
+  prompt: |
+    Start the `dev:brief-judge` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Judge one brief before its build.
+
+    - Brief file: `<workdir>/brief.md`. Read it whole.
+    - Requirement: Add the field `currency` with the value `EUR` to the JSON of `GET /orders/:id`.
+    - The requirement is a message of the human.
+    - Decision records: `<workdir>/records.md`.
+    - Design doc: none.
+    - Target: the repo `<workdir>/repo`. Repo rules: `AGENTS.md` at the repo root.
+
+    Return your JSON.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: auto-with-no-gap
+    type: regex
+    pattern: '^(?=[\s\S]*"verdict"\s*:\s*"auto")(?=[\s\S]*"gaps"\s*:\s*\[\s*\])'
+  - name: judge-ran
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type"\s*:\s*"dev:brief-judge"'

@@ -1,0 +1,1 @@
+- Decided: set the field `currency` in `toOrderJson`. Because: `AGENTS.md:5` says that `src/orders.js` builds the JSON of `GET /orders/:id`, and `src/orders.js:1` defines `toOrderJson`. Revisit if: another file builds that JSON.

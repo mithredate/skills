@@ -226,6 +226,28 @@ blast_scaffold() { # case name
 blast_scaffold blast-radius-recall-role-grant
 blast_scaffold blast-radius-clean-report-group
 
+# The scaffold of a brief-judge case writes the brief, the records, and a repo
+# with an AGENTS.md. Each `<path>:<line>` that a record cites is a line of that repo.
+judge_scaffold() { # case name
+  local run=$tmp/judge/$1 case_dir=$PWD/dev/evals/$1 cite file missing=
+  mkdir -p "$run"
+  (cd "$run" && bash "$case_dir/scaffold.sh") || missing+=" a scaffold that exits 0"
+  for file in brief.md records.md repo/AGENTS.md; do [[ -s $run/$file ]] || missing+=" $file"; done
+  while read -r cite; do
+    file=$run/repo/${cite%:*}
+    if [[ ! -f $file ]] || (( $(wc -l < "$file") < ${cite##*:} )); then missing+=" $cite"; fi
+  done < <(grep -oE '`[^` ]+:[0-9]+`' "$run/records.md" 2>/dev/null | tr -d '`')
+  if [[ -z $missing ]]; then
+    echo "  ✓ scaffold of $1"
+  else
+    echo "  ✘ scaffold of $1: want$missing"
+    failed=1
+  fi
+}
+for name in recall-claim recall-step-before-merge recall-ci-change clean-ci-change-answered clean-plain-change; do
+  judge_scaffold "brief-judge-$name"
+done
+
 if [ "$failed" -ne 0 ]; then
   echo "✘ score-reviewer.sh or scaffold.sh failed one or more checks."
   exit 1

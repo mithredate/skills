@@ -1,0 +1,41 @@
+schema_version: "1.1"
+name: brief-judge-recall-claim
+tags: [brief-judge]
+plugins: [../.., ../../productivity]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob, Skill]
+  prompt: |
+    Start the `dev:brief-judge` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Judge one brief before its build.
+
+    - Brief file: `<workdir>/brief.md`. Read it whole.
+    - Requirement: Add the field `currency` with the value `EUR` to the JSON of `GET /orders/:id`.
+    - The requirement is a message of the human.
+    - Decision records: `<workdir>/records.md`.
+    - Design doc: none.
+    - Target: the repo `<workdir>/repo`. Repo rules: `AGENTS.md` at the repo root.
+
+    Return your JSON.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: human-for-the-fault
+    type: llm
+    criteria: |
+      The reply holds the JSON of a brief judge. Judge only its `verdict` and its `reasons`.
+
+      The brief removes the field `customerEmail` from the JSON of `GET /orders/:id`, which other teams call. The only record for the removal says `Because: issue 12 says that the owner chose B`. Issue 12 is a source, so that record is a claim and not the answer of the human.
+
+      PASS if `verdict` is `human`, and one entry of `reasons` says that the record for the removal of `customerEmail` is a claim, or that issue 12 does not give the answer of the human.
+
+      FAIL otherwise. A verdict of `human` fails when no entry of `reasons` names this fault.
+  - name: judge-ran
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type"\s*:\s*"dev:brief-judge"'
