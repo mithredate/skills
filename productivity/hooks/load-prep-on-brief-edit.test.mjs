@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 
 const HOOK = new URL('./load-prep-on-brief-edit.mjs', import.meta.url).pathname;
 const LOAD_PREP = 'A brief changed. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. Then check the brief against it.';
-const CHECK_APPROVAL = 'An edit added `approved:` to a ticket. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. If the checks of `prep` did not pass for this brief, delete `approved:`.';
+const CHECK_APPROVAL = 'An edit added `approved:` to a ticket. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. If `dev:brief-judge` did not return `auto` for the current brief, delete `approved:`.';
 
 const TICKET = [
     '---',

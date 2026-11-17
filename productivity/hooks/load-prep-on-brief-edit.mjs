@@ -9,7 +9,7 @@ const NEXT_SECTION = /^## /m;
 const FRONTMATTER = /^---\n([\s\S]*?)\n---(?:\n|$)/;
 const APPROVED = /^approved:.*$/m;
 const BRIEF_CHANGED = 'A brief changed. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. Then check the brief against it.';
-const APPROVED_ADDED = 'An edit added `approved:` to a ticket. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. If the checks of `prep` did not pass for this brief, delete `approved:`.';
+const APPROVED_ADDED = 'An edit added `approved:` to a ticket. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. If `dev:brief-judge` did not return `auto` for the current brief, delete `approved:`.';
 
 // The text under the brief heading up to the next section, or null for a file with no brief.
 function briefOf(file) {
