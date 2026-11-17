@@ -1,6 +1,6 @@
 {
   "name": "show-session",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Opens a pane with the session's skills, folders, shell commands, and agents, on /show-session.",
   "author": {
     "name": "Mehrdad Hedayati",
