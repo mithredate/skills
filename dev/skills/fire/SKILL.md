@@ -20,11 +20,11 @@ The session does not edit code or a target system. Agents build, review, and ver
 
 The step is done when each git target has its branch checked out in a known directory, and has its base commit.
 
-The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool does not list them, ask the user to run `/reload-plugins`. In `orchestrate fire`, no user is there. Stop with the status `blocked`, and name the missing agents.
+The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool cannot start an agent, call the Skill tool with `dev:run-agent`. This also applies to the implementer and to general-purpose verifiers. Keep the inputs and the result rules below. If execution still fails, stop with the status `blocked` and its evidence.
 
 ## Build
 
-Start one agent with the Agent tool. In rounds 1 and 2, set its `model` to `opus`. In round 3, set its `model` to `fable`. Round 3 runs only after two failed rounds, so it gets the stronger model. The session picks the model from the round number. The implementer does not judge its own capability. If the Agent tool rejects `fable`, start round 3 with `opus`. Keep the reason for the report.
+Start one agent with the Agent tool. In rounds 1 and 2, set its `model` to `opus`. In round 3, set its `model` to `fable`. Round 3 runs only after two failed rounds, so it gets the stronger model. The session picks the model from the round number. The implementer does not judge its own capability. If the agent runtime rejects `fable`, start round 3 with `opus`. Keep the reason for the report.
 
 If a target is a git repo, start the prompt with `First actions: call the Skill tool with dev:tdd.` Give it:
 
