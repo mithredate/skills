@@ -25,15 +25,13 @@ function approvalOf(file) {
     return frontmatter.match(APPROVED)?.[0] ?? null;
 }
 
-function linesOf(texts) {
-    return texts.join('\n').split(/\r?\n/);
+function linesOf(text) {
+    return (text ?? '').split(/\r?\n/);
 }
 
 function editAdds(input, line) {
-    const edits = input.edits ?? [];
-    const newLines = linesOf([input.new_string, input.content, ...edits.map((edit) => edit.new_string)]);
-    const oldLines = linesOf([input.old_string, ...edits.map((edit) => edit.old_string)]);
-    return newLines.includes(line) && !oldLines.includes(line);
+    const edits = input.edits ?? [{ old_string: input.old_string, new_string: input.new_string ?? input.content }];
+    return edits.some((edit) => linesOf(edit.new_string).includes(line) && !linesOf(edit.old_string).includes(line));
 }
 
 try {

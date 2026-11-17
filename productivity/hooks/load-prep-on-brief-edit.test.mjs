@@ -158,6 +158,17 @@ test('reminds after a MultiEdit that adds approved: to a ticket', () => {
     assert.equal(context, CHECK_APPROVAL);
 });
 
+test('reminds after a MultiEdit whose later edit anchors on the approved: line that an earlier edit added', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-16\nlabel: x'));
+
+    const context = contextFor('MultiEdit', { file_path: path, edits: [
+        { old_string: 'assignee: claude', new_string: 'assignee: claude\napproved: 2026-11-16' },
+        { old_string: 'approved: 2026-11-16\n---', new_string: 'approved: 2026-11-16\nlabel: x\n---' },
+    ] });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
 test('reminds after a Write that adds approved: to a ticket whose tool response has a null originalFile', () => {
     const content = TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-16');
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', content);
