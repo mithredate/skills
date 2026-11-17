@@ -269,15 +269,28 @@ blast_scaffold blast-radius-recall-role-grant
 blast_scaffold blast-radius-clean-report-group
 
 # The scaffold of a brief-judge case writes the brief, the records, and a repo
-# with an AGENTS.md. Each `<path>:<line>` that a record cites is a line of that repo.
+# with an AGENTS.md. Each `<path>:<line>` that a record cites is a line of that
+# repo, and holds the text that the record says it holds.
+cited_text() { # path:line
+  case $1 in
+    AGENTS.md:5) echo 'builds the JSON of `GET /orders/:id`' ;;
+    src/orders.js:1) echo 'export function toOrderJson' ;;
+    src/orders.js:2) echo 'const tax' ;;
+    src/orders.js:6) echo 'total: order.total ?? null' ;;
+    package.json:7) echo '"lint": "eslint' ;;
+    .github/workflows/ci.yml:12) echo 'run: npm test' ;;
+  esac
+}
 judge_scaffold() { # case name
-  local run=$tmp/judge/$1 case_dir=$PWD/dev/evals/$1 cite file missing=
+  local run=$tmp/judge/$1 case_dir=$PWD/dev/evals/$1 cite text file missing=
   mkdir -p "$run"
   (cd "$run" && bash "$case_dir/scaffold.sh") || missing+=" a scaffold that exits 0"
   for file in brief.md records.md repo/AGENTS.md; do [[ -s $run/$file ]] || missing+=" $file"; done
   while read -r cite; do
-    file=$run/repo/${cite%:*}
-    if [[ ! -f $file ]] || (( $(wc -l < "$file") < ${cite##*:} )); then missing+=" $cite"; fi
+    text=$(cited_text "$cite")
+    if [[ -z $text ]] || ! sed -n "${cite##*:}p" "$run/repo/${cite%:*}" 2>/dev/null | grep -qF -- "$text"; then
+      missing+=" the text of $cite"
+    fi
   done < <(grep -oE '`[^` ]+:[0-9]+`' "$run/records.md" 2>/dev/null | tr -d '`')
   if [[ -z $missing ]]; then
     echo "  ✓ scaffold of $1"
