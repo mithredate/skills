@@ -94,7 +94,6 @@ test('stays silent after an Edit that claims the ticket or records a resolution'
     for (const [old_string, new_string] of [
         ['assignee:', 'assignee: claude'],
         ['blocked:', 'Fire returned blocked:'],
-        ['## Resolution\n', '## Resolution\n\napproved: 2026-11-16\n'],
     ]) assert.equal(contextAfterEdit(path, old_string, new_string), '', new_string);
     assert.equal(contextAfterEdit(path, 'example.com', 'noreply@example.com'), LOAD_PREP);
 });
@@ -123,11 +122,44 @@ test('gives only the brief reminder after an Edit of an approved ticket whose to
     assert.equal(context, LOAD_PREP);
 });
 
-test('gives no approval reminder after an Edit that keeps approved: or deletes it with a brief change', () => {
+test('reminds after an Edit that changes only the date of approved:', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 
-    assert.equal(contextAfterEdit(path, 'assignee: claude', 'assignee: orchestrate fire 2026-11-16T10:00Z'), '');
-    assert.equal(contextAfterEdit(path, 'approved: 2026-11-03\n---\n\n## Brief\n\n- Goal: the sandbox', '---\n\n## Brief\n\n- Goal: staging'), LOAD_PREP);
+    const context = contextAfterEdit(path, 'approved: 2026-11-03', 'approved: 2026-11-16');
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('stays silent after an Edit that adds approved: outside the frontmatter', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextAfterEdit(path, '## Resolution\n', '## Resolution\n\napproved: 2026-11-16\n');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after an Edit that keeps approved:', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'assignee: claude', 'assignee: orchestrate fire 2026-11-16T10:00Z');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after an Edit that deletes approved:', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'approved: 2026-11-03\n', '');
+
+    assert.equal(context, '');
+});
+
+test('gives only the brief reminder after an Edit that deletes approved: and changes the brief', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'approved: 2026-11-03\n---\n\n## Brief\n\n- Goal: the sandbox', '---\n\n## Brief\n\n- Goal: staging');
+
+    assert.equal(context, LOAD_PREP);
 });
 
 test('stays silent after an Edit that anchors on the last brief line to add a resolution', () => {
