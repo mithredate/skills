@@ -30,7 +30,7 @@ The format and the examples are in [references/brief.md](references/brief.md). R
 - If the change touches a vendor SDK or API, link the official guide of the feature at the version that the brief names. The model can remember an old workaround.
 - The scope of a brief is its FR and NFR. A change that no FR or NFR line asks for is out of scope. A new runtime dependency is in scope only when the NFR allows it.
 
-Write the brief to a file before the checks, because the judge of check 5 reads a file. In a hand-off, write it as the body of the build ticket, with no `approved:`. If the ticket has an `assignee`, change only its body with the Edit tool. An edit that holds the `assignee:` line makes a hook load `dev:fire` before the checks. Otherwise, write it to `draft.md` in the session scratchpad. A write of `brief.md` makes a hook load `dev:fire`, so write `brief.md` only after the checks.
+Write the brief to a file before the checks, because the judge of check 5 reads a file. In a hand-off, write it as the body of the build ticket, with no `approved:`. If the ticket has an `assignee`, change only its body with the Edit tool. An edit that holds the `assignee:` line makes a hook load `dev:fire` before the checks. Outside a hand-off, write it to `draft.md` in the session scratchpad. A write of `brief.md` makes a hook load `dev:fire`, so write `brief.md` only after the checks.
 
 Check the brief:
 
@@ -38,16 +38,19 @@ Check the brief:
 2. Each FR is behavior that a caller, a user, or a test can see.
 3. Each Verification check is a real command with real data.
 4. The Terms line names each domain term that the change touches, or says `none`. Each edge case of the change is an FR line.
-5. Start `dev:brief-judge`. Give it the path of the brief file and the requirement. Say if the requirement is a message of the human or a source. Give it the decision records, or the paths of the decision tickets. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target. Start it again after each change of the brief or of the records. The check is done when the judge returns `auto` for the current brief.
+5. Start `dev:brief-judge`. Give it the path of the brief file and the requirement. If the requirement is a message of the human, write `The requirement is a message of the human.` in the prompt. Give it the decision records, or the paths of the decision tickets. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target. Start it again after each change of the brief or of the records. The check is done when the judge returns `auto` for the current brief.
    - If the Agent tool does not list `dev:brief-judge`, add no `approved:`, and start no other agent in its place. Tell the user to run `/reload-plugins`, and stop the check.
-   - Treat the verdict as `human` if it is not `auto`, if an item applies, or if there is no JSON. If a `human` verdict gives no reason, tell the user, and stop the check.
-   - If the verdict is `human`, fix each gap that the judge lists. Fix a `line_count` over 800 by check 6. For each other reason, change the brief or add evidence to the record. Evidence comes from the code, the data, or the docs. A record of your own decision does not answer a reason.
-   - If neither settles a reason, put the decision to the human by Gather step 3. Outside a hand-off, that is a round of `productivity:settle-decisions`.
+   - Treat the verdict as `human` if it is not `auto`, or if there is no JSON. Also treat it as `human` if an item applies, or if `gaps` lists a gap.
+   - If a `human` verdict gives no reason, tell the user, and stop the check. Do not start the judge again for this brief in this session.
+   - If the verdict is `human`, fix each gap that the judge lists. Fix a `line_count` over 800 by check 6. For each other reason, change the brief, or add to the record what clears the reason.
+   - A record of a session clears a reason only with evidence from the code, the data, or the docs. It clears a critical entry only when rule 2 of "Who decides" lets the session make the decision. It never clears a reason about a CI workflow, a deploy config, or a step before the merge that a closed PR does not undo. Only the answer of the human clears such a reason, in the requirement or in a record.
+   - If no change and no record settles a reason, put the decision to the human by Gather step 3. Outside a hand-off, that is a round of `productivity:settle-decisions`.
+   - After the third `human` verdict for one brief in this session, stop the check. Put each open reason and each open gap to the human by Gather step 3.
 6. If `line_count` is over 800, split the change into incremental briefs. Each brief can merge alone. Reviewers report a larger diff as too large to review. In a hand-off, each brief is its own build ticket, with a `blocked-by` edge to the build ticket before it. Outside a hand-off, stop, and tell the user to chart the change with `productivity:orchestrate`.
 
 ## Hand off
 
-Do not show the brief, and do not wait for a yes, because the user does not read a whole brief.
+Give the user a path, not the brief, because the user does not read a whole brief.
 
-- In a hand-off, add `approved: <YYYY-MM-DD>` to the ticket frontmatter only after the judge returns `auto` for the current brief. When you change a brief, do the checks again, and start the judge again. If the ticket has `approved:`, delete it in the same edit. Then go back to `orchestrate`. `orchestrate fire` builds the ticket later, with no human.
-- Otherwise, when the judge returns `auto`, write the text of `draft.md` to `brief.md` with the Write tool. Put `brief.md` in the session scratchpad, next to `draft.md`. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call. Then run `diff` on `draft.md` and `brief.md`, before the first step of `fire`. If `diff` prints a line, write `brief.md` again, because the judge cleared only the text of `draft.md`. Give the user the path of `brief.md`, and continue in the same turn.
+- In a hand-off, add `approved: <YYYY-MM-DD>` to the ticket frontmatter only after the judge returns `auto` for the current brief. When you change a brief, do the checks again, and start the judge again. If the ticket has `approved:`, delete it in the same edit. Give the user the path of the build ticket and the verdict of the judge. Then go back to `orchestrate`. `orchestrate fire` builds the ticket later, with no human.
+- Outside a hand-off, when the judge returns `auto`, write the text of `draft.md` to `brief.md` with the Write tool. Put `brief.md` in the session scratchpad, next to `draft.md`. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call. Then run `diff` on `draft.md` and `brief.md`, before the first step of `fire`. If `diff` prints a line, write `brief.md` again, because the judge cleared only the text of `draft.md`. Give the user the path of `brief.md`, and continue in the same turn.
