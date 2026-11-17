@@ -67,6 +67,7 @@ scripts/score-reviewer.test.sh || failed=1
 scripts/score-writing.test.sh || failed=1
 scripts/check-score-lines.test.sh || failed=1
 scripts/check-descriptions.test.sh || failed=1
+scripts/managed-settings.test.sh || failed=1
 dev/skills/review-pr/scripts/codex-review.test.sh || failed=1
 
 # Mod tests run the hooks module against the engine's test kit. Some builds,
