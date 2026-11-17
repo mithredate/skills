@@ -28,14 +28,17 @@ function approvalOf(file) {
 try {
     const { tool_input: input, tool_response: response } = JSON.parse(data);
     if (TRACKER_TICKET.test(input.file_path)) {
-        // A new file has a null originalFile. A tool response without it counts as a new file too.
-        const before = response?.originalFile ?? '';
+        // A new file has a null originalFile. For the brief, a tool response without it counts as a new file too.
+        const original = response?.originalFile;
+        const before = original ?? '';
         const after = readFileSync(input.file_path, 'utf8');
 
         const contexts = [];
         if (briefOf(before) !== briefOf(after)) contexts.push(BRIEF_CHANGED);
         const approval = approvalOf(after);
-        if (approval !== null && approval !== approvalOf(before)) contexts.push(APPROVED_ADDED);
+        // Without originalFile, the hook cannot tell an added approved: line from an old one.
+        const addsApproval = original !== undefined && approval !== null && approval !== approvalOf(before);
+        if (addsApproval) contexts.push(APPROVED_ADDED);
 
         if (contexts.length > 0) {
             console.log(JSON.stringify({

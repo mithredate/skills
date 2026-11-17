@@ -107,6 +107,14 @@ test('reminds after an Edit that adds approved: to the frontmatter of a ticket',
     assert.equal(context, CHECK_APPROVAL);
 });
 
+test('gives only the brief reminder after an Edit of an approved ticket whose tool response has no originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextFor('Edit', { file_path: path, old_string: 'assignee:', new_string: 'assignee: claude' }, { filePath: path });
+
+    assert.equal(context, LOAD_PREP);
+});
+
 test('gives no approval reminder after an Edit that keeps approved: or deletes it with a brief change', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 
