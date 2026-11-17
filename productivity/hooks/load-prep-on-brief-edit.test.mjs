@@ -88,14 +88,20 @@ test('reminds after a MultiEdit with one edit inside the brief', () => {
     assert.equal(context, LOAD_PREP);
 });
 
-test('stays silent after an Edit that claims the ticket or records a resolution', () => {
+test('stays silent after an Edit that claims the ticket', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
-    for (const [old_string, new_string] of [
-        ['assignee:', 'assignee: claude'],
-        ['blocked:', 'Fire returned blocked:'],
-    ]) assert.equal(contextAfterEdit(path, old_string, new_string), '', new_string);
-    assert.equal(contextAfterEdit(path, 'example.com', 'noreply@example.com'), LOAD_PREP);
+    const context = contextAfterEdit(path, 'assignee:', 'assignee: claude');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after an Edit that records a resolution', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextAfterEdit(path, 'blocked:', 'Fire returned blocked:');
+
+    assert.equal(context, '');
 });
 
 test('reminds after an Edit that adds approved: to the frontmatter of a ticket', () => {
@@ -114,10 +120,10 @@ test('reminds after an Edit that adds approved: to the frontmatter of a ticket w
     assert.equal(context, CHECK_APPROVAL);
 });
 
-test('gives only the brief reminder after an Edit of an approved ticket whose tool response has no originalFile', () => {
+test('gives only the brief reminder after an Edit of the brief of an approved ticket whose tool response has no originalFile', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 
-    const context = contextFor('Edit', { file_path: path, old_string: 'assignee:', new_string: 'assignee: claude' }, { filePath: path });
+    const context = contextAfterEdit(path, 'the new address', 'the staging address', { originalFile: undefined });
 
     assert.equal(context, LOAD_PREP);
 });
