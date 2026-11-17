@@ -28,7 +28,7 @@ function approvalOf(file) {
 try {
     const { tool_input: input, tool_response: response } = JSON.parse(data);
     if (TRACKER_TICKET.test(input.file_path)) {
-        // A new file has a null originalFile. For the brief, a tool response without it counts as a new file too.
+        // For the brief, a tool response without the original text counts as a new file.
         const original = response?.originalFile;
         const before = original ?? '';
         const after = readFileSync(input.file_path, 'utf8');
@@ -36,8 +36,9 @@ try {
         const contexts = [];
         if (briefOf(before) !== briefOf(after)) contexts.push(BRIEF_CHANGED);
         const approval = approvalOf(after);
-        // Without originalFile, the hook cannot tell an added approved: line from an old one.
-        const addsApproval = original !== undefined && approval !== null && approval !== approvalOf(before);
+        // Claude Code also sends a null originalFile for a staged edit of a remote session, so only type 'create' marks a new file.
+        const knowsBefore = typeof original === 'string' || response?.type === 'create';
+        const addsApproval = knowsBefore && approval !== null && approval !== approvalOf(before);
         if (addsApproval) contexts.push(APPROVED_ADDED);
 
         if (contexts.length > 0) {

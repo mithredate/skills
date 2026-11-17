@@ -47,10 +47,10 @@ function contextFor(toolName, toolInput, toolResponse) {
 }
 
 // Edits the file the way the Edit tool does, then runs the hook with the tool's input and response.
-function contextAfterEdit(path, old_string, new_string) {
+function contextAfterEdit(path, old_string, new_string, responseChanges = {}) {
     const originalFile = readFileSync(path, 'utf8');
     writeFileSync(path, originalFile.replace(old_string, () => new_string));
-    return contextFor('Edit', { file_path: path, old_string, new_string }, { filePath: path, oldString: old_string, newString: new_string, originalFile });
+    return contextFor('Edit', { file_path: path, old_string, new_string }, { filePath: path, oldString: old_string, newString: new_string, originalFile, ...responseChanges });
 }
 
 test('reminds after an Edit inside the brief of a ticket', () => {
@@ -118,6 +118,14 @@ test('gives only the brief reminder after an Edit of an approved ticket whose to
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 
     const context = contextFor('Edit', { file_path: path, old_string: 'assignee:', new_string: 'assignee: claude' }, { filePath: path });
+
+    assert.equal(context, LOAD_PREP);
+});
+
+test('gives only the brief reminder after an Edit of the brief of an approved ticket whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'the new address', 'the staging address', { originalFile: null });
 
     assert.equal(context, LOAD_PREP);
 });
