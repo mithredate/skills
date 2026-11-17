@@ -165,6 +165,14 @@ test('reminds after a Write that adds approved: to a ticket whose tool response 
     assert.equal(context, CHECK_APPROVAL);
 });
 
+test('stays silent after an Edit whose old and new text hold approved: and whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-03'));
+
+    const context = contextAfterEdit(path, 'assignee: claude\napproved: 2026-11-03', 'assignee: orchestrate fire 2026-11-16T10:00Z\napproved: 2026-11-03', { originalFile: null });
+
+    assert.equal(context, '');
+});
+
 test('reminds after an Edit that changes only the date of approved:', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 

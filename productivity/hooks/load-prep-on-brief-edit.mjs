@@ -25,9 +25,15 @@ function approvalOf(file) {
     return frontmatter.match(APPROVED)?.[0] ?? null;
 }
 
-function editWrites(input, line) {
+function linesOf(texts) {
+    return texts.join('\n').split(/\r?\n/);
+}
+
+function editAdds(input, line) {
     const edits = input.edits ?? [];
-    return [input.new_string, input.content, ...edits.map((edit) => edit.new_string)].join('\n').split(/\r?\n/).includes(line);
+    const newLines = linesOf([input.new_string, input.content, ...edits.map((edit) => edit.new_string)]);
+    const oldLines = linesOf([input.old_string, ...edits.map((edit) => edit.old_string)]);
+    return newLines.includes(line) && !oldLines.includes(line);
 }
 
 try {
@@ -43,7 +49,7 @@ try {
         const approval = approvalOf(after);
         // Claude Code also sends a null originalFile for a staged edit of a remote session, so only type 'create' marks a new file.
         const knowsBefore = typeof original === 'string' || response?.type === 'create';
-        const addsApproval = approval !== null && (knowsBefore ? approval !== approvalOf(before) : editWrites(input, approval));
+        const addsApproval = approval !== null && (knowsBefore ? approval !== approvalOf(before) : editAdds(input, approval));
         if (addsApproval) contexts.push(APPROVED_ADDED);
 
         if (contexts.length > 0) {
