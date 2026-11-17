@@ -79,13 +79,14 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 2. Start from the goal. Name the next step toward it that a person or an agent can take now. Claim the open tickets that this step cannot start without, or the tickets that the user names. Check that need against the step itself, because a `blocked-by` edge can be stale. Do not claim a `gate`, or a build ticket for a git repo. List the other open tickets as "not needed now", with no question to the user. If the next step is a gate, give the user its checklist.
    - For each ready build ticket with a brief and no `approved:`, read the Targets line. If it names only git repos, start `dev:brief-judge`. Give it the path of the ticket, of `initiative.md`, and of each ticket in its `blocked-by`. Tell it that the Goal of `initiative.md` is the requirement. The user agreed to the Goal in `chart` step 1. So write `The requirement is a message of the human.` in the prompt. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target.
    - If the Agent tool does not list `dev:brief-judge`, add no `approved:`, and start no other agent in its place. Tell the user to run `/reload-plugins`, and leave each build ticket as it is.
-   - Treat the verdict as `human` if it is not `auto`, or if there is no JSON. Also treat it as `human` if an item applies, or if `gaps` lists a gap.
-   - If a `human` verdict gives no reason, tell the user. Do not start the judge again for this build ticket in this session.
+   - Treat the verdict as `human` if it is not `auto`, or if there is no JSON. Also treat it as `human` if an item applies, if `gaps` lists a gap, or if `line_count` is over 800.
    - If the verdict is `auto`, add `approved: <YYYY-MM-DD>` to the build ticket.
-   - If it is the third `human` verdict for the build ticket in this session, do not start the judge again. Write each open reason and each open gap as its own ticket with a question for the owner. Add each such ticket to the `blocked-by` of the build ticket.
+   - If a `human` verdict gives no reason, tell the user. Do not start the judge again for this build ticket in this session.
    - If the first or second `human` verdict lists a gap, fix each gap by the rules of `productivity:prep`. Then start the judge again.
    - If the first or second `human` verdict lists no gap, write each reason as its own ticket. Add each such ticket to the `blocked-by` of the build ticket.
-   - If step 2 claimed no ticket, go to step 7.
+   - If it is the third `human` verdict for the build ticket in this session, do not start the judge again. Write each open reason and each open gap as its own ticket with a question for the owner. Add each such ticket to the `blocked-by` of the build ticket.
+
+   If step 2 claimed no ticket, go to step 7.
 3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in the rounds of `productivity:settle-decisions`.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under Decisions so far in `initiative.md`. The resolution of a build ticket links the PRs or the Verification evidence.
    - When a decision ticket closes, write its decision into the brief of each build ticket that has it in `blocked-by`. Follow the rules of `productivity:prep`.
