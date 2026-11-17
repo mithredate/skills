@@ -77,8 +77,12 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 
 1. Read `initiative.md`. Do not read every ticket body. Read a related or closed ticket only when the work needs it.
 2. Start from the goal. Name the next step toward it that a person or an agent can take now. Claim the open tickets that this step cannot start without, or the tickets that the user names. Check that need against the step itself, because a `blocked-by` edge can be stale. Do not claim a `gate`, or a build ticket for a git repo. List the other open tickets as "not needed now", with no question to the user. If the next step is a gate, give the user its checklist.
-   - For each ready build ticket with a brief and no `approved:`, start `dev:brief-judge`. Give it the path of the ticket, of `initiative.md`, and of each ticket in its `blocked-by`. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target.
-   - If the judge returns `auto`, add `approved: <YYYY-MM-DD>` to the build ticket. If it returns `human`, write each reason as its own ticket. Add each such ticket to the `blocked-by` of the build ticket. Name `owner needed` in the status line.
+   - For each ready build ticket with a brief and no `approved:`, read the Targets line. If it names only git repos, start `dev:brief-judge`. Give it the path of the ticket, of `initiative.md`, and of each ticket in its `blocked-by`. Tell it that the Goal of `initiative.md` is the requirement, and that the user agreed to it. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target.
+   - If the Agent tool does not list `dev:brief-judge`, add no `approved:`, and start no other agent in its place. Tell the user to run `/reload-plugins`, and leave each build ticket as it is.
+   - Treat the verdict as `human` if it is not `auto`, if an item applies, or if there is no JSON. If a `human` verdict gives no reason, tell the user.
+   - If the verdict is `auto`, add `approved: <YYYY-MM-DD>` to the build ticket.
+   - If the verdict is `human` and `gaps` lists a gap, fix each gap in the brief by the rules of `productivity:prep`. Then start the judge again.
+   - If the verdict is `human` and `gaps` is empty, write each reason as its own ticket. Add each such ticket to the `blocked-by` of the build ticket.
    - If step 2 claimed no ticket, go to step 7.
 3. Resolve the tickets. Start a subagent with a fresh context for each `research` ticket. Sort each decision with `productivity:settle-decisions`. Make your own decisions first, then put the human's decisions in the rounds of `productivity:settle-decisions`.
 4. If `fire` returns a status other than `pass`, do not close the ticket and add no gist. Record the status and the blocker in the ticket, and clear `assignee`. Write a ticket for the blocker, and add it to the `blocked-by` of the build ticket. In all other cases, write the record of `productivity:settle-decisions` as the resolution of a decision ticket. Close the ticket. Add one gist line under Decisions so far in `initiative.md`. The resolution of a build ticket links the PRs or the Verification evidence.
@@ -89,7 +93,7 @@ If the user names no initiative, ask the user which initiative to work. Claim no
 7. Update the one-line state in the index row of this initiative, in the limit of [The index](#the-index). Change no other row. Give the number of ready build tickets that are approved, not their titles. If the row is `paused`, set the status to `open`. If the resolution now depends on a person outside the repo, set the status to `waiting`.
 8. Commit and push the tickets, `initiative.md`, and the index. The task is done when each claimed ticket is closed or blocked as in step 4, and the sweep table is in your final message. Start the final message with the [status line](#the-status-line).
 
-The user can run other sessions on other ready tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the initiative, and its tickets. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
+The user can run other sessions on other ready tickets at the same time. If the user asks for several sessions, split only the tickets that step 2 claims. Start each session with `orchestrate cook`, the initiative, and its tickets. Tell each session not to start the judge of step 2, because this session did. If there are fewer tickets than sessions, start fewer sessions and tell the user why. Expect concurrent commits.
 
 ## fire
 
