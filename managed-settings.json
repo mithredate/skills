@@ -10,6 +10,18 @@
     "pnpm_config_minimum_release_age": "10080",
     "UV_EXCLUDE_NEWER": "7 days"
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$SSL_CERT_FILE\" ] && [ -n \"$CLAUDE_ENV_FILE\" ] || exit 0; for f in /opt/homebrew/etc/ca-certificates/cert.pem /usr/local/etc/ca-certificates/cert.pem; do if [ -f \"$f\" ]; then echo \"export SSL_CERT_FILE=$f\" >> \"$CLAUDE_ENV_FILE\"; exit; fi; done; echo 'gh fails TLS in the sandbox on this Mac, because it has no Homebrew CA bundle. Run brew install ca-certificates to fix it, then start a new session.'"
+          }
+        ]
+      }
+    ]
+  },
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
