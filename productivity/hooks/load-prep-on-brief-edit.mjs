@@ -25,6 +25,10 @@ function approvalOf(file) {
     return frontmatter.match(APPROVED)?.[0] ?? null;
 }
 
+function editWrites(input, line) {
+    return [input.new_string].join('\n').split(/\r?\n/).includes(line);
+}
+
 try {
     const { tool_input: input, tool_response: response } = JSON.parse(data);
     if (TRACKER_TICKET.test(input.file_path)) {
@@ -38,7 +42,7 @@ try {
         const approval = approvalOf(after);
         // Claude Code also sends a null originalFile for a staged edit of a remote session, so only type 'create' marks a new file.
         const knowsBefore = typeof original === 'string' || response?.type === 'create';
-        const addsApproval = knowsBefore && approval !== null && approval !== approvalOf(before);
+        const addsApproval = approval !== null && (knowsBefore ? approval !== approvalOf(before) : editWrites(input, approval));
         if (addsApproval) contexts.push(APPROVED_ADDED);
 
         if (contexts.length > 0) {

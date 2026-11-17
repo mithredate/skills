@@ -27,6 +27,7 @@ const TICKET = [
     'Fire returned blocked: the sandbox has no DNS record.',
 ].join('\n');
 const TICKET_WITHOUT_RESOLUTION = TICKET.split('\n\n## Resolution')[0];
+const TICKET_WITHOUT_BRIEF = TICKET.split('\n\n## Brief')[0];
 const APPROVED_TICKET = TICKET.replace('assignee: claude\n', 'assignee: claude\napproved: 2026-11-03\n');
 
 function writeFile(relativePath, content) {
@@ -134,6 +135,14 @@ test('gives only the brief reminder after an Edit of the brief of an approved ti
     const context = contextAfterEdit(path, 'the new address', 'the staging address', { originalFile: null });
 
     assert.equal(context, LOAD_PREP);
+});
+
+test('reminds after an Edit that adds approved: to a ticket whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF);
+
+    const context = contextAfterEdit(path, 'assignee: claude\n', 'assignee: claude\napproved: 2026-11-16\n', { originalFile: null });
+
+    assert.equal(context, CHECK_APPROVAL);
 });
 
 test('reminds after an Edit that changes only the date of approved:', () => {
