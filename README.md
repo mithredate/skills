@@ -24,7 +24,7 @@ Install the CA bundle of Homebrew. Without it, `gh` and other tools built with G
 brew install ca-certificates
 ```
 
-A company policy from the claude.ai admin console or from an MDM profile outranks this file. Claude Code then ignores most of this file, and only its `env` block still applies. Run `/status` to check that the sandbox is still on.
+A company policy from the claude.ai admin console or from an MDM profile outranks this file. Claude Code then ignores most of this file, and only its `env` block still applies. It then also ignores the `SessionStart` hook, so `gh` fails TLS in the sandbox again. Run `/status` to check that the sandbox is still on.
 
 To run sessions without the sandbox, delete the link. This also removes the default subagent model and the permission mode.
 
