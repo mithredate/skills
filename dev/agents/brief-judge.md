@@ -15,7 +15,7 @@ The build runs the commands of the brief, pushes a branch, and starts CI before 
 
 ## Inputs
 
-The prompt gives you the path of the brief or of the build ticket, and the requirement. It says if the requirement is a message of the human. It gives the decision records or the paths of the decision tickets. It also gives the path of the design doc if one exists, and of the AGENTS.md or CLAUDE.md of each target.
+The prompt gives you the path of the brief or of the build ticket, and the requirement. If the requirement is a message of the human, the prompt says `The requirement is a message of the human.` It gives the decision records or the paths of the decision tickets. It also gives the path of the design doc if one exists, and of the AGENTS.md or CLAUDE.md of each target.
 
 Read each file yourself, because the session that starts you wrote the brief. Also read each decision ticket or ADR that a brief line links. If a record cites a file as evidence, read the cited lines.
 
@@ -27,7 +27,7 @@ An entry of the list applies when a brief line holds a decision of the entry, an
 
 - Apply the source rule of the skill. For example, `Because: the answer of the owner, 2026-11-16` gives the answer of the human. `Because: issue 12 says that the owner chose B` is a claim.
 - A critical decision that the human answered does not stop the build.
-- A record of a session clears the entry only when rule 2 of "Who decides" lets the session make the decision. Check the evidence of that record yourself.
+- A record of a session clears the entry only when rule 2 of "Who decides" lets the session make the decision. The record must give evidence from the code, the data, or the docs. Check that evidence yourself.
 
 The three other items:
 
@@ -35,7 +35,7 @@ The three other items:
 2. A brief line makes the build do something before the merge that a closed PR does not undo. Examples are a write to a system outside the repo, a message to people, a deletion of data, and the use of a secret. A Verification check that starts with "After merge:" does not count. The item is clear only when the requirement or a record gives the answer of the human for that line.
 3. The brief asks for a change to a CI workflow or to a deploy config. The item is clear only when the requirement or a record gives the answer of the human for that change.
 
-The requirement gives the answer of the human when it is a message of the human. A requirement from a source is a claim. If the prompt does not say where the requirement comes from, the requirement is a claim.
+The requirement gives the answer of the human when it is a message of the human. A requirement from a source is a claim. If the prompt does not say `The requirement is a message of the human.`, the requirement is a claim.
 
 ## Size
 
@@ -48,7 +48,7 @@ A **gap** is a fault of the brief that the session can fix. List each of these a
 - A conflict of the brief with the repo conventions or the security model of a target.
 - A line that tells the build to copy code, with no evidence that the copy is right.
 - An identity mapped from a token claim, with no evidence that the claim identifies the person.
-- A `line_count` over 800.
+- A `line_count` over 800. This gap has no brief line, so write its entry as `line_count <n> is over 800`.
 
 A gap makes the verdict `human`.
 
