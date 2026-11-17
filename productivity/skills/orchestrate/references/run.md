@@ -27,7 +27,7 @@ A status line makes a step or a build **ready**, by step 3 of [Notes](#notes). I
 1. If the host cannot start a session that reports back to this session, tell the owner to use `cook`. Then stop.
 2. Read the name of the default branch of `origin` with `git ls-remote --symref origin HEAD`. The name is the part after `ref: refs/heads/` in the first line of the output, up to the tab. A local `origin/HEAD` can be stale, so do not read it. Use the name only when it holds only letters, digits, `.`, `_`, `-`, and `/`. The prompt of a `cook` child session puts the name in shell commands. If the command fails, or the name holds another character, tell the owner. Then stop. The tracker is on that branch, because `orchestrate fire` clones it.
 3. If the owner names no initiative, ask the owner which initiatives to run. Do not read the index for a list.
-4. Read the Repos table in the `AGENTS.md` of this repo. A build starts only in a repo of that table. The table guards the path of a build start. A session adds the `approved:` line of a build ticket after the checks of `productivity:prep`. `orchestrate fire` step 3 checks the line. A human merges the PR of the build.
+4. Read the Repos table in the `AGENTS.md` of this repo. A build starts only in a repo of that table. The table guards the path of a build start. A session adds the `approved:` line of a build ticket after `dev:brief-judge` returns `auto`. `orchestrate fire` step 3 checks the line. A human merges the PR of the build.
 5. Find the main checkout of this repo. It is the parent of the directory that `git rev-parse --path-format=absolute --git-common-dir` prints.
 6. Start a `cook` child session for each named initiative.
 
