@@ -5,10 +5,10 @@
 # line and a `HEAD:` line of that agent. A PR that changes cases of the agent
 # needs a `HEAD:` line. The files under dev/evals/blast-radius-* belong to
 # blast-radius, and the files under dev/evals/brief-judge-* to brief-judge. The
-# other files under dev/evals/ belong to pr-reviewer. A score line starts a line of
-# the body, as scripts/score-reviewer.sh prints it. A `none` score counts. The
-# check does not compare the scores. The body is untrusted, so the script only
-# greps it.
+# other files under dev/evals/ belong to pr-reviewer. A score line starts a line
+# of the body, as scripts/score-reviewer.sh prints it. A `none` score counts.
+# The check does not compare the scores. The body is untrusted, so the script
+# only greps it.
 # The paths come as git diff prints them. git puts a path with a special byte
 # in double quotes, and the prefix dev/evals/ stays as it is after the quote.
 # Usage: <changed paths, one per line> | BODY=<PR body> scripts/check-score-lines.sh
