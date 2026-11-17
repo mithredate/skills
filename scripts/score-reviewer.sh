@@ -35,6 +35,11 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/score-reviewer.XXXXXX")
 cp -R dev "$work/dev"
 rm -rf "$work/dev/evals/results"
 git show "$ref:dev/agents/$agent.md" > "$work/dev/agents/$agent.md"
+# A brief-judge case names this copy in its plugins, for the skill of the judge.
+# The copy holds no hook of productivity.
+mkdir -p "$work/dev/productivity/.claude-plugin" "$work/dev/productivity/skills"
+cp productivity/.claude-plugin/plugin.json "$work/dev/productivity/.claude-plugin/"
+cp -R productivity/skills/settle-decisions "$work/dev/productivity/skills/"
 
 # The case session and the judge are pinned. The agent keeps the model of
 # its frontmatter. Threshold 0 keeps a low score from failing the eval.

@@ -14,8 +14,11 @@ mkdir "$tmp/bin"
 cat > "$tmp/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 # Copy $FAKE_JSON, if set, to <--output-dir>/aggregate-result.json. Exit $FAKE_STATUS.
-# Write the arguments, one per line, to $FAKE_ARGS.
+# Write the arguments, one per line, to $FAKE_ARGS. Copy the productivity/
+# folder of the target <plugin dir> to $FAKE_PLUGINS.
 printf '%s\n' "$@" > "$FAKE_ARGS"
+rm -rf "$FAKE_PLUGINS"
+cp -R "$3/productivity" "$FAKE_PLUGINS"
 out=
 while (( $# )); do [[ $1 == --output-dir ]] && out=$2; shift; done
 if [[ -n $FAKE_JSON ]]; then mkdir -p "$out" && cp "$FAKE_JSON" "$out/aggregate-result.json"; fi
@@ -98,13 +101,20 @@ cat > "$tmp/blast-radius.json" <<'EOF'
  {"name": "recall-b", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}}
 ]}
 EOF
+cat > "$tmp/brief-judge.json" <<'EOF'
+{"partial": false, "cases": [
+ {"name": "brief-judge-recall-a", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null}]}},
+ {"name": "brief-judge-clean-x", "arms": {"with": [{"graders": [{"passed": false}, {"passed": true}], "error": null}]}},
+ {"name": "clean-y", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}}
+]}
+EOF
 
 failed=0
 check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted text, [script arguments]
   local name=$1 code=0 out
   local -a args=("${@:6}")
   (( ${#args[@]} )) || args=(HEAD)
-  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 FAKE_ARGS=$tmp/args \
+  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 FAKE_ARGS=$tmp/args FAKE_PLUGINS=$tmp/plugins \
     scripts/score-reviewer.sh "${args[@]}" 2>&1) || code=$?
   if [[ $code == "$4" && $out == *"$5"* ]]; then
     echo "  ✓ $name"
@@ -149,6 +159,24 @@ check "another agent counts its own cases" "$tmp/blast-radius.json" 0 0 \
   "HEAD: blast-radius recall 0.5 (1 of 2 runs), clean 0 (0 of 1 runs), runs with an error 0" \
   --agent blast-radius HEAD
 tagged "another agent runs its own cases" blast-radius
+
+# A brief-judge case loads productivity:settle-decisions from a copy inside the
+# target, and no hook of productivity.
+check "brief-judge counts its own cases" "$tmp/brief-judge.json" 0 0 \
+  "HEAD: brief-judge recall 1 (1 of 1 runs), clean 0 (0 of 1 runs), runs with an error 0" \
+  --agent brief-judge HEAD
+expected=$'./.claude-plugin/plugin.json\n./skills/settle-decisions/SKILL.md'
+actual=$(cd "$tmp/plugins" && find . -type f | sort) || true
+if [[ $actual == "$expected" ]] \
+  && cmp -s productivity/skills/settle-decisions/SKILL.md "$tmp/plugins/skills/settle-decisions/SKILL.md"; then
+  echo "  ✓ the target holds productivity with only settle-decisions"
+else
+  echo "  ✘ the target holds productivity with only settle-decisions: want the files"
+  echo "$expected" | sed 's/^/    /'
+  echo "  with the settle-decisions of the checkout, got"
+  echo "$actual" | sed 's/^/    /'
+  failed=1
+fi
 check "an agent with no file at the ref" "" 0 128 "dev/agents/no-such-agent.md" \
   --agent no-such-agent HEAD
 
