@@ -156,6 +156,15 @@ test('reminds after a MultiEdit that adds approved: to a ticket', () => {
     assert.equal(context, CHECK_APPROVAL);
 });
 
+test('reminds after a Write that adds approved: to a ticket whose tool response has a null originalFile', () => {
+    const content = TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-16');
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', content);
+
+    const context = contextFor('Write', { file_path: path, content }, { type: 'update', filePath: path, content, originalFile: null });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
 test('reminds after an Edit that changes only the date of approved:', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 

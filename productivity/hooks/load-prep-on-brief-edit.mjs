@@ -27,7 +27,7 @@ function approvalOf(file) {
 
 function editWrites(input, line) {
     const edits = input.edits ?? [];
-    return [input.new_string, ...edits.map((edit) => edit.new_string)].join('\n').split(/\r?\n/).includes(line);
+    return [input.new_string, input.content, ...edits.map((edit) => edit.new_string)].join('\n').split(/\r?\n/).includes(line);
 }
 
 try {
