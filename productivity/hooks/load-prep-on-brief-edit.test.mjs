@@ -107,6 +107,14 @@ test('reminds after an Edit that adds approved: to the frontmatter of a ticket',
     assert.equal(context, CHECK_APPROVAL);
 });
 
+test('reminds after an Edit that adds approved: to the frontmatter of a ticket with CRLF line endings', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET.replaceAll('\n', '\r\n'));
+
+    const context = contextAfterEdit(path, '---\r\n\r\n## Brief', 'approved: 2026-11-16\r\n---\r\n\r\n## Brief');
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
 test('gives only the brief reminder after an Edit of an approved ticket whose tool response has no originalFile', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 
