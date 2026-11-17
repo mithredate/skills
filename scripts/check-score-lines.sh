@@ -2,7 +2,9 @@
 # Fail a PR that changes a reviewer agent or its cases, and has no score lines
 # of that agent in its body. The agents are pr-reviewer, blast-radius, and
 # brief-judge. A PR that changes dev/agents/<agent>.md needs an `origin/main:`
-# line and a `HEAD:` line of that agent. A PR that changes cases of the agent
+# line and a `HEAD:` line of that agent. The judge takes the critical list and
+# the source rule from productivity/skills/settle-decisions/, so a change there
+# needs both brief-judge lines too. A PR that changes cases of the agent
 # needs a `HEAD:` line. The files under dev/evals/blast-radius-* belong to
 # blast-radius, and the files under dev/evals/brief-judge-* to brief-judge. The
 # other files under dev/evals/ belong to pr-reviewer. A score line starts a line
@@ -28,8 +30,10 @@ for agent in pr-reviewer blast-radius brief-judge; do
     label="$agent " option=" --agent $agent" cases="files under dev/evals/$agent-*"
     own=$(grep -E "^\"?dev/evals/$agent-" <<<"$evals" || true)
   fi
-  if grep -qx "dev/agents/$agent.md" <<<"$paths"; then
-    refs='origin/main HEAD' changed=dev/agents/$agent.md
+  agent_files="dev/agents/$agent\.md"
+  if [[ $agent == brief-judge ]]; then agent_files+='|"?productivity/skills/settle-decisions/.+'; fi
+  if changed=$(grep -Exm1 "$agent_files" <<<"$paths"); then
+    refs='origin/main HEAD'
   elif [[ -n $own ]]; then
     refs=HEAD changed=$cases
   else
