@@ -73,9 +73,11 @@ test('reminds after a Write of a ticket that holds a brief', () => {
 test('gives both reminders after a Write of a new ticket that holds a brief and approved:', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-21.md', APPROVED_TICKET);
 
+    const expected = `${LOAD_PREP} ${CHECK_APPROVAL}`;
+
     const context = contextFor('Write', { file_path: path, content: APPROVED_TICKET }, { type: 'create', filePath: path, content: APPROVED_TICKET, originalFile: null });
 
-    assert.equal(context, `${LOAD_PREP} ${CHECK_APPROVAL}`);
+    assert.equal(context, expected);
 });
 
 test('reminds after a MultiEdit with one edit inside the brief', () => {
