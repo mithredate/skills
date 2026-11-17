@@ -15,13 +15,13 @@ The build runs the commands of the brief, pushes a branch, and starts CI before 
 
 ## Inputs
 
-The prompt gives you the path of the brief or of the build ticket, and the requirement. It gives the decision records or the paths of the decision tickets. It also gives the path of the design doc if one exists, and of the AGENTS.md or CLAUDE.md of each target.
+The prompt gives you the path of the brief or of the build ticket, and the requirement. It says if the requirement is a message of the human. It gives the decision records or the paths of the decision tickets. It also gives the path of the design doc if one exists, and of the AGENTS.md or CLAUDE.md of each target.
 
 Read each file yourself, because the session that starts you wrote the brief. Also read each decision ticket or ADR that a brief line links. If a record cites a file as evidence, read the cited lines.
 
 ## Rubric
 
-The items are the entries of the critical list in `productivity:settle-decisions`, and the four items below. The skill is in your context. If it is not, call the Skill tool with it. If you cannot get the list, the verdict is `human`.
+The items are the entries of the critical list in `productivity:settle-decisions`, and the three items below. The skill is in your context. If it is not, call the Skill tool with it. If you cannot get the list, the verdict is `human`.
 
 An entry of the list applies when a brief line holds a decision of the entry, and no record gives the answer of the human.
 
@@ -29,12 +29,17 @@ An entry of the list applies when a brief line holds a decision of the entry, an
 - A critical decision that the human answered does not stop the build.
 - A record of a session clears the entry only when rule 2 of "Who decides" lets the session make the decision. Check the evidence of that record yourself.
 
-The four other items:
+The three other items:
 
 1. A brief line rests on a claim from a source, and no record gives evidence for it from the code, the data, or the docs.
-2. A brief line makes the build do something before the merge that a closed PR does not undo. Examples are a write to a system outside the repo, a message to people, a deletion of data, and the use of a secret. A Verification check that starts with "After merge:" does not count.
-3. The brief asks for a change to a CI workflow, or to another file that runs on a push.
-4. A target of the brief is not a git repo.
+2. A brief line makes the build do something before the merge that a closed PR does not undo. Examples are a write to a system outside the repo, a message to people, a deletion of data, and the use of a secret. A Verification check that starts with "After merge:" does not count. The item is clear only when the requirement or a record gives the answer of the human for that line.
+3. The brief asks for a change to a CI workflow or to a deploy config. The item is clear only when the requirement or a record gives the answer of the human for that change.
+
+The requirement gives the answer of the human when it is a message of the human. A requirement from a source is a claim. If the prompt does not say where the requirement comes from, the requirement is a claim.
+
+## Size
+
+Count the lines that the change can add or change, without generated files. Return the count as the number `line_count`.
 
 ## Gaps
 
@@ -43,18 +48,15 @@ A **gap** is a fault of the brief that the session can fix. List each of these a
 - A conflict of the brief with the repo conventions or the security model of a target.
 - A line that tells the build to copy code, with no evidence that the copy is right.
 - An identity mapped from a token claim, with no evidence that the claim identifies the person.
+- A `line_count` over 800.
 
 A gap makes the verdict `human`.
 
-## Size
-
-Count the lines that the change can add or change, without generated files. Return the count as the number `line_count`.
-
 ## Evidence
 
-Write one line in `items` for each entry of the critical list and for each of the four other items. For an item that applies, quote the brief line and say what is open. For a clear item, cite the record or the `path:line` of the evidence. If no brief line touches the item, say why in one sentence. An item without evidence applies.
+Write one line in `items` for each entry of the critical list and for each of the three other items. For an item that applies, quote the brief line and say what is open. For a clear item, cite the record or the `path:line` of the evidence. If no brief line touches the item, say why in one sentence. An item without evidence applies.
 
-Write one sentence in `reasons` for each item that applies and for each gap.
+Write one sentence in `reasons` for each item that applies and for each gap. Say what clears it: a change of the brief, evidence, or the answer of the human.
 
 ## Output
 
