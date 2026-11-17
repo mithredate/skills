@@ -15,10 +15,9 @@ cat > "$tmp/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 # Copy $FAKE_JSON, if set, to <--output-dir>/aggregate-result.json. Exit $FAKE_STATUS.
 # Write the arguments, one per line, to $FAKE_ARGS. Copy the productivity/
-# folder of the target <plugin dir> to $FAKE_PLUGINS.
+# folder of the target <plugin dir>, if any, to $FAKE_PLUGINS.
 printf '%s\n' "$@" > "$FAKE_ARGS"
-rm -rf "$FAKE_PLUGINS"
-cp -R "$3/productivity" "$FAKE_PLUGINS"
+[[ ! -d $3/productivity ]] || cp -R "$3/productivity" "$FAKE_PLUGINS"
 out=
 while (( $# )); do [[ $1 == --output-dir ]] && out=$2; shift; done
 if [[ -n $FAKE_JSON ]]; then mkdir -p "$out" && cp "$FAKE_JSON" "$out/aggregate-result.json"; fi
@@ -110,12 +109,14 @@ cat > "$tmp/brief-judge.json" <<'EOF'
 EOF
 
 failed=0
+script=scripts/score-reviewer.sh
 check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted text, [script arguments]
-  local name=$1 code=0 out
+  local name=$1 code=0
   local -a args=("${@:6}")
   (( ${#args[@]} )) || args=(HEAD)
+  rm -rf "$tmp/plugins"
   out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 FAKE_ARGS=$tmp/args FAKE_PLUGINS=$tmp/plugins \
-    scripts/score-reviewer.sh "${args[@]}" 2>&1) || code=$?
+    "$script" "${args[@]}" 2>&1) || code=$?
   if [[ $code == "$4" && $out == *"$5"* ]]; then
     echo "  ✓ $name"
   else
@@ -160,25 +161,66 @@ check "another agent counts its own cases" "$tmp/blast-radius.json" 0 0 \
   --agent blast-radius HEAD
 tagged "another agent runs its own cases" blast-radius
 
-# A brief-judge case loads productivity:settle-decisions from a copy inside the
-# target, and no hook of productivity.
 check "brief-judge counts its own cases" "$tmp/brief-judge.json" 0 0 \
   "HEAD: brief-judge recall 1 (1 of 1 runs), clean 0 (0 of 1 runs), runs with an error 0" \
   --agent brief-judge HEAD
-expected=$'./.claude-plugin/plugin.json\n./skills/settle-decisions/SKILL.md'
-actual=$(cd "$tmp/plugins" && find . -type f | sort) || true
-if [[ $actual == "$expected" ]] \
-  && cmp -s productivity/skills/settle-decisions/SKILL.md "$tmp/plugins/skills/settle-decisions/SKILL.md"; then
-  echo "  ✓ the target holds productivity with only settle-decisions"
-else
-  echo "  ✘ the target holds productivity with only settle-decisions: want the files"
-  echo "$expected" | sed 's/^/    /'
-  echo "  with the settle-decisions of the checkout, got"
-  echo "$actual" | sed 's/^/    /'
-  failed=1
-fi
 check "an agent with no file at the ref" "" 0 128 "dev/agents/no-such-agent.md" \
   --agent no-such-agent HEAD
+
+# A brief-judge case loads productivity:settle-decisions of <ref> from a copy
+# inside the target, with no hook of productivity. Another agent loads only dev,
+# also when the checkout has no productivity/. These checks run a copy of the
+# script in a small git repo.
+copied() { # name, wanted `<file>:<line>` list of the productivity copy in the target
+  local got
+  got=$(cd "$tmp/plugins" 2>/dev/null && grep -r '' . | LC_ALL=C sort) || true
+  if [[ $got == "$2" ]]; then
+    echo "  ✓ $1"
+  else
+    echo "  ✘ $1: want"
+    echo "$2" | sed 's/^/    /'
+    echo "  got"
+    echo "$got" | sed 's/^/    /'
+    failed=1
+  fi
+}
+repo=$tmp/repo
+commit() { git -C "$repo" add -A && git -C "$repo" -c user.name=test -c user.email=test@example.com commit -q -m "$1"; }
+mkdir -p "$repo/scripts" "$repo/dev/agents"
+cp scripts/score-reviewer.sh "$repo/scripts/"
+for agent in pr-reviewer blast-radius brief-judge; do echo "The $agent." > "$repo/dev/agents/$agent.md"; done
+git -C "$repo" init -q
+commit "no productivity"
+no_skill=$(git -C "$repo" rev-parse HEAD)
+script=$repo/scripts/score-reviewer.sh
+check "pr-reviewer with no productivity/ in the checkout" "$tmp/clean-only.json" 0 0 \
+  "HEAD: recall none (0 of 0 runs), clean 0.5 (1 of 2 runs), runs with an error 0"
+copied "the pr-reviewer target holds no productivity" ""
+check "blast-radius with no productivity/ in the checkout" "$tmp/blast-radius.json" 0 0 \
+  "HEAD: blast-radius recall 0.5 (1 of 2 runs)" --agent blast-radius HEAD
+copied "the blast-radius target holds no productivity" ""
+
+skill=$repo/productivity/skills/settle-decisions
+mkdir -p "$repo/productivity/.claude-plugin" "$repo/productivity/hooks" "$skill/references" "$repo/productivity/skills/write-ste"
+echo '{"name": "productivity", "hooks": "./hooks/hooks.json"}' > "$repo/productivity/.claude-plugin/plugin.json"
+echo '{}' > "$repo/productivity/hooks/hooks.json"
+echo "The skill at the ref." > "$skill/SKILL.md"
+echo "A reference of the skill." > "$skill/references/a.md"
+echo "Another skill." > "$repo/productivity/skills/write-ste/SKILL.md"
+commit "settle-decisions"
+echo "The skill of the checkout." > "$skill/SKILL.md"
+check "brief-judge at a ref with settle-decisions" "$tmp/brief-judge.json" 0 0 \
+  "HEAD: brief-judge recall 1 (1 of 1 runs)" --agent brief-judge HEAD
+copied "the brief-judge target holds settle-decisions of the ref, and no hook" \
+  './.claude-plugin/plugin.json:{"name": "productivity"}
+./skills/settle-decisions/SKILL.md:The skill at the ref.
+./skills/settle-decisions/references/a.md:A reference of the skill.'
+check "brief-judge at a ref with no settle-decisions" "$tmp/brief-judge.json" 0 128 \
+  "productivity/skills/settle-decisions" --agent brief-judge "$no_skill"
+if [[ $out == *recall* ]]; then
+  echo "  ✘ brief-judge at a ref with no settle-decisions: want no score line"
+  failed=1
+fi
 
 # The scaffold of a head that holds dev/evals/ writes a repo/ with no
 # dev/evals/. The pr.diff still holds the full diff.

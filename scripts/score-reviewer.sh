@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Score a reviewer agent on its cases in dev/evals/. Runs the cases of this
 # checkout with the dev/agents/<agent>.md of <ref>, and prints recall and
-# clean. The agent is pr-reviewer unless --agent names another one. The eval
+# clean. A brief-judge run also takes productivity/skills/settle-decisions/ of
+# <ref>. The agent is pr-reviewer unless --agent names another one. The eval
 # runs only the cases with the agent's name in their tags. Extra arguments go
 # to `claude plugin eval`, for example -j 4.
 # A clean case of blast-radius passes only on a proof that ran, so it needs
@@ -35,11 +36,16 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/score-reviewer.XXXXXX")
 cp -R dev "$work/dev"
 rm -rf "$work/dev/evals/results"
 git show "$ref:dev/agents/$agent.md" > "$work/dev/agents/$agent.md"
-# A brief-judge case names this copy in its plugins, for the skill of the judge.
-# The copy holds no hook of productivity.
-mkdir -p "$work/dev/productivity/.claude-plugin" "$work/dev/productivity/skills"
-cp productivity/.claude-plugin/plugin.json "$work/dev/productivity/.claude-plugin/"
-cp -R productivity/skills/settle-decisions "$work/dev/productivity/skills/"
+# A brief-judge case names this copy in its plugins, for the skill that the
+# judge takes the critical list and the source rule from. The copy holds no
+# hook of productivity, and its manifest names no hook or skill path.
+if [[ $agent == brief-judge ]]; then
+  git archive -o "$work/settle-decisions.tar" "$ref" \
+    productivity/skills/settle-decisions/SKILL.md productivity/skills/settle-decisions
+  tar -xf "$work/settle-decisions.tar" -C "$work/dev"
+  mkdir "$work/dev/productivity/.claude-plugin"
+  echo '{"name": "productivity"}' > "$work/dev/productivity/.claude-plugin/plugin.json"
+fi
 
 # The case session and the judge are pinned. The agent keeps the model of
 # its frontmatter. Threshold 0 keeps a low score from failing the eval.
