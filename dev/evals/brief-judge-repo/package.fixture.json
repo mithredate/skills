@@ -1,0 +1,12 @@
+{
+  "name": "orders-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "lint": "eslint src test"
+  },
+  "devDependencies": {
+    "eslint": "9.39.1"
+  }
+}

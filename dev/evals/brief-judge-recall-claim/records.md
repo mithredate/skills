@@ -1,0 +1,2 @@
+- Decided: set the field `currency` in `toOrderJson`. Because: `AGENTS.md:5` says that `src/orders.js` builds the JSON of `GET /orders/:id`, and `src/orders.js:1` defines `toOrderJson`. Revisit if: another file builds that JSON.
+- Decided: remove the field `customerEmail` from the JSON of `GET /orders/:id`, option B of issue 12. Because: issue 12 says that the owner chose B. Revisit if: a team that calls `GET /orders/:id` reads the field.

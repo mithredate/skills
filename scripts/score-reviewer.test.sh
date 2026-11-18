@@ -14,8 +14,10 @@ mkdir "$tmp/bin"
 cat > "$tmp/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 # Copy $FAKE_JSON, if set, to <--output-dir>/aggregate-result.json. Exit $FAKE_STATUS.
-# Write the arguments, one per line, to $FAKE_ARGS.
+# Write the arguments, one per line, to $FAKE_ARGS. Copy the productivity/
+# folder of the target <plugin dir>, if any, to $FAKE_PLUGINS.
 printf '%s\n' "$@" > "$FAKE_ARGS"
+[[ ! -d $3/productivity ]] || cp -R "$3/productivity" "$FAKE_PLUGINS"
 out=
 while (( $# )); do [[ $1 == --output-dir ]] && out=$2; shift; done
 if [[ -n $FAKE_JSON ]]; then mkdir -p "$out" && cp "$FAKE_JSON" "$out/aggregate-result.json"; fi
@@ -98,14 +100,23 @@ cat > "$tmp/blast-radius.json" <<'EOF'
  {"name": "recall-b", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}}
 ]}
 EOF
+cat > "$tmp/brief-judge.json" <<'EOF'
+{"partial": false, "cases": [
+ {"name": "brief-judge-recall-a", "arms": {"with": [{"graders": [{"passed": true}, {"passed": true}], "error": null}]}},
+ {"name": "brief-judge-clean-x", "arms": {"with": [{"graders": [{"passed": false}, {"passed": true}], "error": null}]}},
+ {"name": "clean-y", "arms": {"with": [{"graders": [{"passed": true}], "error": null}]}}
+]}
+EOF
 
 failed=0
+script=scripts/score-reviewer.sh
 check() { # name, fixture or "", exit code of the eval, wanted exit code, wanted text, [script arguments]
-  local name=$1 code=0 out
+  local name=$1 code=0
   local -a args=("${@:6}")
   (( ${#args[@]} )) || args=(HEAD)
-  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 FAKE_ARGS=$tmp/args \
-    scripts/score-reviewer.sh "${args[@]}" 2>&1) || code=$?
+  rm -rf "$tmp/plugins"
+  out=$(PATH="$tmp/bin:$PATH" TMPDIR=$tmp FAKE_JSON=$2 FAKE_STATUS=$3 FAKE_ARGS=$tmp/args FAKE_PLUGINS=$tmp/plugins \
+    "$script" "${args[@]}" 2>&1) || code=$?
   if [[ $code == "$4" && $out == *"$5"* ]]; then
     echo "  ✓ $name"
   else
@@ -149,8 +160,67 @@ check "another agent counts its own cases" "$tmp/blast-radius.json" 0 0 \
   "HEAD: blast-radius recall 0.5 (1 of 2 runs), clean 0 (0 of 1 runs), runs with an error 0" \
   --agent blast-radius HEAD
 tagged "another agent runs its own cases" blast-radius
+
+check "brief-judge counts its own cases" "$tmp/brief-judge.json" 0 0 \
+  "HEAD: brief-judge recall 1 (1 of 1 runs), clean 0 (0 of 1 runs), runs with an error 0" \
+  --agent brief-judge HEAD
 check "an agent with no file at the ref" "" 0 128 "dev/agents/no-such-agent.md" \
   --agent no-such-agent HEAD
+
+# A brief-judge case loads productivity:settle-decisions of <ref> from a copy
+# inside the target, with no hook of productivity. Another agent loads only dev,
+# also when the checkout has no productivity/. These checks run a copy of the
+# script in a small git repo.
+copied() { # name, wanted `<file>:<line>` list of the productivity copy in the target
+  local got
+  got=$(cd "$tmp/plugins" 2>/dev/null && grep -r '' . | LC_ALL=C sort) || true
+  if [[ $got == "$2" ]]; then
+    echo "  ✓ $1"
+  else
+    echo "  ✘ $1: want"
+    echo "$2" | sed 's/^/    /'
+    echo "  got"
+    echo "$got" | sed 's/^/    /'
+    failed=1
+  fi
+}
+repo=$tmp/repo
+commit() { git -C "$repo" add -A && git -C "$repo" -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false commit -q -m "$1"; }
+mkdir -p "$repo/scripts" "$repo/dev/agents"
+cp scripts/score-reviewer.sh "$repo/scripts/"
+for agent in pr-reviewer blast-radius brief-judge; do echo "The $agent." > "$repo/dev/agents/$agent.md"; done
+git -C "$repo" init -q
+commit "no productivity"
+no_skill=$(git -C "$repo" rev-parse HEAD)
+script=$repo/scripts/score-reviewer.sh
+check "pr-reviewer with no productivity/ in the checkout" "$tmp/clean-only.json" 0 0 \
+  "HEAD: recall none (0 of 0 runs), clean 0.5 (1 of 2 runs), runs with an error 0"
+copied "the pr-reviewer target holds no productivity" ""
+check "blast-radius with no productivity/ in the checkout" "$tmp/blast-radius.json" 0 0 \
+  "HEAD: blast-radius recall 0.5 (1 of 2 runs)" --agent blast-radius HEAD
+copied "the blast-radius target holds no productivity" ""
+
+skill=$repo/productivity/skills/settle-decisions
+mkdir -p "$repo/productivity/.claude-plugin" "$repo/productivity/hooks" "$skill/references" "$repo/productivity/skills/write-ste"
+echo '{"name": "productivity", "hooks": "./hooks/hooks.json"}' > "$repo/productivity/.claude-plugin/plugin.json"
+echo '{}' > "$repo/productivity/hooks/hooks.json"
+echo "The skill at the ref." > "$skill/SKILL.md"
+echo "A reference of the skill." > "$skill/references/a.md"
+echo "Another skill." > "$repo/productivity/skills/write-ste/SKILL.md"
+commit "settle-decisions"
+echo "The skill of the checkout." > "$skill/SKILL.md"
+check "brief-judge at a ref with settle-decisions" "$tmp/brief-judge.json" 0 0 \
+  "HEAD: brief-judge recall 1 (1 of 1 runs)" --agent brief-judge HEAD
+copied "the brief-judge target holds settle-decisions of the ref, and no hook" \
+  './.claude-plugin/plugin.json:{"name": "productivity"}
+./skills/settle-decisions/SKILL.md:The skill at the ref.
+./skills/settle-decisions/references/a.md:A reference of the skill.'
+check "brief-judge at a ref with no settle-decisions" "$tmp/brief-judge.json" 0 128 \
+  "productivity/skills/settle-decisions" --agent brief-judge "$no_skill"
+if [[ $out == *recall* ]]; then
+  echo "  ✘ brief-judge at a ref with no settle-decisions: want no score line"
+  failed=1
+fi
 
 # The scaffold of a head that holds dev/evals/ writes a repo/ with no
 # dev/evals/. The pr.diff still holds the full diff.
@@ -159,12 +229,12 @@ mkdir -p "$src/dev/agents" "$src/dev/evals/recall-a" "$tmp/scaffold/case" "$tmp/
 git -C "$src" init -q
 echo "# Repo" > "$src/README.md"
 git -C "$src" add -A
-git -C "$src" -c user.name=test -c user.email=test@example.com commit -q -m base
+git -C "$src" -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false commit -q -m base
 base=$(git -C "$src" rev-parse HEAD)
 echo "The reviewer." > "$src/dev/agents/pr-reviewer.md"
 echo "PASS when the reviewer names the bug." > "$src/dev/evals/recall-a/case.yaml"
 git -C "$src" add -A
-git -C "$src" -c user.name=test -c user.email=test@example.com commit -q -m head
+git -C "$src" -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false commit -q -m head
 head=$(git -C "$src" rev-parse HEAD)
 git -C "$src" bundle create -q "$tmp/scaffold/repo.bundle" --all
 cp dev/evals/scaffold.sh "$tmp/scaffold/scaffold.sh"
@@ -197,6 +267,52 @@ blast_scaffold() { # case name
 }
 blast_scaffold blast-radius-recall-role-grant
 blast_scaffold blast-radius-clean-report-group
+
+# The scaffold of a brief-judge case writes the brief, the records, and a repo
+# with an AGENTS.md. Each `<path>:<line>` that a record cites is a line of that
+# repo, and holds the text that the record says it holds.
+cited_text() { # path:line
+  case $1 in
+    AGENTS.md:5) echo 'builds the JSON of `GET /orders/:id`' ;;
+    src/orders.js:1) echo 'export function toOrderJson' ;;
+    src/orders.js:2) echo 'const tax' ;;
+    src/orders.js:6) echo 'total: order.total ?? null' ;;
+    package.json:7) echo '"lint": "eslint' ;;
+    .github/workflows/ci.yml:12) echo 'run: npm test' ;;
+  esac
+}
+judge_scaffold() { # case name
+  local run=$tmp/judge/$1 case_dir=$PWD/dev/evals/$1 cite text file missing=
+  mkdir -p "$run"
+  (cd "$run" && bash "$case_dir/scaffold.sh") || missing+=" a scaffold that exits 0"
+  for file in brief.md records.md repo/AGENTS.md; do [[ -s $run/$file ]] || missing+=" $file"; done
+  while read -r cite; do
+    text=$(cited_text "$cite")
+    if [[ -z $text ]] || ! sed -n "${cite##*:}p" "$run/repo/${cite%:*}" 2>/dev/null | grep -qF -- "$text"; then
+      missing+=" the text of $cite"
+    fi
+  done < <(grep -oE '`[^` ]+:[0-9]+`' "$run/records.md" 2>/dev/null | tr -d '`')
+  if [[ -z $missing ]]; then
+    echo "  ✓ scaffold of $1"
+  else
+    echo "  ✘ scaffold of $1: want$missing"
+    failed=1
+  fi
+}
+for name in recall-claim recall-step-before-merge recall-ci-change clean-ci-change-answered clean-plain-change; do
+  judge_scaffold "brief-judge-$name"
+done
+
+# The judge has its skill only when the case names both plugin folders. Without
+# that line, the judge returns `human` for each brief.
+for case_file in dev/evals/brief-judge-*/case.yaml; do
+  if grep -qxF 'plugins: [../.., ../../productivity]' "$case_file"; then
+    echo "  ✓ $case_file loads the skill of the judge"
+  else
+    echo "  ✘ $case_file: want the line \`plugins: [../.., ../../productivity]\`"
+    failed=1
+  fi
+done
 
 if [ "$failed" -ne 0 ]; then
   echo "✘ score-reviewer.sh or scaffold.sh failed one or more checks."

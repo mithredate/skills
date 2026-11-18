@@ -1,0 +1,1 @@
+- Decided: delete the variable `tax`. Because: `src/orders.js:2` sets `tax`, and no other line of `src/orders.js` reads it. Revisit if: a caller needs the tax.
