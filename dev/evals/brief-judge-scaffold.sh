@@ -6,5 +6,9 @@
 set -euo pipefail
 
 cp -R "$(dirname "$0")/brief-judge-repo" repo
+# GitHub reads both files by their path, so brief-judge-repo/ has other names.
+mv repo/package.fixture.json repo/package.json
+mkdir -p repo/.github/workflows
+mv repo/ci.fixture.yml repo/.github/workflows/ci.yml
 cp "$1" brief.md
 cp "$2" records.md
