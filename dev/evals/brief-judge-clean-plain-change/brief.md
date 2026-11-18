@@ -1,16 +1,15 @@
 ## Brief
 
-- Why: The shop shows prices in euro, but the JSON of `GET /orders/:id` has no currency.
-- Goal: The JSON of `GET /orders/:id` has the field `currency` with the value `EUR`.
+- Why: `npm run lint` fails on `main`. The variable `tax` in `src/orders.js` is never read.
+- Goal: `npm run lint` exits 0.
 - Targets: the repo `orders-api`, base `main`.
 - Decisions:
-  - `toOrderJson` in `src/orders.js` sets the field. Because: see the records.
+  - Delete the variable `tax`. Because: see the records.
 - Terms: none.
 - FR:
-  - `toOrderJson` returns the field `currency` with the value `EUR` for each order.
-  - The other fields of the JSON stay the same.
-  - The test in `test/orders.test.js` expects the field `currency`.
+  - `src/orders.js` has no variable `tax`. The JSON of `GET /orders/:id` stays the same.
 - NFR:
   - No new dependency.
 - Verification:
+  - `npm run lint` exits 0.
   - `npm test` exits 0.

@@ -14,7 +14,7 @@ execution:
     Judge one brief before its build.
 
     - Brief file: `<workdir>/brief.md`. Read it whole.
-    - Requirement: Add the field `currency` with the value `EUR` to the JSON of `GET /orders/:id`.
+    - Requirement: `npm run lint` fails on `main`, because `src/orders.js` has an unused variable. Fix it.
     - The requirement is a message of the human.
     - Decision records: `<workdir>/records.md`.
     - Design doc: none.
