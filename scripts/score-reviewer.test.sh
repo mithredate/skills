@@ -185,7 +185,7 @@ copied() { # name, wanted `<file>:<line>` list of the productivity copy in the t
   fi
 }
 repo=$tmp/repo
-commit() { git -C "$repo" add -A && git -C "$repo" -c user.name=test -c user.email=test@example.com commit -q -m "$1"; }
+commit() { git -C "$repo" add -A && git -C "$repo" -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false commit -q -m "$1"; }
 mkdir -p "$repo/scripts" "$repo/dev/agents"
 cp scripts/score-reviewer.sh "$repo/scripts/"
 for agent in pr-reviewer blast-radius brief-judge; do echo "The $agent." > "$repo/dev/agents/$agent.md"; done
@@ -229,12 +229,12 @@ mkdir -p "$src/dev/agents" "$src/dev/evals/recall-a" "$tmp/scaffold/case" "$tmp/
 git -C "$src" init -q
 echo "# Repo" > "$src/README.md"
 git -C "$src" add -A
-git -C "$src" -c user.name=test -c user.email=test@example.com commit -q -m base
+git -C "$src" -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false commit -q -m base
 base=$(git -C "$src" rev-parse HEAD)
 echo "The reviewer." > "$src/dev/agents/pr-reviewer.md"
 echo "PASS when the reviewer names the bug." > "$src/dev/evals/recall-a/case.yaml"
 git -C "$src" add -A
-git -C "$src" -c user.name=test -c user.email=test@example.com commit -q -m head
+git -C "$src" -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false commit -q -m head
 head=$(git -C "$src" rev-parse HEAD)
 git -C "$src" bundle create -q "$tmp/scaffold/repo.bundle" --all
 cp dev/evals/scaffold.sh "$tmp/scaffold/scaffold.sh"
