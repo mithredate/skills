@@ -26,6 +26,8 @@ Call the Skill tool with `productivity:write-ste` first. Every file you write he
 - Do not write a line that the agent can find with `ls`, with `--help`, or in a config file. Do not write a step that the agent's runtime does by default. Before you write a step about a tool or the runtime, read the docs of each runtime that the repo supports.
 - Do not write a method that the agent can work out from the goal. An example is the steps of a root-cause search. Keep a step of a method only if people or other sessions depend on it. Also keep a step that the agent gets wrong without it.
 - Give a rule at most one example, next to the rule. An example without its rule hides the scope of the rule.
+- Take the names in an example from a generic domain, such as customers and orders with `CustomerOrdersQuery`. Do not use a name from a private codebase, because the repo is public.
+- Write the example of a rule for any language as pseudocode, such as `actual = sut.findOrdersOfCustomer(customerId)`. An example in the syntax of one language goes only in a reference for that language, such as `references/typescript.md`.
 - Delete a sentence that the agent obeys without it.
 - State the target behaviour. A ban makes the banned behaviour more available, so write a ban only as a guardrail next to the target.
 - Introduce a **defined term** once, in bold, with a one-sentence definition. Then use the word alone. A word the model already knows, such as "brief", carries its meaning for free. Prefer it to a new coinage.
