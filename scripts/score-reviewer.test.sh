@@ -303,6 +303,17 @@ for name in recall-claim recall-step-before-merge recall-ci-change clean-ci-chan
   judge_scaffold "brief-judge-$name"
 done
 
+# The judge has its skill only when the case names both plugin folders. Without
+# that line, the judge returns `human` for each brief.
+for case_file in dev/evals/brief-judge-*/case.yaml; do
+  if grep -qxF 'plugins: [../.., ../../productivity]' "$case_file"; then
+    echo "  ✓ $case_file loads the skill of the judge"
+  else
+    echo "  ✘ $case_file: want the line \`plugins: [../.., ../../productivity]\`"
+    failed=1
+  fi
+done
+
 if [ "$failed" -ne 0 ]; then
   echo "✘ score-reviewer.sh or scaffold.sh failed one or more checks."
   exit 1
