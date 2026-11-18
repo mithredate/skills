@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 
 const HOOK = new URL('./load-prep-on-brief-edit.mjs', import.meta.url).pathname;
 const LOAD_PREP = 'A brief changed. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. Then check the brief against it.';
+const CHECK_APPROVAL = 'An edit added `approved:` to a ticket. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. If `dev:brief-judge` did not return `auto` for the current brief, delete `approved:`.';
 
 const TICKET = [
     '---',
@@ -14,7 +15,6 @@ const TICKET = [
     'type: task',
     'status: open',
     'assignee: claude',
-    'approved: 2026-11-03',
     '---',
     '',
     '## Brief',
@@ -27,6 +27,8 @@ const TICKET = [
     'Fire returned blocked: the sandbox has no DNS record.',
 ].join('\n');
 const TICKET_WITHOUT_RESOLUTION = TICKET.split('\n\n## Resolution')[0];
+const TICKET_WITHOUT_BRIEF = TICKET.split('\n\n## Brief')[0];
+const APPROVED_TICKET = TICKET.replace('assignee: claude\n', 'assignee: claude\napproved: 2026-11-03\n');
 
 function writeFile(relativePath, content) {
     const path = join(mkdtempSync(join(tmpdir(), 'prep-on-brief-edit-')), relativePath);
@@ -46,10 +48,10 @@ function contextFor(toolName, toolInput, toolResponse) {
 }
 
 // Edits the file the way the Edit tool does, then runs the hook with the tool's input and response.
-function contextAfterEdit(path, old_string, new_string) {
+function contextAfterEdit(path, old_string, new_string, responseChanges = {}) {
     const originalFile = readFileSync(path, 'utf8');
     writeFileSync(path, originalFile.replace(old_string, () => new_string));
-    return contextFor('Edit', { file_path: path, old_string, new_string }, { filePath: path, oldString: old_string, newString: new_string, originalFile });
+    return contextFor('Edit', { file_path: path, old_string, new_string }, { filePath: path, oldString: old_string, newString: new_string, originalFile, ...responseChanges });
 }
 
 test('reminds after an Edit inside the brief of a ticket', () => {
@@ -68,6 +70,16 @@ test('reminds after a Write of a ticket that holds a brief', () => {
     assert.equal(context, LOAD_PREP);
 });
 
+test('gives both reminders after a Write of a new ticket that holds a brief and approved:', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-21.md', APPROVED_TICKET);
+
+    const expected = `${LOAD_PREP} ${CHECK_APPROVAL}`;
+
+    const context = contextFor('Write', { file_path: path, content: APPROVED_TICKET }, { type: 'create', filePath: path, content: APPROVED_TICKET, originalFile: null });
+
+    assert.equal(context, expected);
+});
+
 test('reminds after a MultiEdit with one edit inside the brief', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
@@ -79,15 +91,139 @@ test('reminds after a MultiEdit with one edit inside the brief', () => {
     assert.equal(context, LOAD_PREP);
 });
 
-test('stays silent after an Edit that claims the ticket, approves it, or records a resolution', () => {
+test('stays silent after an Edit that claims the ticket', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
 
-    for (const [old_string, new_string] of [
-        ['assignee:', 'assignee: claude'],
-        ['---\n\n## Brief', 'approved: 2026-11-03\n---\n\n## Brief'],
-        ['blocked:', 'Fire returned blocked:'],
-    ]) assert.equal(contextAfterEdit(path, old_string, new_string), '', new_string);
-    assert.equal(contextAfterEdit(path, 'example.com', 'noreply@example.com'), LOAD_PREP);
+    const context = contextAfterEdit(path, 'assignee:', 'assignee: claude');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after an Edit that records a resolution', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextAfterEdit(path, 'blocked:', 'Fire returned blocked:');
+
+    assert.equal(context, '');
+});
+
+test('reminds after an Edit that adds approved: to the frontmatter of a ticket', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextAfterEdit(path, '---\n\n## Brief', 'approved: 2026-11-16\n---\n\n## Brief');
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('reminds after an Edit that adds approved: to the frontmatter of a ticket with CRLF line endings', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET.replaceAll('\n', '\r\n'));
+
+    const context = contextAfterEdit(path, '---\r\n\r\n## Brief', 'approved: 2026-11-16\r\n---\r\n\r\n## Brief');
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('gives only the brief reminder after an Edit of the brief of an approved ticket whose tool response has no originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'the new address', 'the staging address', { originalFile: undefined });
+
+    assert.equal(context, LOAD_PREP);
+});
+
+test('gives only the brief reminder after an Edit of the brief of an approved ticket whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'the new address', 'the staging address', { originalFile: null });
+
+    assert.equal(context, LOAD_PREP);
+});
+
+test('reminds after an Edit that adds approved: to a ticket whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF);
+
+    const context = contextAfterEdit(path, 'assignee: claude\n', 'assignee: claude\napproved: 2026-11-16\n', { originalFile: null });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('reminds after a MultiEdit that adds approved: to a ticket', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-16'));
+
+    const context = contextFor('MultiEdit', { file_path: path, edits: [
+        { old_string: 'status: open', new_string: 'status: in-progress' },
+        { old_string: 'assignee: claude', new_string: 'assignee: claude\napproved: 2026-11-16' },
+    ] });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('reminds after a MultiEdit whose later edit anchors on the approved: line that an earlier edit added', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-16\nlabel: x'));
+
+    const context = contextFor('MultiEdit', { file_path: path, edits: [
+        { old_string: 'assignee: claude', new_string: 'assignee: claude\napproved: 2026-11-16' },
+        { old_string: 'approved: 2026-11-16\n---', new_string: 'approved: 2026-11-16\nlabel: x\n---' },
+    ] });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('reminds after a Write that adds approved: to a ticket whose tool response has a null originalFile', () => {
+    const content = TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-16');
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', content);
+
+    const context = contextFor('Write', { file_path: path, content }, { type: 'update', filePath: path, content, originalFile: null });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('stays silent after an Edit whose old and new text hold approved: and whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-03'));
+
+    const context = contextAfterEdit(path, 'assignee: claude\napproved: 2026-11-03', 'assignee: orchestrate fire 2026-11-16T10:00Z\napproved: 2026-11-03', { originalFile: null });
+
+    assert.equal(context, '');
+});
+
+test('reminds after an Edit that changes only the date of approved:', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'approved: 2026-11-03', 'approved: 2026-11-16');
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('stays silent after an Edit that adds approved: outside the frontmatter', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET);
+
+    const context = contextAfterEdit(path, '## Resolution\n', '## Resolution\n\napproved: 2026-11-16\n');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after an Edit that keeps approved:', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'assignee: claude', 'assignee: orchestrate fire 2026-11-16T10:00Z');
+
+    assert.equal(context, '');
+});
+
+test('stays silent after an Edit that deletes approved:', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'approved: 2026-11-03\n', '');
+
+    assert.equal(context, '');
+});
+
+test('gives only the brief reminder after an Edit that deletes approved: and changes the brief', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
+
+    const context = contextAfterEdit(path, 'approved: 2026-11-03\n---\n\n## Brief\n\n- Goal: the sandbox', '---\n\n## Brief\n\n- Goal: staging');
+
+    assert.equal(context, LOAD_PREP);
 });
 
 test('stays silent after an Edit that anchors on the last brief line to add a resolution', () => {

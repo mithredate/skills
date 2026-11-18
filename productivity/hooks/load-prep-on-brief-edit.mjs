@@ -6,6 +6,10 @@ for await (const chunk of process.stdin) data += chunk;
 const TRACKER_TICKET = /\/\.initiatives\/[^/]+\/tickets\/[^/]+\.md$/;
 const BRIEF = /^## Brief$/m;
 const NEXT_SECTION = /^## /m;
+const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
+const APPROVED = /^approved:.*$/m;
+const BRIEF_CHANGED = 'A brief changed. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. Then check the brief against it.';
+const APPROVED_ADDED = 'An edit added `approved:` to a ticket. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. If `dev:brief-judge` did not return `auto` for the current brief, delete `approved:`.';
 
 // The text under the brief heading up to the next section, or null for a file with no brief.
 function briefOf(file) {
@@ -16,18 +20,41 @@ function briefOf(file) {
     return (next < 0 ? body : body.slice(0, next)).trim();
 }
 
+function approvalOf(file) {
+    const frontmatter = file.match(FRONTMATTER)?.[1] ?? '';
+    return frontmatter.match(APPROVED)?.[0] ?? null;
+}
+
+function linesOf(text) {
+    return (text ?? '').split(/\r?\n/);
+}
+
+function editAdds(input, line) {
+    const edits = input.edits ?? [{ old_string: input.old_string, new_string: input.new_string ?? input.content }];
+    return edits.some((edit) => linesOf(edit.new_string).includes(line) && !linesOf(edit.old_string).includes(line));
+}
+
 try {
     const { tool_input: input, tool_response: response } = JSON.parse(data);
     if (TRACKER_TICKET.test(input.file_path)) {
-        // A new file has a null originalFile. A tool response without it counts as a new file too.
-        const before = briefOf(response?.originalFile ?? '');
-        const after = briefOf(readFileSync(input.file_path, 'utf8'));
+        // For the brief, a tool response without the original text counts as a new file.
+        const original = response?.originalFile;
+        const before = original ?? '';
+        const after = readFileSync(input.file_path, 'utf8');
 
-        if (before !== after) {
+        const contexts = [];
+        if (briefOf(before) !== briefOf(after)) contexts.push(BRIEF_CHANGED);
+        const approval = approvalOf(after);
+        // Claude Code also sends a null originalFile for a staged edit of a remote session, so only type 'create' marks a new file.
+        const knowsBefore = typeof original === 'string' || response?.type === 'create';
+        const addsApproval = approval !== null && (knowsBefore ? approval !== approvalOf(before) : editAdds(input, approval));
+        if (addsApproval) contexts.push(APPROVED_ADDED);
+
+        if (contexts.length > 0) {
             console.log(JSON.stringify({
                 hookSpecificOutput: {
                     hookEventName: 'PostToolUse',
-                    additionalContext: 'A brief changed. If `productivity:prep` is not loaded, call the Skill tool with it before your next tool call. Then check the brief against it.',
+                    additionalContext: contexts.join(' '),
                 },
             }));
         }
