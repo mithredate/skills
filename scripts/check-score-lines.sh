@@ -2,7 +2,7 @@
 # Fail a PR that changes a reviewer agent or its cases, and has no score lines
 # of that agent in its body. The agents are pr-reviewer, blast-radius, and
 # brief-judge. A PR that changes dev/agents/<agent>.md needs an `origin/main:`
-# line and a `HEAD:` line of that agent. The judge takes the critical list and
+# line and a `HEAD:` line of that agent. brief-judge takes the critical list and
 # the source rule from productivity/skills/settle-decisions/, so a change there
 # needs both brief-judge lines too. A PR that changes cases of the agent
 # needs a `HEAD:` line. The files under dev/evals/blast-radius-* belong to
