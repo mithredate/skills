@@ -41,6 +41,7 @@ Start each child session as a session that reports back to this session, in its 
   orchestrate cook <dir>
   Take one step. If cook step 5 sends you back to step 2, go on to step 6. Then name `step ready` in the status line.
   Work only on this initiative. Repair and cut only its index row. Give sweep only this initiative, and no `waiting` row of another initiative.
+  Skip the follow-ups, and write no line of `.followups.md`. Name each new follow-up in your final report.
   Before you read the index, run `git fetch origin` and `git switch --detach origin/<branch>`. The tracker is on that branch. Do not merge a local branch, because it can hold commits that are not published.
   Stage and commit by path only the files that you changed yourself. These include the files that your sweep wrote, such as `.initiatives/sources.md`.
   Before cook step 6, commit your changes, then run `git fetch origin` and `git merge --no-edit origin/<branch>`. If cook step 2 sends you to step 7, do this before step 7.

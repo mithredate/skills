@@ -2,7 +2,12 @@ import type { Register, EngineInterface, ProcessRunResult } from 'claude-code'
 import { isMainCheckout, parseWorktreeAdd, worktreeAdvice } from './rules.js'
 
 // The orchestrator tracker is edited on the main checkout by design.
-const ALWAYS_ALLOWED = /(^|\/)\.initiatives\//
+const TRACKER = /^(\.initiatives\/|\.notes\/|\.followups\.md$)/
+
+// A `..` segment can climb out of a tracker directory, so such a path never counts as the tracker.
+function isTracker(path: string, top: string) {
+  return !path.split('/').includes('..') && path.startsWith(top + '/') && TRACKER.test(path.slice(top.length + 1))
+}
 
 // A repo with no origin, such as a stray `git init` in a home directory, has no PR workflow to guard.
 // Nor has a GitHub repo whose default branch takes direct pushes, such as a private repo on a free plan.
@@ -56,9 +61,9 @@ async function guardedCheckout($: EngineInterface, dir: string) {
 }
 
 async function guardEdit($: EngineInterface, path: string | undefined) {
-  if (!path || ALWAYS_ALLOWED.test(path)) return undefined
+  if (!path) return undefined
   const checkout = await guardedCheckout($, await nearestDir($, path))
-  if (!checkout?.isMain) return undefined
+  if (!checkout?.isMain || isTracker(path, checkout.top)) return undefined
   if ((await git($, ['-C', checkout.top, 'check-ignore', '-q', path])).exitCode === 0) return undefined
   const session = await guardedCheckout($, await $.session.cwd())
   return worktreeAdvice(path, checkout, session?.common === checkout.common ? session : undefined)
