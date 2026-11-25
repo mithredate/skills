@@ -11,7 +11,7 @@ Call the Skill tool with `productivity:sweep` first.
 
 Sup works in an orchestrator repo, on the local-markdown tracker of `productivity:orchestrate`. The index, initiative, goal, ticket, and ready ticket are the terms of orchestrate. Each index row is `| Initiative | Status | Goal |`, and the Status cell holds the status, then the one-line state. A ready ticket has `status: open`, an empty `assignee`, and every `blocked-by` id closed. Sup never writes a file and never commits, because orchestrate owns every write to the index.
 
-If the user gives an initiative, report only that row in the same shape. Then skip Propose.
+If the user gives an initiative, report only that row in the same shape. Then skip the follow-ups and Propose.
 
 ## Read
 

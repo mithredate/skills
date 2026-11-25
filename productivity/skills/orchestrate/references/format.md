@@ -126,3 +126,5 @@ Add the sections that the topic needs, for example the findings.
 
 - `Due` is the first day on which the row is due. To delay a row, change its `Due` date.
 - `Done when` states a fact, not a command.
+- Write `\|` for a `|` inside a cell, for example in a metric query.
+- An empty table holds the header row and the separator row only.
