@@ -2,7 +2,7 @@ import type { Register, EngineInterface, ProcessRunResult } from 'claude-code'
 import { isMainCheckout, parseWorktreeAdd, worktreeAdvice } from './rules.js'
 
 // The orchestrator tracker is edited on the main checkout by design.
-const ALWAYS_ALLOWED = /(^|\/)\.initiatives\//
+const ALWAYS_ALLOWED = /(^|\/)(\.initiatives\/|\.notes\/|\.followups\.md$)/
 
 // A repo with no origin, such as a stray `git init` in a home directory, has no PR workflow to guard.
 // Nor has a GitHub repo whose default branch takes direct pushes, such as a private repo on a free plan.

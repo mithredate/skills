@@ -5,7 +5,7 @@ This file holds the file shapes of an orchestrator repo. It uses plain files, no
 ## Layout
 
 ```
-.notes/<YYYY-MM-DD>-<slug>.md   one discussion or decision that has no initiative
+.notes/<YYYY-MM-DD>-<slug>.md   one note file: a discussion or decision that has no initiative
 .followups.md                   one table of follow-ups with a due date
 .initiatives/
   README.md                  index of initiatives
@@ -96,9 +96,9 @@ A `gate` ticket has `owner:` in its frontmatter, with the human who owns it. Its
 - Closes when: <the fact that shows the step is done>
 ```
 
-## Note
+## Note file
 
-A note has no goal and no status. Its open work is a row in `.followups.md`.
+A note file has no goal and no status. Its open work is a follow-up. A follow-up lives only in its row, so the note file does not repeat it.
 
 ```markdown
 # <title>
@@ -119,10 +119,10 @@ Add the sections that the topic needs, for example the findings.
 ## Follow-ups
 
 ```markdown
-| Due | Follow-up | Check | From |
+| Due | Follow-up | Done when | From |
 |---|---|---|---|
-| <YYYY-MM-DD> | <the state to reach> | <a read-only command, query, or link that shows the state> | [<title>](<path of the note, ticket, or initiative.md>) |
+| <YYYY-MM-DD> | <the state to reach> | <the fact that shows the state, and where to read it: a link, a file at a branch, or a metric query> | [<title>](<path of the note file, ticket, or initiative.md>) |
 ```
 
-- Due is the first day of the reminder. To snooze a row, change its Due date.
-- When the Check passes, remove the row. Record the result in the file of the From column.
+- `Due` is the first day on which the row is due. To delay a row, change its `Due` date.
+- `Done when` states a fact, not a command.

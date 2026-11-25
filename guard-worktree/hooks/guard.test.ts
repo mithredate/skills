@@ -116,6 +116,20 @@ test('allows tracker edits and ignored files in the main checkout', async ($, on
   expect(refusal(ignored)).toBeUndefined()
 })
 
+test('allows note files and follow-up rows in the main checkout', async ($, on) => {
+  fakeGit(on)
+  const note = await $.tool.call({ tool: 'Write', file_path: REPO + '/.notes/2026-11-25-x.md', content: 'x' })
+  const followups = await $.tool.call({ tool: 'Edit', file_path: REPO + '/.followups.md', old_string: 'a', new_string: 'b' })
+  expect(refusal(note)).toBeUndefined()
+  expect(refusal(followups)).toBeUndefined()
+})
+
+test('refuses a file in the main checkout whose name only starts like the follow-ups file', async ($, on) => {
+  fakeGit(on)
+  const actual = await $.tool.call({ tool: 'Write', file_path: REPO + '/.followups.md.bak', content: 'x' })
+  expect(refusal(actual)).toContain('EnterWorktree')
+})
+
 test('allows an edit in a repo with no origin', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Write', file_path: NO_ORIGIN + '/notes/a.md', content: 'x' })
