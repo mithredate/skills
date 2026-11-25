@@ -1,0 +1,1 @@
+- Decided: change `order.total ?? null` to `order.total ?? 0` in `toOrderJson`. Because: `src/orders.js:6` maps a missing total to `null`, and `AGENTS.md:5` says that `src/orders.js` builds the JSON of `GET /orders/:id`. Revisit if: another file builds that JSON.

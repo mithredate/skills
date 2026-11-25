@@ -65,6 +65,26 @@ check "case change of both agents, only the blast-radius line" "$blast_cases"$'\
   "no score line for: HEAD."
 check "case change of both agents, both HEAD lines" "$blast_cases"$'\n'"$cases" "$head"$'\n'"$blast_head" 0 ""
 
+# brief-judge has its own score lines, and its cases start with its name.
+judge_main='origin/main: brief-judge recall none (0 of 0 runs), clean none (0 of 0 runs), runs with an error 0'
+judge_head='HEAD: brief-judge recall 0.67 (6 of 9 runs), clean 1 (6 of 6 runs), runs with an error 0'
+judge_agent=$'dev/agents/brief-judge.md\ndev/.claude-plugin/plugin.json'
+judge_cases=$'dev/evals/brief-judge-recall-a/case.yaml\ndev/evals/brief-judge-repo/AGENTS.md'
+check "brief-judge case change, the brief-judge HEAD line" "$judge_cases" "$judge_head" 0 ""
+check "brief-judge case change, the message names the agent option" "$judge_cases" "## Why" 1 \
+  $'    scripts/score-reviewer.sh --agent brief-judge HEAD\n'
+check "brief-judge change, both brief-judge score lines" "$judge_agent" "$judge_main"$'\n'"$judge_head" 0 ""
+check "brief-judge change, only the HEAD line" "$judge_agent" "$judge_head" 1 \
+  "no brief-judge score line for: origin/main."
+# The judge takes the critical list and the source rule from settle-decisions.
+judge_skill='productivity/skills/settle-decisions/SKILL.md'
+check "settle-decisions change, no score line" "$judge_skill" "" 1 \
+  $'    scripts/score-reviewer.sh --agent brief-judge origin/main\n    scripts/score-reviewer.sh --agent brief-judge HEAD\n'
+check "settle-decisions change, only the HEAD line" "$judge_skill" "$judge_head" 1 \
+  "no brief-judge score line for: origin/main."
+check "settle-decisions change, both brief-judge score lines" "$judge_skill" "$judge_main"$'\n'"$judge_head" 0 ""
+check "another productivity skill change" 'productivity/skills/write-ste/SKILL.md' "" 0 ""
+
 # The body is untrusted. A command in it runs nothing.
 check "a command in the body" "$cases" "\$(touch \"$tmp/pwned\") \`touch \"$tmp/pwned\"\`" 1 \
   "    HEAD: recall ..., clean ..., runs with an error ..."
