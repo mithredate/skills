@@ -11,7 +11,7 @@ Call the Skill tool with `productivity:sweep` first.
 
 Sup works in an orchestrator repo, on the local-markdown tracker of `productivity:orchestrate`. The index, initiative, goal, ticket, and ready ticket are the terms of orchestrate. Each index row is `| Initiative | Status | Goal |`, and the Status cell holds the status, then the one-line state. A ready ticket has `status: open`, an empty `assignee`, and every `blocked-by` id closed. Sup never writes a file and never commits, because orchestrate owns every write to the index.
 
-If the user gives an initiative, report only that row in the same shape. Then skip Propose.
+If the user gives an initiative, report only that row in the same shape. Then skip the follow-ups and Propose.
 
 ## Read
 
@@ -21,6 +21,7 @@ If the user gives an initiative, report only that row in the same shape. Then sk
 4. Read no ticket body and no `initiative.md` body. The one exception is the Goal of the initiative. Check it for a `Closes when` sentence.
 5. For each initiative directory, get the date of the last commit with `git log -1 --format=%ad --date=short -- <dir>`. The `reports/` directory is not an initiative directory.
 6. Run sweep in report mode, for each row that is not `closed`. The files show only what the last session wrote. The live links show the state now.
+7. Read `.followups.md`, if it exists. Collect each row with a `Due` date of today or earlier. Do not check its `Done when` fact. Orchestrate checks it and removes the rows that are done.
 
 The step is done when each row has its number of ready tickets and its date, and sweep has returned its result table.
 
@@ -35,7 +36,7 @@ Write one line per row, in index order. A table is also correct. A `closed` row 
 - for a `waiting` row, who it waits on and since when
 - the number of claims from sweep
 
-Mark each initiative that has no `Closes when` sentence. Put no prose between the rows. After the rows, give the number of open tickets across all initiatives. If initiative directories have no row, give their number and say that orchestrate repairs the index. Then print the sweep result table.
+Mark each initiative that has no `Closes when` sentence. Put no prose between the rows. After the rows, give the number of open tickets across all initiatives. If initiative directories have no row, give their number and say that orchestrate repairs the index. Then list each due follow-up with its `Due` date, its `Follow-up` text, and its `From` link. Say that sup checked none of them. Then print the sweep result table.
 
 ## Propose
 
