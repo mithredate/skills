@@ -83,7 +83,7 @@ A ticket is ready when `status: open`, `assignee` is empty, and every `blocked-b
 
 A build `task` ticket holds a `## Brief` section as its body. `productivity:prep` writes it. The format is in [../../prep/references/brief.md](../../prep/references/brief.md).
 
-When the human says yes to the brief, the ticket gets `approved: <YYYY-MM-DD>` in its frontmatter. `orchestrate fire` builds only an approved ticket.
+A session adds `approved: <YYYY-MM-DD>` to the ticket frontmatter after `dev:brief-judge` returns `auto` for the brief. A yes of the human does not add it. `orchestrate fire` builds only an approved ticket.
 
 ## Gate
 

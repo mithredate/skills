@@ -27,7 +27,7 @@ A status line makes a step or a build **ready**, by step 3 of [Notes](#notes). I
 1. If the host cannot start a session that reports back to this session, tell the owner to use `cook`. Then stop.
 2. Read the name of the default branch of `origin` with `git ls-remote --symref origin HEAD`. The name is the part after `ref: refs/heads/` in the first line of the output, up to the tab. A local `origin/HEAD` can be stale, so do not read it. Use the name only when it holds only letters, digits, `.`, `_`, `-`, and `/`. The prompt of a `cook` child session puts the name in shell commands. If the command fails, or the name holds another character, tell the owner. Then stop. The tracker is on that branch, because `orchestrate fire` clones it.
 3. If the owner names no initiative, ask the owner which initiatives to run. Do not read the index for a list.
-4. Read the Repos table in the `AGENTS.md` of this repo. A build starts only in a repo of that table. The table guards the path of a build start. The consent for a build is the `approved:` line of its ticket, and `orchestrate fire` step 3 checks it.
+4. Read the Repos table in the `AGENTS.md` of this repo. A build starts only in a repo of that table. The table guards the path of a build start. A session adds the `approved:` line of a build ticket after `dev:brief-judge` returns `auto`. `orchestrate fire` step 3 checks the line. A human merges the PR of the build.
 5. Find the main checkout of this repo. It is the parent of the directory that `git rev-parse --path-format=absolute --git-common-dir` prints.
 6. Start a `cook` child session for each named initiative.
 
@@ -45,7 +45,7 @@ Start each child session as a session that reports back to this session, in its 
   Before you read the index, run `git fetch origin` and `git switch --detach origin/<branch>`. The tracker is on that branch. Do not merge a local branch, because it can hold commits that are not published.
   Stage and commit by path only the files that you changed yourself. These include the files that your sweep wrote, such as `.initiatives/sources.md`.
   Before cook step 6, commit your changes, then run `git fetch origin` and `git merge --no-edit origin/<branch>`. If cook step 2 sends you to step 7, do this before step 7.
-  In a later turn, do the same before each edit of the index or of `.initiatives/sources.md`. An example is the turn of the owner's yes to a brief.
+  In a later turn, do the same before each edit of the index or of `.initiatives/sources.md`. An example is the turn of the owner's answer to a question.
   Two child sessions can change neighbouring lines of the index or of `.initiatives/sources.md`. So write no line of these two files before the merge of the turn. Keep each such edit of the repair, the cut, and the first sweep, and write it after that merge.
   Push with `git push origin HEAD:<branch>`. If the push fails, fetch and merge `origin/<branch>` again, and push again.
   If a fetch or the switch fails, or a merge fails or conflicts, stop the step. If a merge is open, run `git merge --abort` in this worktree. Change nothing else.
