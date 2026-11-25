@@ -1,10 +1,12 @@
 # Format
 
-This file holds the file shapes of an orchestrator repo. It uses plain files under `.initiatives/`, not an issue tracker. The rules are in the orchestrate `SKILL.md`.
+This file holds the file shapes of an orchestrator repo. It uses plain files, not an issue tracker. The rules are in the orchestrate `SKILL.md`.
 
 ## Layout
 
 ```
+.notes/<YYYY-MM-DD>-<slug>.md   one discussion or decision that has no initiative
+.followups.md                   one table of follow-ups with a due date
 .initiatives/
   README.md                  index of initiatives
   sources.md                 the hosts that the tracker links to, owned by productivity:sweep
@@ -93,3 +95,34 @@ A `gate` ticket has `owner:` in its frontmatter, with the human who owns it. Its
 - [ ] <one action, with the system and the exact names>
 - Closes when: <the fact that shows the step is done>
 ```
+
+## Note
+
+A note has no goal and no status. Its open work is a row in `.followups.md`.
+
+```markdown
+# <title>
+
+Date: <YYYY-MM-DD>. Source: <the request, the thread, or the link>.
+
+## Context
+
+<the need in one sentence, and the evidence>
+
+## Decisions
+
+- <one record of `productivity:settle-decisions` for each decision>
+```
+
+Add the sections that the topic needs, for example the findings.
+
+## Follow-ups
+
+```markdown
+| Due | Follow-up | Check | From |
+|---|---|---|---|
+| <YYYY-MM-DD> | <the state to reach> | <a read-only command, query, or link that shows the state> | [<title>](<path of the note, ticket, or initiative.md>) |
+```
+
+- Due is the first day of the reminder. To snooze a row, change its Due date.
+- When the Check passes, remove the row. Record the result in the file of the From column.

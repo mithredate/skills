@@ -17,7 +17,8 @@ Prep turns a requirement into a brief. The **brief** is the whole input of one `
 1. Read the source. Read an issue or a thread with the tools of the session. If no tool reaches it, ask the user to paste it. In a hand-off, read the decision records that the build follows. The step is done when you can state the need in one sentence.
 2. Read the code that the change touches. The step is done when you can name each target and its base branch.
 3. Settle each decision with `productivity:settle-decisions`. In a hand-off, a question for the human becomes its own ticket by the Hand-off rules of `orchestrate`. The step is done when each decision is settled or has its own ticket.
-4. If the work outside a hand-off needs a human step between two builds, or waits on another person, one brief cannot hold it. Stop, and tell the user to chart it with `productivity:orchestrate`.
+4. If the work outside a hand-off needs a human step between two builds, or the build waits on another person, one brief cannot hold it. Stop, and tell the user to chart it with `productivity:orchestrate`.
+5. If the work outside a hand-off needs no build, write no brief. Write a note and its follow-up rows by the Note and Follow-ups shapes of [the orchestrate format](../orchestrate/references/format.md). Then stop. The step is done when the note is committed, or shown to the user in a repo with no `.followups.md`.
 
 ## Write the brief
 

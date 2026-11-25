@@ -21,9 +21,10 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 - If the index is missing, build it. If an initiative directory has no row, or a row has no directory, repair the index. Leave a `closed` row and its directory as they are, also when the directory still exists. Run `close` for that initiative only when the user names it. If a one-line state is longer than the limit below, cut it to the latest fact and the next step. Do this before any other work. Do not work a ticket while the index is not true.
 - Then run sweep in write mode. Give it the initiative of this session and each `waiting` row. Sweep also adds each new host to `.initiatives/sources.md`, or builds the file if it is missing. The tracker is true only when its live links are checked.
   - Before you work a ticket, sort each claim that sweep gives you with `productivity:settle-decisions`. Record each result with the link and the date and time of the check. Put the record in the ticket that holds the link. If no ticket holds the link, put the record in the Notes of the initiative.
-- `orchestrate fire` reads the index in its clone and changes nothing in it. It skips the repair, the cut, and the sweep, because it commits only tickets and `initiative.md`.
-- `orchestrate run` reads nothing in the tracker. It skips the index read, the repair, the cut, and the sweep. Each `cook` session that it starts does them in its own context.
-- A `cook` session that `orchestrate run` started works only on its own initiative, as `orchestrate fire` does. It repairs and cuts only its own index row. It gives sweep only its own initiative, and no `waiting` row of another initiative. Such sessions run at the same time, so two of them must not write the same line.
+- Then run the Check of each row in `.followups.md` with a Due date of today or earlier. Remove each row whose Check passes, and record the result in the file of its From column. List the other due rows in your first message.
+- `orchestrate fire` reads the index in its clone and changes nothing in it. It skips the repair, the cut, the sweep, and the follow-ups, because it commits only tickets and `initiative.md`.
+- `orchestrate run` reads nothing in the tracker. It skips the index read, the repair, the cut, the sweep, and the follow-ups. Each `cook` session that it starts does them in its own context.
+- A `cook` session that `orchestrate run` started works only on its own initiative, as `orchestrate fire` does. It repairs and cuts only its own index row. It gives sweep only its own initiative, and no `waiting` row of another initiative. It skips the follow-ups. Such sessions run at the same time, so two of them must not write the same line.
 - The row order is the priority. The first row is the most important initiative.
 - When the user says "prioritize", reorder the rows with the user. Then commit and push.
 - `waiting` records an external dependency, for example a support case or a PR review by another person. `paused` records the owner's own choice to stop. Only an `open` row is takeable.
@@ -36,6 +37,14 @@ The file shapes of the index, the initiative, the tickets, and the gate are in [
 When a change happens to an initiative, ticket, or asset, commit and push it. Concurrent sessions read the tracker from git.
 
 In everything the user reads, refer to a ticket by its title and to an initiative by its directory name. Put the path inside the link. A list of bare ids is not readable.
+
+## Notes and follow-ups
+
+A **note** records a discussion or a decision that belongs to no initiative. A **follow-up** is a state to check from a due date. Their shapes are in [references/format.md](references/format.md).
+
+- When the work fits one session, record its result in `.notes/<YYYY-MM-DD>-<slug>.md`, not in a new initiative.
+- Write each wait on another person, and each check after a date, as a row in `.followups.md`. A ticket or an initiative can add a row too.
+- A follow-up lives only in its row. The file of its From column does not repeat it.
 
 ## The initiative
 
@@ -64,7 +73,7 @@ A **HITL** ticket waits for the human. A `gate` ticket is HITL. A `decision` or 
 The user gives a loose idea. Charting is one session's work. It resolves no ticket.
 
 1. Name the goal with the user. The goal fixes the scope, so settle it first. It ends with one sentence that starts with `Closes when`. The step is done when the user agrees to the goal.
-2. List the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no initiative. Write the user a prompt that starts that session. Then stop.
+2. List the open decisions breadth-first, and the first steps that a session can take now. If no unspecified question shows, the work fits one session and needs no initiative. Write the user a prompt that starts that session, and that records its result in a note. Then stop.
 3. Write `initiative.md` with the Goal and the Notes. Leave Decisions so far empty. List the unspecified questions under Not yet specified.
 4. Write a ticket for each question that you can state precisely now. Then add the `blocked-by` edges.
 5. For each research ticket, start a subagent with a fresh context that calls the Skill tool with `productivity:research`. Each subagent resolves its ticket in parallel.
@@ -128,7 +137,7 @@ Write it as `Next: <state>, <state>.` Name each state that applies:
 
 ## init
 
-A new orchestrator repo needs three files: `.initiatives/README.md` with the empty index table, `.initiatives/sources.md` with the empty table from `productivity:sweep`, and `AGENTS.md`. Copy `AGENTS.md` from [references/agents-md-template.md](references/agents-md-template.md). Add `.claude/rules/claude-code.md` only when a gate is Claude-only. Fill the repos table with the sibling repos this repo plans for.
+A new orchestrator repo needs four files: `.initiatives/README.md` with the empty index table, `.initiatives/sources.md` with the empty table from `productivity:sweep`, `.followups.md` with the empty follow-up table, and `AGENTS.md`. Copy `AGENTS.md` from [references/agents-md-template.md](references/agents-md-template.md). Add `.claude/rules/claude-code.md` only when a gate is Claude-only. Fill the repos table with the sibling repos this repo plans for.
 
 ## close
 
@@ -141,7 +150,7 @@ An initiative closes when the `Closes when` sentence of its Goal is true, or whe
    - each line of Out of scope, with its reason, and with each ticket title as plain text
    - each open ticket, with the initiative it moves to, or the reason it is not done
    - the restore command
-3. Set the index row to the closed form of [references/format.md](references/format.md). In each other file under `.initiatives/`, change each link into the directory to a link to the report. Delete the directory with `git rm`. Commit and push.
+3. Set the index row to the closed form of [references/format.md](references/format.md). In each other file under `.initiatives/` or `.notes/`, and in `.followups.md`, change each link into the directory to a link to the report. Delete the directory with `git rm`. Commit and push.
 
 ## Hand-off: build and gate tickets
 
