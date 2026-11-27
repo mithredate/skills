@@ -39,10 +39,11 @@ Check the brief:
 2. Each FR is behavior that a caller, a user, or a test can see.
 3. Each Verification check is a real command with real data.
 4. The Terms line names each domain term that the change touches, or says `none`. Each edge case of the change is an FR line.
-5. Start `dev:brief-judge`. Give it the path of the brief file. Give it the decision records, or the paths of the decision tickets. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target. Start it again after each change of the brief or of the records. The check is done when the judge returns `auto` for the current brief.
+5. Start the `dev:brief-judge` role by `dev:run-agent`. Give it the path of the brief file. Give it the decision records, or the paths of the decision tickets. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target. Start it again after each change of the brief or of the records. The check is done when the judge returns `auto` for the current brief.
    - In a hand-off, give it the path of `initiative.md`. Tell it that the Goal of `initiative.md` is the requirement. The user agreed to the Goal in `chart` step 1. So write `The requirement is a message of the human.` in the prompt.
    - Outside a hand-off, give it the requirement. If the requirement is a message of the human, write `The requirement is a message of the human.` in the prompt.
-   - If the Agent tool cannot start `dev:brief-judge`, start it by the steps of `dev:run-agent`, with the same prompt. If that also fails, add no `approved:`, and start no other agent in its place. Tell the user to run `/reload-plugins`, and stop the check.
+   - If the native start fails, add no `approved:`. Report the role and cause, and stop the check.
+     On Claude Code, suggest `/reload-plugins` only when a required plugin file or registration is missing.
    - Treat the verdict as `human` if it is not `auto`, or if there is no JSON. Also treat it as `human` if an item applies, if `gaps` lists a gap, or if `line_count` is over 800.
    - If a `human` verdict gives no reason, tell the user, and stop the check. Do not start the judge again for this brief in this session.
    - If the verdict is `human`, fix each gap that the judge lists. Fix a `line_count` over 800 by check 6. For each other reason, change the brief, or add to the record what clears the reason.

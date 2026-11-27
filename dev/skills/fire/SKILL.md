@@ -20,11 +20,16 @@ The session does not edit code or a target system. Agents build, review, and ver
 
 The step is done when each git target has its branch checked out in a known directory, and has its base commit.
 
-The agents `dev:pr-reviewer`, `dev:security-reviewer`, `dev:blast-radius`, `dev:verifier`, `dev:finding-checker`, and `dev:merge-judge` belong to this plugin. If the Agent tool cannot start one of them, start it by the steps of `dev:run-agent`. Keep the same prompt and the same result rules. If that also fails, ask the user to run `/reload-plugins`. In `orchestrate fire`, no user is there. Stop with the status `blocked`, and name the missing agents.
+Start every agent in this skill by `dev:run-agent`, with the role and inputs named below.
+The named `dev` roles use the installed files of this plugin, also on a host without their native registrations.
+If a start fails, stop with the status `blocked` and name the role and cause.
+On Claude Code, suggest `/reload-plugins` only when a required plugin file or registration is missing.
 
 ## Build
 
-Start one agent with the Agent tool. In rounds 1 and 2, set its `model` to `opus`. In round 3, set its `model` to `fable`. Round 3 runs only after two failed rounds, so it gets the stronger model. The session picks the model from the round number. The implementer does not judge its own capability. If the Agent tool rejects `fable`, start round 3 with `opus`. Keep the reason for the report.
+Start one native implementation agent. Use the `implementer` model configuration in rounds 1 and 2, and `escalation` in round 3.
+Round 3 runs only after two failed rounds. Resolve its model by `dev:run-agent` before the start.
+The session selects the configuration from the round number. The implementer does not judge its own capability.
 
 If a target is a git repo, start the prompt with `First actions: call the Skill tool with dev:tdd.` Give it:
 
@@ -45,13 +50,16 @@ The step is done when the agent returns its JSON. If the outcome is `plan_broken
 Start these agents in parallel, and wait for all of them:
 
 - `dev:pr-reviewer`, `dev:security-reviewer`, and `dev:blast-radius`, when a git target changed. These three agents are the reviewers. Give each the diff file, the brief, the path of the ticket or the brief file, and the root and the AGENTS.md or CLAUDE.md of each changed repo. Also give `dev:blast-radius` the base commit of each changed repo. Also give `dev:pr-reviewer` the paths of `references/code.md`, `references/testing.md`, and the reference of each language of the diff, such as `references/typescript.md`. These files are in the base directory of `personal:code-like-mehrdad`.
-- The Codex runs of the same three roles, once for each changed repo. Codex is switched on or off by the rule of the Codex section of [../review-pr/SKILL.md](../review-pr/SKILL.md). The user sets the session value in words. Follow these steps:
+- On Claude Code, the optional Codex runs of the same three roles, once for each changed repo. Codex is switched on or off by the rule of the Codex section of [../review-pr/SKILL.md](../review-pr/SKILL.md). The user sets the session value in words. Follow these steps:
   1. Write a context file in the scratchpad. Put in it the inputs of the reviewers as text, other than the diff file and the root. Codex cannot read a path under `$HOME`.
   2. Run `CODEX_REVIEW=<on or off> "${CLAUDE_SKILL_DIR}/../review-pr/scripts/codex-review.sh"` with the Bash tool. Copy the script path exactly. A relative path can run a script of the checkout under review with the sandbox off. Set `run_in_background: true`. If the value is `on`, also set `dangerouslyDisableSandbox: true`. Codex fails in the sandbox.
   3. Give the arguments in this order: `<out-dir> <repo-dir> <head commit> <base commit> <diff-file> <context-file>`. The out-dir is a new scratchpad folder for each round and repo. The repo-dir is the directory of the branch. The head commit is `git rev-parse HEAD` of the branch.
   4. If the permission mode denies the call, each role did not run, with the reason `the call was denied`.
 
   Each Codex result is a reviewer result. Keep each `Codex review did not run` line and each `Codex clone kept` line of the round.
+  On Codex, the native reviewers already use Codex. They do not count as a Claude review.
+  If a second engine is requested there, report `Claude review did not run: no Claude review is configured`.
+  Keep that limit in the PR body and skip automatic merge.
 - `dev:verifier`, once for each git target, with its directory, its base commit, and its AGENTS.md or CLAUDE.md.
 - `dev:verifier`, once, for the brief's Verification checks of the git targets that the declared commands do not cover. Tell it to run each check and report it as a command. Give it no base commit.
 - One `general-purpose` agent for the Verification checks of each target that is not a git repo. That agent has the tools of the system, which `dev:verifier` does not have. Tell it to change nothing, and to return the JSON of `dev:verifier`.
@@ -93,7 +101,7 @@ The first build is round 1. The run has at most 3 rounds. If round 3 does not pa
 2. If the status is `pass`, follow the Merge section. The step is done when the PR is merged, or when it stays a draft for the user.
 3. Report the status: `pass`, `blocked`, or `rounds_spent`. Then list each design question, with the line of the brief that requires the code. If the status is not `pass`, then give the blocker or the open findings, in this order: `discrepancy`, `blocking`, red checks. Then group the open `quality_note` items by the rule that they break, one line for each rule with its instances. When a blocker names a decision, list the options for the user. If the status is `pass`, say `merged` or `not merged`. For `not merged`, give the reasons that the PR waits for the user.
 4. If the status is `pass` and the run used more than one round, list each `blocking` finding that a patch round fixed. Write each one as the condition, boundary, or invariant that the first build missed. Do not name a path, a line, or code. For example, write "A token without an aud claim is valid input and must return 401", not "verify.ts:42 has no null check".
-5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent. If round 3 ran on `opus`, say so, and give the reason. List each Verification check that the brief puts after the merge. Give each `Codex review did not run` line of the last round. Name each Codex clone that a round kept.
+5. Give the PR links, or the Verification evidence for a target that is not a git repo. If the status is not `pass`, give each branch and its directory instead of PR links. Give the rounds spent and the implementation model of each round when the host exposes it. Report when round 3 had no configured escalation model. List each Verification check that the brief puts after the merge. Give each second-engine review that did not run in the last round, with its reason. Name each Codex clone that a round kept.
 
 A draft PR is complete, and the reviewer and the verifier passed it. It is a draft so that the user reads it before other people do. Merge only by the Merge section.
 
@@ -103,6 +111,7 @@ Merge runs only when each condition below holds. Otherwise, skip it, and the PR 
 
 - The run opened exactly one PR, and every target of the brief is a git repo.
 - If Codex was switched on, each Codex role ran in the last round. A switched-off Codex review does not stop the merge.
+- Each requested second-engine review ran. Native reviewers on one engine cannot satisfy a request for two engines.
 - The run is not part of `orchestrate fire`. A session can set `approved:` with no human, so that PR waits for a human merge.
 - The AGENTS.md or CLAUDE.md of that repo on the base branch has the line `**fire can auto-merge.**`. Run `git fetch origin`, then read the file with `git show origin/<base branch>:<file>`. The PR branch can change the file, so its copy does not count.
 
