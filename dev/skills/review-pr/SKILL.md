@@ -6,13 +6,13 @@ argument-hint: "<PR number | branch> [--inline | --fresh] [--codex | --no-codex]
 
 # Review a PR
 
-First actions: call the Skill tool with `personal:work-like-mehrdad` and `personal:code-like-mehrdad`.
+First actions: call the Skill tool with `personal:work-like-mehrdad`, `personal:code-like-mehrdad`, and `dev:run-agent`.
 
 **Arguments:** $ARGUMENTS. The argument is a PR number or a branch name. With no argument, list the open PRs that ask for your review with `gh search prs --review-requested=@me --state=open`. Then ask which one to review. Add `--inline` or `--fresh` to force a mode. When no flag is given, the mode follows the author. Add `--codex` or `--no-codex` to switch the Codex review on or off for this session.
 
 Review stance, order of findings, and the verify-don't-trust rule come from `personal:code-like-mehrdad`. The checklists are [../../agents/pr-reviewer.md](../../agents/pr-reviewer.md), [../../agents/security-reviewer.md](../../agents/security-reviewer.md), and [../../agents/blast-radius.md](../../agents/blast-radius.md). Each file is also the system prompt of its agent. The human decides whether to merge.
 
-An **engine** is the agent program and model family that runs a reviewer role, Claude Code or Codex. A **four-eyes review** runs each of the three checklists on both engines for the same diff. Each review of this skill is a four-eyes review, in both modes. The verifier runs on Claude only.
+An **engine** is the agent program and model family that runs a reviewer role, Claude Code or Codex. A **four-eyes review** runs each of the three checklists on both engines for the same diff. Native reviewers and the verifier use the current host's engine. The optional second-engine review follows the Codex section below. Report an engine that did not run; one engine cannot count as two.
 
 ## Gather
 
@@ -30,9 +30,13 @@ An **engine** is the agent program and model family that runs a reviewer role, C
 
 ## Codex: the second engine
 
+This section starts Codex from Claude Code. On Codex, the native reviewers already use Codex; do not start them again as a second engine.
+If a second engine is requested on Codex, report `Claude review did not run: no Claude review is configured`.
+That review has no four-eyes verdict.
+
 Codex runs only when `CODEX_REVIEW` is `on`. Any other value, or no value, switches it off. A machine sets the value in the `env` of `~/.claude/settings.json`. The **session value** is the value that `--codex` or `--no-codex` sets, or that the user sets in words in the session. The session value wins over the value of the machine. With no session value, run `printenv CODEX_REVIEW` to get the value of the machine.
 
-Start [scripts/codex-review.sh](scripts/codex-review.sh) at the start of the review, in parallel with the other work of the mode.
+On Claude Code, start [scripts/codex-review.sh](scripts/codex-review.sh) at the start of the review, in parallel with the other work of the mode.
 
 1. Write a context file in the scratchpad. Put in it the inputs that `dev:pr-reviewer` gets, other than the diff file and the repo root. Write each input as text, not as a path. Codex cannot read a path under `$HOME`.
 2. Run `CODEX_REVIEW=<on or off> "${CLAUDE_SKILL_DIR}/scripts/codex-review.sh" <out-dir> <repo-dir> <head commit> <base commit> <diff-file> <context-file>` with the Bash tool. Copy the script path exactly. A relative path can run a script of the checkout under review with the sandbox off. Set `run_in_background: true`. If the value is `on`, also set `dangerouslyDisableSandbox: true`. Codex fails in the sandbox, and the permission mode reviews the call. The out-dir is a new folder in the scratchpad, outside `$HOME`. The repo-dir is the directory of the branch, or the repo that holds the head commit.
@@ -44,16 +48,18 @@ The step is done when each role has a JSON result or a reason. Each role reviews
 
 **Design baseline.** The repo, the ticket, or the PR can name an ADR or a design document. If one does, judge the design of the change against it first. A review that only checks the fit with the ticket says nothing about whether the design is sound. Fit with the ticket is one line of the review.
 
-Start the Codex script before you review, so that it runs while you review. Apply both lenses of `pr-reviewer.md` to the diff yourself. Then apply `security-reviewer.md` as a second checklist. Then follow the steps of `blast-radius.md`. Read outside the diff only for the reasons that the checklists name. Use `grep` for this, not whole-file reads. If the branch is checked out, run the declared commands yourself. For a command that fails, follow the Base run section of [../../agents/verifier.md](../../agents/verifier.md) with the base commit. If the branch is not checked out, state that verification did not run.
+On Claude Code, start the optional Codex script before you review. Apply both lenses of `pr-reviewer.md` to the diff yourself. Then apply `security-reviewer.md` as a second checklist. Then follow the steps of `blast-radius.md`. Read outside the diff only for the reasons that the checklists name. Use `grep` for this, not whole-file reads. If the branch is checked out, run the declared commands yourself. For a command that fails, follow the Base run section of [../../agents/verifier.md](../../agents/verifier.md) with the base commit. If the branch is not checked out, state that verification did not run.
 
 ## Fresh: three reviewers, one verifier
 
-Spawn the four agents in parallel with the Agent tool. In the same message, start the Codex script. Set `subagent_type` to the scoped names below. Wait for all four agents and the script to finish.
+Start the four roles below in parallel by `dev:run-agent`. Use their configured models and keep their tool restrictions.
+On Claude Code, also start the optional Codex script. Wait for every started agent and script to finish.
+If a required native role cannot start or return its result, report the review as incomplete and name the cause.
 
-- `dev:pr-reviewer` (Sonnet, 20 turns, no shell). Give it the diff file path, the brief text, and the PR title and body. Also give it the ticket context that you gathered, and the repo root. Also give it the path of the repo's AGENTS.md or CLAUDE.md. Also give it the rubrics `references/code.md` and `references/testing.md` of `personal:code-like-mehrdad`. Also give it the reference of each language of the diff. Its input is the diff, not the repo. It can use Context7 for one library-documentation check.
-- `dev:security-reviewer` (Sonnet, 20 turns, no shell). Give it the same inputs as `dev:pr-reviewer`.
-- `dev:verifier` (Haiku, 16 turns). Give it the base commit. If the branch under review is checked out, give it the directory that holds the branch. If the branch is not checked out, spawn the verifier with `isolation: "worktree"`. Then its working directory is a new worktree, and the prompt names no directory. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first. If one of these commands fails, tell it to run no declared command and to return the verdict `could_not_run`. The switch fails when the PR changes a file that the sandbox denies, such as `.claude/settings.json`.
-- `dev:blast-radius` (Opus, 30 turns, with a shell). Give it the same inputs as `dev:pr-reviewer`, and the base commit. Give it the directory of the branch, or spawn it with `isolation: "worktree"`, the same as `dev:verifier`.
+- `dev:pr-reviewer` (20 turns, no shell). Give it the diff file path, the brief text, and the PR title and body. Also give it the ticket context that you gathered, and the repo root. Also give it the path of the repo's AGENTS.md or CLAUDE.md. Also give it the rubrics `references/code.md` and `references/testing.md` of `personal:code-like-mehrdad`. Also give it the reference of each language of the diff. Its input is the diff, not the repo. It can use Context7 for one library-documentation check.
+- `dev:security-reviewer` (20 turns, no shell). Give it the same inputs as `dev:pr-reviewer`.
+- `dev:verifier` (16 turns). Give it the base commit. If the branch under review is checked out, give it the directory that holds the branch. Otherwise use the host's worktree isolation, or prepare an isolated checkout before the start. Tell it to run `git fetch origin pull/<n>/head` and `git switch --detach FETCH_HEAD` there first. If isolation or either command fails, tell it to run no declared command and return `could_not_run`.
+- `dev:blast-radius` (30 turns, with a shell). Give it the same inputs as `dev:pr-reviewer`, and the base commit. Give it the directory of the branch, or use an isolated checkout as for `dev:verifier`.
 
 A red verifier verdict is a `blocking` finding. Report a `could_not_run` verdict as such. Do not report it as green.
 

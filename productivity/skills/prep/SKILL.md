@@ -6,7 +6,7 @@ argument-hint: "<request | issue key | thread link>"
 
 # Prep
 
-First actions: call the Skill tool with `personal:work-like-mehrdad` and `dev:ponytail`.
+First actions: call the Skill tool with `personal:work-like-mehrdad`, `dev:ponytail`, and `dev:run-agent`.
 
 **Arguments:** $ARGUMENTS. The argument is a requirement: a request in the user's words, a Jira or Linear key, or a link to a Slack or Teams thread. In an `orchestrate` hand-off, the requirement is the build ticket and the decisions of its initiative.
 
@@ -39,10 +39,11 @@ Check the brief:
 2. Each FR is behavior that a caller, a user, or a test can see.
 3. Each Verification check is a real command with real data.
 4. The Terms line names each domain term that the change touches, or says `none`. Each edge case of the change is an FR line.
-5. Start `dev:brief-judge`. Give it the path of the brief file. Give it the decision records, or the paths of the decision tickets. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target. Start it again after each change of the brief or of the records. The check is done when the judge returns `auto` for the current brief.
+5. Start the `dev:brief-judge` role by `dev:run-agent`. Give it the path of the brief file. Give it the decision records, or the paths of the decision tickets. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target. Start it again after each change of the brief or of the records. The check is done when the judge returns `auto` for the current brief.
    - In a hand-off, give it the path of `initiative.md`. Tell it that the Goal of `initiative.md` is the requirement. The user agreed to the Goal in `chart` step 1. So write `The requirement is a message of the human.` in the prompt.
    - Outside a hand-off, give it the requirement. If the requirement is a message of the human, write `The requirement is a message of the human.` in the prompt.
-   - If the Agent tool does not list `dev:brief-judge`, add no `approved:`, and start no other agent in its place. Tell the user to run `/reload-plugins`, and stop the check.
+   - If the native start fails, add no `approved:`. Report the role and cause, and stop the check.
+     On Claude Code, suggest `/reload-plugins` only when a required plugin file or registration is missing.
    - Treat the verdict as `human` if it is not `auto`, or if there is no JSON. Also treat it as `human` if an item applies, if `gaps` lists a gap, or if `line_count` is over 800.
    - If a `human` verdict gives no reason, tell the user, and stop the check. Do not start the judge again for this brief in this session.
    - If the verdict is `human`, fix each gap that the judge lists. Fix a `line_count` over 800 by check 6. For each other reason, change the brief, or add to the record what clears the reason.
@@ -56,4 +57,4 @@ Check the brief:
 Give the user a path, not the brief, because the user does not read a whole brief.
 
 - In a hand-off, add `approved: <YYYY-MM-DD>` to the ticket frontmatter only after the judge returns `auto` for the current brief. When you change a brief, do the checks again, and start the judge again. If the ticket has `approved:`, delete it in the same edit. Give the user the path of the build ticket and the verdict of the judge. Then go back to `orchestrate`. `orchestrate fire` builds the ticket later, with no human.
-- Outside a hand-off, when the judge returns `auto`, write the text of `draft.md` to `brief.md` with the Write tool. Put `brief.md` in the session scratchpad, next to `draft.md`. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call. Then run `diff` on `draft.md` and `brief.md`, before the first step of `fire`. If `diff` prints a line, write `brief.md` again, because the judge cleared only the text of `draft.md`. Give the user the path of `brief.md`, and continue in the same turn.
+- Outside a hand-off, when the judge returns `auto`, write the text of `draft.md` to `brief.md` with the Write tool. Put `brief.md` in the session scratchpad, next to `draft.md`. Call the Skill tool with `dev:fire` before your next tool call, also when the host runs no hooks. Then run `diff` on `draft.md` and `brief.md`, before the first step of `fire`. If `diff` prints a line, write `brief.md` again, because the judge cleared only the text of `draft.md`. Give the user the path of `brief.md`, and continue in the same turn.
