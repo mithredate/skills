@@ -64,8 +64,9 @@ fi
 # A read outside the working folders asks for a permission, and no person answers it.
 for folder in "$@"; do flags+=(--add-dir "$(cd "$folder" && pwd -P)"); done
 
-# claude loads the CLAUDE.md of each --add-dir folder when this variable is true.
+echo "run-agent: prompt $run_dir/prompt.md, output $run_dir/output.jsonl" >&2
 code=0
+# claude loads the CLAUDE.md of each --add-dir folder when this variable is true.
 (cd "$work_dir" && env -u CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD claude "${flags[@]}" < "$run_dir/prompt.md" > "$run_dir/output.jsonl") || code=$?
 
 fail() {

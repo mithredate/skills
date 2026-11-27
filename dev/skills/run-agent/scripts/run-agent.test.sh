@@ -38,9 +38,15 @@ cat > "$tmp/bin/claude" <<'EOF'
 # Otherwise write the arguments, one per line, to fake/args, the environment to
 # fake/env, the working directory to fake/pwd, its files to fake/pwd-files, and
 # stdin to fake/stdin. Print fake/out, and exit with fake/status, or 0.
+# If fake/echo exists, wait one second, then answer with the prompt as JSON.
 fake=$(dirname "$0")/../fake
 echo "$*" >> "$fake/calls"
 if [[ $1 == plugin ]]; then cat "$fake/plugins.json"; exit 0; fi
+if [[ -f $fake/echo ]]; then
+  sleep 1
+  jq -cn --arg p "$(cat)" '{type: "result", subtype: "success", is_error: false, result: ({prompt: $p} | tojson)}'
+  exit 0
+fi
 printf '%s\n' "$@" > "$fake/args"
 env > "$fake/env"
 pwd -P > "$fake/pwd"
@@ -200,5 +206,23 @@ answer "$judge_json"
 echo 1 > "$tmp/fake/status"
 expect_failure "claude exits 1 after a result event with subtype success"
 rm "$tmp/fake/status"
+
+touch "$tmp/fake/echo"
+for n in 1 2; do
+  printf 'Prompt %s.' "$n" | PATH="$tmp/bin:$PATH" ./run-agent.sh dev:brief-judge "$tmp/checkout" > "$tmp/stdout$n" 2> "$tmp/stderr$n" &
+done
+wait
+for n in 1 2; do
+  prompt_file=$(sed -n 's/^run-agent: prompt \(.*\), output .*/\1/p' "$tmp/stderr$n")
+  output_file=$(sed -n 's/^run-agent: prompt .*, output \(.*\)/\1/p' "$tmp/stderr$n")
+  expected="{\"prompt\":\"Prompt $n.\"}"
+  if [[ $(cat "$tmp/stdout$n") == "$expected" && $(cat "$prompt_file") == "Prompt $n." \
+    && $(jq -r .result "$output_file") == "$expected" ]]; then
+    pass "run $n of two at the same time writes its prompt and its output to its own files"
+  else
+    fail "run $n: stdout $(cat "$tmp/stdout$n"), stderr $(cat "$tmp/stderr$n")"
+  fi
+done
+rm "$tmp/fake/echo"
 
 exit "$failed"
