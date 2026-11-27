@@ -77,6 +77,6 @@ result=$(jq -c -R 'fromjson? | select(.type == "result")' "$run_dir/output.jsonl
 [[ -n $result ]] || fail "the output has no result event"
 jq -e '.is_error == false and .subtype == "success"' <<< "$result" > /dev/null \
   || fail "the result event is an error: $(jq -c '{subtype, is_error}' <<< "$result")"
-answer=$(jq -r '.result | strings' <<< "$result")
+answer=$(jq -r '.result | strings | (capture("^```[a-z]*\n(?<json>[\\s\\S]*)\n```\\s*$").json // .)' <<< "$result")
 [[ $(jq -s length <<< "$answer" 2> /dev/null) == 1 ]] || fail "the result text is not one JSON value"
 printf '%s\n' "$answer"

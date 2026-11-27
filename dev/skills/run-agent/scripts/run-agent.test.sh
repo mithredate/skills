@@ -174,6 +174,16 @@ expect_failure() { # case name
     fail "$1: exit $code, stdout: $(cat "$tmp/stdout")"
   fi
 }
+answer $'```json\n'"$judge_json"$'\n```'
+run dev:brief-judge 'Judge.'
+if [[ $code == 0 && $(cat "$tmp/stdout") == "$judge_json" ]]; then
+  pass "a result text with one JSON value in one Markdown fence prints the JSON with no fence"
+else
+  fail "fenced result: exit $code, stdout: $(cat "$tmp/stdout")"
+fi
+answer $'```json\n'"$judge_json"$'\n```\n```json\n'"$judge_json"$'\n```'
+expect_failure "a result text with two fences"
+
 echo '{"type":"system","subtype":"init","tools":["Read"]}' > "$tmp/fake/out"
 expect_failure "no result event"
 jq -cn --arg r "$judge_json" '{type: "result", subtype: "success", is_error: true, result: $r}' > "$tmp/fake/out"
