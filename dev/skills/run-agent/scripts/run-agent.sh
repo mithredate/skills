@@ -15,6 +15,14 @@ fi
 agent=$1 checkout=$(cd "$2" && pwd -P)
 shift 2
 name=${agent#dev:}
+# An implementer needs edit prompts, and a general-purpose agent misses the spawn rules of the SubagentStart hook.
+case $agent in
+  dev:brief-judge | dev:merge-judge | dev:pr-reviewer | dev:security-reviewer | dev:blast-radius | dev:verifier | dev:finding-checker) ;;
+  *)
+    echo "run-agent: $agent has no fallback. The script starts only the seven native agents of dev." >&2
+    exit 2
+    ;;
+esac
 
 run_dir=$(mktemp -d "${TMPDIR:-/tmp}/run-agent.XXXXXX")
 cat > "$run_dir/prompt.md"
@@ -28,6 +36,10 @@ fi
 version=$(jq -r .version <<< "$plugin")
 native=$(jq -r .installPath <<< "$plugin")/agents/$name.md
 echo "run-agent: $agent from dev $version, $native" >&2
+if [[ ! -f $native ]]; then
+  echo "run-agent: dev $version has no native file for $agent." >&2
+  exit 1
+fi
 
 field() { awk -v key="$1: " '/^---$/ { if (++n == 2) exit; next } n == 1 && index($0, key) == 1 { print substr($0, length(key) + 1) }' "$native"; }
 tools=$(field tools | tr ',' '\n' | sed 's/^ *//; s/ *$//')

@@ -148,4 +148,22 @@ else
   fail "verifier arguments: $(tr '\n' ' ' < "$tmp/fake/args")"
 fi
 
+# The fake plugin holds a native file for each name, so only the list of the script refuses them.
+for agent in general-purpose dev:implementer dev:no-such-agent; do
+  printf -- '---\nname: %s\ntools: Read\n---\n' "${agent#dev:}" > "$tmp/install/agents/${agent#dev:}.md"
+  run "$agent" 'Build the brief.'
+  if [[ $code != 0 && ! -s $tmp/stdout && ! -e $tmp/fake/calls ]] && grep -qF -- "$agent" "$tmp/stderr"; then
+    pass "$agent exits non-zero, names the agent, and starts no claude"
+  else
+    fail "$agent: exit $code, claude calls: $(cat "$tmp/fake/calls" 2>/dev/null), stderr: $(cat "$tmp/stderr")"
+  fi
+done
+
+run dev:security-reviewer 'Review the diff.'
+if [[ $code != 0 && ! -s $tmp/stdout ]] && ! grep -q -- '^-p' "$tmp/fake/calls" && grep -qF dev:security-reviewer "$tmp/stderr"; then
+  pass "an agent with no native file in the installed plugin exits non-zero, names the agent, and starts no claude -p"
+else
+  fail "security-reviewer with no native file: exit $code, claude calls: $(cat "$tmp/fake/calls"), stderr: $(cat "$tmp/stderr")"
+fi
+
 exit "$failed"
