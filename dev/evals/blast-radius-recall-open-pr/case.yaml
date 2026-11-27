@@ -1,0 +1,43 @@
+schema_version: "1.1"
+name: blast-radius-recall-open-pr
+tags: [blast-radius]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  timeout_seconds: 1800
+  allowed_tools: [Agent, Read, Grep, Glob]
+  prompt: |
+    Start the `dev:blast-radius` agent with the Agent tool. Give it the prompt between the two lines below. Replace `<workdir>` with the absolute path of your working directory.
+
+    ---
+    Find the blast radius of one change.
+
+    - Diff file: `<workdir>/pr.diff`
+    - Brief file: `<workdir>/brief.md`. It holds the PR title and the PR body. Read it whole.
+    - Repo root: `<workdir>/repo`, a git repo at the head commit of the change.
+    - Base commit: the branch `base` of that repo.
+    - Repo rules: `AGENTS.md` at the repo root.
+    - `gh`: `<workdir>/bin/gh`. This PR is number 13.
+
+    Return your JSON.
+    ---
+
+    When the agent returns, reply with its JSON exactly as it returned it. Write nothing else.
+graders:
+  - name: no-blocking-or-discrepancy
+    type: regex
+    pattern: '^(?=[\s\S]*"blocking"\s*:\s*\[\s*\])(?=[\s\S]*"discrepancy"\s*:\s*\[\s*\])'
+  - name: names-the-open-pr-conflict
+    type: llm
+    criteria: |
+      The reply holds the JSON of a blast-radius analyst. Judge only its `open_prs` object.
+
+      The change adds the group `REPORT` and says that only admins can export. Open PR 12 adds a `finance` role with every group (`"*"`). With both merged, the finance role gets `report.export`.
+
+      PASS if `checked` is `yes` and one item of `conflicts` names PR 12 and says that the finance role gets the export permission.
+
+      FAIL otherwise.
+  - name: agent-ran
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type"\s*:\s*"dev:blast-radius"'

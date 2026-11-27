@@ -61,7 +61,7 @@ EOF
 chmod +x "$tmp/codex-pkg/codex"
 review_json='{"blocking": [], "discrepancy": [], "quality_note": ["a.txt:1 one sentence"], "nit": [], "pre_existing": []}'
 blast_json='{"what_it_does": "adds a.txt", "safety_fact": {"fact": "no code reads a.txt", "step": "4", "proof": "grep -r a.txt printed nothing"},
- "blocking": [], "discrepancy": [], "quality_note": [], "cleared": ["grep a.txt: no reader"], "before_merge": "none"}'
+ "blocking": [], "discrepancy": [], "quality_note": [], "open_prs": {"checked": "yes", "conflicts": []}, "cleared": ["grep a.txt: no reader"], "before_merge": "none"}'
 
 home=$(cd "$HOME" && pwd -P)
 home_none='"'"$home"'" = "none"'

@@ -28,6 +28,7 @@ The verdict is also `human` when one of these holds:
 - The diff changes a file that controls review or merge. Examples are AGENTS.md, CLAUDE.md, a CI workflow, CODEOWNERS, and deploy config.
 - The AGENTS.md or CLAUDE.md names a path or a topic that always needs a human review, and the diff touches it.
 - The last review left a `discrepancy`, `blocking`, or `quality_note` finding open. A `pre_existing` item is not open. A finding that `dev:finding-checker` refuted is not open.
+- A result of `dev:blast-radius` has an item in `open_prs.conflicts`, or no result has `yes` in `open_prs.checked`. One engine with `yes` is enough, because Codex cannot run `gh`.
 - The result of `dev:blast-radius` is missing, or its `safety_fact` stopped below step 4 of its proof ladder. At step 4, a script or a test ran the real code. A step 4 or 5 without the command and its output counts as below step 4.
 
 ## Evidence
