@@ -8,7 +8,7 @@ description: Use when a workflow starts an implementer, a verifier, or a named `
 Start agents with the current host's native agent tool. The role gives the instructions; the host supplies the model and permissions.
 Use a second engine only when the caller explicitly asks for a cross-engine review, not as a fallback for a missing role.
 
-Read [references/models.md](references/models.md) before the first start. It defines the optional model configuration for each host.
+For model setup examples, see [references/models.md](references/models.md).
 Load each required skill with the host's skill mechanism.
 If there is no Skill tool, read its installed `SKILL.md` and supply those instructions to the agent.
 This satisfies a Skill-tool call in a role or in the caller's contract, including the implementer's `dev:tdd` call.
@@ -25,7 +25,10 @@ This satisfies a Skill-tool call in a role or in the caller's contract, includin
    Give each agent fresh context, without the parent conversation's history.
    Keep the host's permissions. Enforce the role's tool restrictions with native controls.
    If the host cannot enforce a required restriction, report that capability as missing and apply the caller's stop rule.
-4. Start the agent with the configured model override for the role. With no override, keep the native model choice.
+4. Read `DEV_<ROLE>_MODEL` with `printenv`. Remove `dev:`, uppercase the role name, and replace hyphens with underscores.
+   For example, read `DEV_PR_REVIEWER_MODEL` for `dev:pr-reviewer`.
+   Pass a non-empty value as the native spawn model. If unset or empty, omit the model override.
+   If a native role pins another model, use the generic path of step 3 with the same required controls.
    When copying a Claude role into Codex, its Claude `model` field does not select a Codex model.
    If a configured model is rejected, report the rejection and apply the caller's stop rule.
 5. Wait for the native agent to finish. Return its result to the caller without changing its verdict or evidence.

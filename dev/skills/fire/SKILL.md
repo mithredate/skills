@@ -27,9 +27,9 @@ On Claude Code, suggest `/reload-plugins` only when a required plugin file or re
 
 ## Build
 
-Start one native implementation agent. Use the `implementer` model configuration in rounds 1 and 2, and `escalation` in round 3.
-Round 3 runs only after two failed rounds. Resolve its model by `dev:run-agent` before the start.
-The session selects the configuration from the round number. The implementer does not judge its own capability.
+Start one native implementation agent. Use `DEV_IMPLEMENTER_MODEL` in rounds 1 and 2, and `DEV_ESCALATION_MODEL` in round 3.
+Round 3 runs only after two failed rounds. If its variable is unset or empty, retain the implementation model and report no escalation.
+The session selects the variable from the round number. The implementer does not judge its own capability.
 
 If a target is a git repo, start the prompt with `First actions: call the Skill tool with dev:tdd.` Give it:
 
