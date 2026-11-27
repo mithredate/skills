@@ -178,18 +178,18 @@ for agent in general-purpose dev:implementer dev:no-such-agent; do
 done
 
 run dev:security-reviewer 'Review the diff.'
-if [[ $code != 0 && ! -s $tmp/stdout ]] && ! grep -q -- '^-p' "$tmp/fake/calls" && grep -qF dev:security-reviewer "$tmp/stderr"; then
+if [[ $code != 0 && ! -s $tmp/stdout ]] && ! grep -q -- '^-p' "$tmp/fake/calls" && grep -qF 'no native file for dev:security-reviewer' "$tmp/stderr"; then
   pass "an agent with no native file in the installed plugin exits non-zero, names the agent, and starts no claude -p"
 else
   fail "security-reviewer with no native file: exit $code, claude calls: $(cat "$tmp/fake/calls"), stderr: $(cat "$tmp/stderr")"
 fi
 
-expect_failure() { # case name
+expect_failure() { # case name, reason on stderr
   run dev:brief-judge 'Judge.'
-  if [[ $code != 0 && ! -s $tmp/stdout ]]; then
-    pass "$1: the script exits non-zero and prints no JSON"
+  if [[ $code != 0 && ! -s $tmp/stdout ]] && grep -qF -- "$2" "$tmp/stderr"; then
+    pass "$1: the script exits non-zero, prints no JSON, and names the reason"
   else
-    fail "$1: exit $code, stdout: $(cat "$tmp/stdout")"
+    fail "$1: exit $code, stdout: $(cat "$tmp/stdout"), stderr: $(cat "$tmp/stderr")"
   fi
 }
 answer $'```json\n'"$judge_json"$'\n```'
@@ -200,23 +200,23 @@ else
   fail "fenced result: exit $code, stdout: $(cat "$tmp/stdout")"
 fi
 answer $'```json\n'"$judge_json"$'\n```\n```json\n'"$judge_json"$'\n```'
-expect_failure "a result text with two fences"
+expect_failure "a result text with two fences" "not one JSON value"
 
 echo '{"type":"system","subtype":"init","tools":["Read"]}' > "$tmp/fake/out"
-expect_failure "no result event"
+expect_failure "no result event" "no result event"
 jq -cn --arg r "$judge_json" '{type: "result", subtype: "success", is_error: true, result: $r}' > "$tmp/fake/out"
-expect_failure "is_error true"
+expect_failure "is_error true" "is_error false and subtype success"
 jq -cn --arg r "$judge_json" '{type: "result", subtype: "error_max_turns", is_error: false, result: $r}' > "$tmp/fake/out"
-expect_failure "a subtype other than success"
+expect_failure "a subtype other than success" "is_error false and subtype success"
 answer 'The brief is fine.'
-expect_failure "a result text that is not JSON"
+expect_failure "a result text that is not JSON" "not one JSON value"
 answer "Verdict: $judge_json"
-expect_failure "a result text with prose around the JSON"
+expect_failure "a result text with prose around the JSON" "not one JSON value"
 answer "$judge_json $judge_json"
-expect_failure "a result text with two JSON values"
+expect_failure "a result text with two JSON values" "not one JSON value"
 answer "$judge_json"
 echo 1 > "$tmp/fake/status"
-expect_failure "claude exits 1 after a result event with subtype success"
+expect_failure "claude exits 1 after a result event with subtype success" "claude exited 1"
 rm "$tmp/fake/status"
 
 touch "$tmp/fake/echo"
