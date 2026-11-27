@@ -15,9 +15,10 @@ Prep turns a requirement into a brief. The **brief** is the whole input of one `
 ## Gather
 
 1. Read the source. Read an issue or a thread with the tools of the session. If no tool reaches it, ask the user to paste it. In a hand-off, read the decision records that the build follows. The step is done when you can state the need in one sentence.
-2. Read the code that the change touches. The step is done when you can name each target and its base branch.
+2. Read the code that the change touches. The step is done when you can name each target and its base branch, or you know that no build follows.
 3. Settle each decision with `productivity:settle-decisions`. In a hand-off, a question for the human becomes its own ticket by the Hand-off rules of `orchestrate`. The step is done when each decision is settled or has its own ticket.
-4. If the work outside a hand-off needs a human step between two builds, or waits on another person, one brief cannot hold it. Stop, and tell the user to chart it with `productivity:orchestrate`.
+4. If the work outside a hand-off needs a human step between two builds, or the build waits on another person, one brief cannot hold it. Stop, and tell the user to chart it with `productivity:orchestrate`.
+5. If the work outside a hand-off needs no build, write no brief. Write a note file and its follow-ups by the shapes in [the orchestrate format](../orchestrate/references/format.md). Write them in the orchestrator repo of the session, the repo with `.initiatives/`. Show each new follow-up to the user before you commit it. If the session has no orchestrator repo, show the note file and its follow-ups to the user instead. Then stop. The step is done when the note file and its follow-ups are committed, or shown to the user.
 
 ## Write the brief
 
@@ -41,7 +42,7 @@ Check the brief:
 5. Start `dev:brief-judge`. Give it the path of the brief file. Give it the decision records, or the paths of the decision tickets. Give it the paths of the design doc, if one exists, and of the AGENTS.md or CLAUDE.md of each target. Start it again after each change of the brief or of the records. The check is done when the judge returns `auto` for the current brief.
    - In a hand-off, give it the path of `initiative.md`. Tell it that the Goal of `initiative.md` is the requirement. The user agreed to the Goal in `chart` step 1. So write `The requirement is a message of the human.` in the prompt.
    - Outside a hand-off, give it the requirement. If the requirement is a message of the human, write `The requirement is a message of the human.` in the prompt.
-   - If the Agent tool cannot start `dev:brief-judge`, call the Skill tool with `dev:run-agent`. Keep the same inputs and verdict checks. If execution still fails, add no `approved:`, and report its evidence.
+   - If the Agent tool does not list `dev:brief-judge`, add no `approved:`, and start no other agent in its place. Tell the user to run `/reload-plugins`, and stop the check.
    - Treat the verdict as `human` if it is not `auto`, or if there is no JSON. Also treat it as `human` if an item applies, if `gaps` lists a gap, or if `line_count` is over 800.
    - If a `human` verdict gives no reason, tell the user, and stop the check. Do not start the judge again for this brief in this session.
    - If the verdict is `human`, fix each gap that the judge lists. Fix a `line_count` over 800 by check 6. For each other reason, change the brief, or add to the record what clears the reason.
@@ -55,4 +56,4 @@ Check the brief:
 Give the user a path, not the brief, because the user does not read a whole brief.
 
 - In a hand-off, add `approved: <YYYY-MM-DD>` to the ticket frontmatter only after the judge returns `auto` for the current brief. When you change a brief, do the checks again, and start the judge again. If the ticket has `approved:`, delete it in the same edit. Give the user the path of the build ticket and the verdict of the judge. Then go back to `orchestrate`. `orchestrate fire` builds the ticket later, with no human.
-- Outside a hand-off, when the judge returns `auto`, write the text of `draft.md` to `brief.md` with the Write tool. Put `brief.md` in the session scratchpad, next to `draft.md`. Call the Skill tool with `dev:fire` before your next tool call, also when the host runs no hooks. Then run `diff` on `draft.md` and `brief.md`, before the first step of `fire`. If `diff` prints a line, write `brief.md` again, because the judge cleared only the text of `draft.md`. Give the user the path of `brief.md`, and continue in the same turn.
+- Outside a hand-off, when the judge returns `auto`, write the text of `draft.md` to `brief.md` with the Write tool. Put `brief.md` in the session scratchpad, next to `draft.md`. A hook tells you to call the Skill tool with `dev:fire`. Do it before your next tool call. Then run `diff` on `draft.md` and `brief.md`, before the first step of `fire`. If `diff` prints a line, write `brief.md` again, because the judge cleared only the text of `draft.md`. Give the user the path of `brief.md`, and continue in the same turn.

@@ -1,0 +1,2 @@
+- Decided: delete the variable `tax`. Because: `src/orders.js:2` sets `tax`, and no other line of `src/orders.js` reads it. Revisit if: a caller needs the tax.
+- Decided: add the step `- run: npm run lint` after `- run: npm test` in `.github/workflows/ci.yml`. Because: `package.json:7` defines the script `lint`, and `.github/workflows/ci.yml:12` runs only `npm test`, so CI does not catch a lint error. Revisit if: the lint step slows CI by more than a minute.

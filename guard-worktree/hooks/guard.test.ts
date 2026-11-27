@@ -116,6 +116,36 @@ test('allows tracker edits and ignored files in the main checkout', async ($, on
   expect(refusal(ignored)).toBeUndefined()
 })
 
+test('allows a note file in the main checkout', async ($, on) => {
+  fakeGit(on)
+  const actual = await $.tool.call({ tool: 'Write', file_path: REPO + '/.notes/2026-11-25-x.md', content: 'x' })
+  expect(refusal(actual)).toBeUndefined()
+})
+
+test('allows an edit of the follow-ups file in the main checkout', async ($, on) => {
+  fakeGit(on)
+  const actual = await $.tool.call({ tool: 'Edit', file_path: REPO + '/.followups.md', old_string: 'a', new_string: 'b' })
+  expect(refusal(actual)).toBeUndefined()
+})
+
+test('refuses a file in the main checkout whose name only starts like the follow-ups file', async ($, on) => {
+  fakeGit(on)
+  const actual = await $.tool.call({ tool: 'Write', file_path: REPO + '/.followups.md.bak', content: 'x' })
+  expect(refusal(actual)).toContain('EnterWorktree')
+})
+
+test('refuses a path that climbs out of a tracker directory', async ($, on) => {
+  fakeGit(on)
+  const actual = await $.tool.call({ tool: 'Write', file_path: REPO + '/.notes/../src/a.ts', content: 'x' })
+  expect(refusal(actual)).toContain('EnterWorktree')
+})
+
+test('refuses a notes directory below the repo root', async ($, on) => {
+  fakeGit(on)
+  const actual = await $.tool.call({ tool: 'Write', file_path: REPO + '/src/.notes/a.ts', content: 'x' })
+  expect(refusal(actual)).toContain('EnterWorktree')
+})
+
 test('allows an edit in a repo with no origin', async ($, on) => {
   fakeGit(on)
   const ran = await $.tool.call({ tool: 'Write', file_path: NO_ORIGIN + '/notes/a.md', content: 'x' })

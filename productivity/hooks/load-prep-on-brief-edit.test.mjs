@@ -186,6 +186,43 @@ test('stays silent after an Edit whose old and new text hold approved: and whose
     assert.equal(context, '');
 });
 
+test('reminds after an Edit that renames pending: to approved: in the frontmatter of a ticket whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\npending: 2026-11-25'));
+
+    const context = contextAfterEdit(path, 'pending:', 'approved:', { originalFile: null });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('reminds after a MultiEdit that adds approved: and then changes its date, whose tool response has a null originalFile', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-19.md', TICKET_WITHOUT_BRIEF.replace('assignee: claude', 'assignee: claude\napproved: 2026-11-25'));
+
+    const context = contextFor('MultiEdit', { file_path: path, edits: [
+        { old_string: 'assignee: claude', new_string: 'assignee: claude\napproved: 2026-11-24' },
+        { old_string: '2026-11-24', new_string: '2026-11-25' },
+    ] }, { filePath: path, originalFile: null });
+
+    assert.equal(context, CHECK_APPROVAL);
+});
+
+test('gives only the brief reminder after a MultiEdit with no tool response that keeps approved: and adds a frontmatter line', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET.replace('approved: 2026-11-03', 'approved: 2026-11-03\nlabel: x'));
+
+    const context = contextFor('MultiEdit', { file_path: path, edits: [
+        { old_string: 'approved: 2026-11-03', new_string: 'approved: 2026-11-03\nlabel: x' },
+    ] });
+
+    assert.equal(context, LOAD_PREP);
+});
+
+test('gives only the brief reminder after an Edit with no tool response that adds approved: under the resolution', () => {
+    const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', TICKET.replace('## Resolution\n', '## Resolution\n\napproved: 2026-11-25\n'));
+
+    const context = contextFor('Edit', { file_path: path, old_string: '## Resolution\n', new_string: '## Resolution\n\napproved: 2026-11-25\n' });
+
+    assert.equal(context, LOAD_PREP);
+});
+
 test('reminds after an Edit that changes only the date of approved:', () => {
     const path = writeFile('.initiatives/2026-10-01-braze/tickets/brz-17.md', APPROVED_TICKET);
 

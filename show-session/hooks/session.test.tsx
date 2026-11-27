@@ -26,9 +26,13 @@ const MESSAGES: SessionMessage[] = [
   },
 ]
 
+function makeAgent(shown: Pick<AgentInfo, 'id' | 'description' | 'type' | 'status'>): AgentInfo {
+  return { kind: 'local_agent', taskStatus: 'running', label: shown.description, startTime: 0, cwd: '/repo', tokenCount: 0, tokenSamples: [], hasRow: true, ...shown }
+}
+
 const AGENTS: AgentInfo[] = [
-  { id: 'a1', description: 'Research CLI design', type: 'general-purpose', status: 'completed', kind: 'local_agent', taskStatus: 'completed', label: 'Research CLI design', startTime: 0, cwd: '/repo', tokenCount: 0, tokenSamples: [], hasRow: true },
-  { id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'running', kind: 'local_agent', taskStatus: 'running', label: 'Review the PR', startTime: 0, cwd: '/repo', tokenCount: 0, tokenSamples: [], hasRow: true },
+  makeAgent({ id: 'a1', description: 'Research CLI design', type: 'general-purpose', status: 'completed' }),
+  makeAgent({ id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'running' }),
 ]
 
 // Claude Code beneath the mod: the session and the agents above or the ones a test gives, 42% of the context used, $1.20 spent, and 3 tool calls in agent a1.
@@ -219,12 +223,12 @@ test('registers /show-session to run at once, so the pane opens while a turn run
 })
 
 test("redraws a finished agent on the queue record of its notice", async ($, on) => {
-  const agents: [AgentInfo] = [{ id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'running', kind: 'local_agent', taskStatus: 'running', label: 'Review the PR', startTime: 0, cwd: '/repo', tokenCount: 0, tokenSamples: [], hasRow: true }]
+  const agents: AgentInfo[] = [makeAgent({ id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'running' })]
   claudeCode(on, MESSAGES, agents)
   const pane = await drawPane($)
   expect(await pane.find({ type: 'Button', text: '● Review the PR' })).toBeDefined()
 
-  agents[0] = { ...agents[0], status: 'completed', taskStatus: 'completed' }
+  agents[0] = makeAgent({ id: 'a2', description: 'Review the PR', type: 'dev:pr-reviewer', status: 'completed' })
   await $.session.append({
     message: { type: 'user', role: 'user', isMeta: true, content: [{ type: 'text', text: '<task-notification>Review the PR finished</task-notification>' }] },
     door: 'queue',

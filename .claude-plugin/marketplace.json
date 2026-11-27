@@ -16,7 +16,6 @@
         "./skills/tdd",
         "./skills/systematic-debugging",
         "./skills/fire",
-        "./skills/run-agent",
         "./skills/ponytail",
         "./skills/verification-before-completion",
         "./skills/review-pr"
