@@ -37,6 +37,10 @@ max_turns=$(field maxTurns)
 [[ -z $max_turns ]] || flags+=(--max-turns "$max_turns")
 effort=$(field effort)
 [[ -z $effort ]] || flags+=(--effort "$effort")
+# The installed context7 plugin uses the same host and path.
+if grep -q context7 <<< "$tools"; then
+  flags+=(--mcp-config '{"mcpServers":{"context7":{"type":"http","url":"https://mcp.context7.com/mcp"}}}')
+fi
 
 # A judge needs only paths. Outside the checkout, it gets no CLAUDE.md of the branch under review.
 work_dir=$checkout
@@ -45,6 +49,8 @@ if [[ $name == brief-judge || $name == merge-judge ]]; then
   mkdir "$work_dir"
   flags+=(--add-dir "$checkout")
 fi
+# A read outside the working folders asks for a permission, and no person answers it.
+for folder in "$@"; do flags+=(--add-dir "$(cd "$folder" && pwd -P)"); done
 
 # claude loads the CLAUDE.md of each --add-dir folder when this variable is true.
 (cd "$work_dir" && env -u CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD claude "${flags[@]}" < "$run_dir/prompt.md" > "$run_dir/output.jsonl")

@@ -124,4 +124,28 @@ else
   fail "environment of claude: $(grep CLAUDE_CODE_ADDITIONAL "$tmp/fake/env")"
 fi
 
+context7='{"mcpServers":{"context7":{"type":"http","url":"https://mcp.context7.com/mcp"}}}'
+for reviewer in pr-reviewer blast-radius finding-checker; do
+  printf -- '---\nname: %s\ntools: Read, Grep, Glob, mcp__context7__query-docs, mcp__plugin_context7_context7__query-docs\nmaxTurns: 9\n---\n' "$reviewer" > "$tmp/install/agents/$reviewer.md"
+  run "dev:$reviewer" 'Review the diff.' "$tmp/extra"
+  if [[ $code == 0 && $(values --tools) == Read,Grep,Glob && $(values --mcp-config | jq -c .) == "$context7" ]] && has_flag --strict-mcp-config; then
+    pass "$reviewer gets only the context7 server, and its built-in tools"
+  else
+    fail "$reviewer arguments: $(tr '\n' ' ' < "$tmp/fake/args")"
+  fi
+done
+if [[ $(cat "$tmp/fake/pwd") == "$tmp/checkout" && $(values --add-dir) == "$tmp/extra" ]]; then
+  pass "a reviewer starts in the checkout, and each more folder is an --add-dir folder"
+else
+  fail "finding-checker ran in $(cat "$tmp/fake/pwd") with --add-dir $(values --add-dir)"
+fi
+
+printf -- '---\nname: verifier\ntools: Bash, Read, Grep\nmaxTurns: 5\n---\n' > "$tmp/install/agents/verifier.md"
+run dev:verifier 'Run git status.'
+if [[ $code == 0 && $(values --tools) == Bash,Read,Grep && $(values --max-turns) == 5 ]] && ! has_flag --effort && ! has_flag --mcp-config; then
+  pass "verifier gets no --effort when its native file sets none, and no MCP server"
+else
+  fail "verifier arguments: $(tr '\n' ' ' < "$tmp/fake/args")"
+fi
+
 exit "$failed"
