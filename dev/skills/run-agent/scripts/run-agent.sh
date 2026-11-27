@@ -24,7 +24,13 @@ case $agent in
     ;;
 esac
 
-run_dir=$(mktemp -d "${TMPDIR:-/tmp}/run-agent.XXXXXX")
+tmp_root=$(cd "${TMPDIR:-/tmp}" && pwd -P)
+# The run folder holds the work folder of a judge, which must be outside the checkout.
+if [[ $tmp_root/ == "${checkout%/}"/* ]]; then
+  echo "run-agent: TMPDIR $tmp_root is in the checkout $checkout. Set TMPDIR to a folder outside the checkout." >&2
+  exit 1
+fi
+run_dir=$(mktemp -d "$tmp_root/run-agent.XXXXXX")
 cat > "$run_dir/prompt.md"
 
 # The native file comes from the installed plugin, never from the checkout under review.

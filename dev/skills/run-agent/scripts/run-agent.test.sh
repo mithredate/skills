@@ -123,6 +123,18 @@ for judge in brief-judge merge-judge; do
   fi
 done
 
+mkdir "$tmp/checkout/.tmp"
+for judge in brief-judge merge-judge; do
+  rm -f "$tmp/fake/calls"
+  printf '%s' 'Judge.' | TMPDIR=$tmp/checkout/.tmp PATH="$tmp/bin:$PATH" ./run-agent.sh "dev:$judge" "$tmp/checkout" > "$tmp/stdout" 2> "$tmp/stderr" && code=0 || code=$?
+  if [[ $code != 0 && ! -s $tmp/stdout && ! -e $tmp/fake/calls && -z $(ls -A "$tmp/checkout/.tmp") ]] && grep -qF "TMPDIR $tmp/checkout/.tmp" "$tmp/stderr"; then
+    pass "$judge with TMPDIR in the checkout exits non-zero, names TMPDIR, and starts no claude"
+  else
+    fail "$judge with TMPDIR in the checkout: exit $code, claude calls: $(cat "$tmp/fake/calls" 2>/dev/null), files: $(ls -A "$tmp/checkout/.tmp"), stderr: $(cat "$tmp/stderr")"
+  fi
+done
+rm -r "$tmp/checkout/.tmp"
+
 printf '%s' 'Judge.' | CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 PATH="$tmp/bin:$PATH" ./run-agent.sh dev:brief-judge "$tmp/checkout" > /dev/null 2>&1 || true
 if grep -q '^PATH=' "$tmp/fake/env" && ! grep -q '^CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=' "$tmp/fake/env"; then
   pass "with CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 in the caller, claude gets no such variable"
