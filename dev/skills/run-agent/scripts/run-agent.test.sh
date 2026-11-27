@@ -225,4 +225,13 @@ for n in 1 2; do
 done
 rm "$tmp/fake/echo"
 
+# The skill runs the script with the sandbox off, so a relative path could run a script of the checkout under review.
+commands=$(grep -o '`[^`]*run-agent\.sh[^`]*`' ../SKILL.md 2> /dev/null) || true
+others=$(grep -vF '`"${CLAUDE_SKILL_DIR}/scripts/run-agent.sh" ' <<< "$commands") || true
+if [[ -n $commands && -z $others ]]; then
+  pass "the skill runs the script by its path from \${CLAUDE_SKILL_DIR}"
+else
+  fail "the skill runs the script by another path: ${others:-no command}"
+fi
+
 exit "$failed"
