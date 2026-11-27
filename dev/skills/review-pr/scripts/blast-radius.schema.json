@@ -7,6 +7,7 @@
     "blocking",
     "discrepancy",
     "quality_note",
+    "open_prs",
     "cleared",
     "before_merge"
   ],
@@ -105,6 +106,46 @@
       "type": "array",
       "items": {
         "type": "string"
+      }
+    },
+    "open_prs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checked",
+        "conflicts"
+      ],
+      "properties": {
+        "checked": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no"
+          ]
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "pr",
+              "conflict",
+              "proof"
+            ],
+            "properties": {
+              "pr": {
+                "type": "string"
+              },
+              "conflict": {
+                "type": "string"
+              },
+              "proof": {
+                "type": "string"
+              }
+            }
+          }
+        }
       }
     },
     "cleared": {
