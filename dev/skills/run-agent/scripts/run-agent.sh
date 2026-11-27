@@ -65,5 +65,18 @@ fi
 for folder in "$@"; do flags+=(--add-dir "$(cd "$folder" && pwd -P)"); done
 
 # claude loads the CLAUDE.md of each --add-dir folder when this variable is true.
-(cd "$work_dir" && env -u CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD claude "${flags[@]}" < "$run_dir/prompt.md" > "$run_dir/output.jsonl")
-jq -r -R 'fromjson? | select(.type == "result") | .result' "$run_dir/output.jsonl" | tail -1
+code=0
+(cd "$work_dir" && env -u CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD claude "${flags[@]}" < "$run_dir/prompt.md" > "$run_dir/output.jsonl") || code=$?
+
+fail() {
+  echo "run-agent: $1. The output is in $run_dir/output.jsonl." >&2
+  exit 1
+}
+(( code == 0 )) || fail "claude exited $code"
+result=$(jq -c -R 'fromjson? | select(.type == "result")' "$run_dir/output.jsonl" | tail -1)
+[[ -n $result ]] || fail "the output has no result event"
+jq -e '.is_error == false and .subtype == "success"' <<< "$result" > /dev/null \
+  || fail "the result event is an error: $(jq -c '{subtype, is_error}' <<< "$result")"
+answer=$(jq -r '.result | strings' <<< "$result")
+[[ $(jq -s length <<< "$answer" 2> /dev/null) == 1 ]] || fail "the result text is not one JSON value"
+printf '%s\n' "$answer"

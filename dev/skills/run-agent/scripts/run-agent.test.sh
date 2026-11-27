@@ -166,4 +166,29 @@ else
   fail "security-reviewer with no native file: exit $code, claude calls: $(cat "$tmp/fake/calls"), stderr: $(cat "$tmp/stderr")"
 fi
 
+expect_failure() { # case name
+  run dev:brief-judge 'Judge.'
+  if [[ $code != 0 && ! -s $tmp/stdout ]]; then
+    pass "$1: the script exits non-zero and prints no JSON"
+  else
+    fail "$1: exit $code, stdout: $(cat "$tmp/stdout")"
+  fi
+}
+echo '{"type":"system","subtype":"init","tools":["Read"]}' > "$tmp/fake/out"
+expect_failure "no result event"
+jq -cn --arg r "$judge_json" '{type: "result", subtype: "success", is_error: true, result: $r}' > "$tmp/fake/out"
+expect_failure "is_error true"
+jq -cn --arg r "$judge_json" '{type: "result", subtype: "error_max_turns", is_error: false, result: $r}' > "$tmp/fake/out"
+expect_failure "a subtype other than success"
+answer 'The brief is fine.'
+expect_failure "a result text that is not JSON"
+answer "Verdict: $judge_json"
+expect_failure "a result text with prose around the JSON"
+answer "$judge_json $judge_json"
+expect_failure "a result text with two JSON values"
+answer "$judge_json"
+echo 1 > "$tmp/fake/status"
+expect_failure "claude exits 1 after a result event with subtype success"
+rm "$tmp/fake/status"
+
 exit "$failed"
