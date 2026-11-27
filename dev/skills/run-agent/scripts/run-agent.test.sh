@@ -106,4 +106,22 @@ else
   fail "stderr: $(cat "$tmp/stderr")"
 fi
 
+sed 's/^name: .*/name: merge-judge/' "$tmp/install/agents/brief-judge.md" > "$tmp/install/agents/merge-judge.md"
+for judge in brief-judge merge-judge; do
+  run "dev:$judge" 'Judge.'
+  work_dir=$(cat "$tmp/fake/pwd")
+  if [[ $code == 0 && $work_dir != "$tmp/checkout"* && ! -s $tmp/fake/pwd-files && $(values --add-dir) == "$tmp/checkout" ]]; then
+    pass "$judge starts in a new empty folder outside the checkout, and reads the checkout through --add-dir"
+  else
+    fail "$judge ran in $work_dir with files $(cat "$tmp/fake/pwd-files"), --add-dir $(values --add-dir)"
+  fi
+done
+
+printf '%s' 'Judge.' | CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 PATH="$tmp/bin:$PATH" ./run-agent.sh dev:brief-judge "$tmp/checkout" > /dev/null 2>&1 || true
+if grep -q '^PATH=' "$tmp/fake/env" && ! grep -q '^CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=' "$tmp/fake/env"; then
+  pass "with CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 in the caller, claude gets no such variable"
+else
+  fail "environment of claude: $(grep CLAUDE_CODE_ADDITIONAL "$tmp/fake/env")"
+fi
+
 exit "$failed"

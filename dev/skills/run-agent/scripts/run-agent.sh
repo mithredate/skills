@@ -38,5 +38,14 @@ max_turns=$(field maxTurns)
 effort=$(field effort)
 [[ -z $effort ]] || flags+=(--effort "$effort")
 
-(cd "$checkout" && claude "${flags[@]}" < "$run_dir/prompt.md" > "$run_dir/output.jsonl")
+# A judge needs only paths. Outside the checkout, it gets no CLAUDE.md of the branch under review.
+work_dir=$checkout
+if [[ $name == brief-judge || $name == merge-judge ]]; then
+  work_dir=$run_dir/work
+  mkdir "$work_dir"
+  flags+=(--add-dir "$checkout")
+fi
+
+# claude loads the CLAUDE.md of each --add-dir folder when this variable is true.
+(cd "$work_dir" && env -u CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD claude "${flags[@]}" < "$run_dir/prompt.md" > "$run_dir/output.jsonl")
 jq -r -R 'fromjson? | select(.type == "result") | .result' "$run_dir/output.jsonl" | tail -1
